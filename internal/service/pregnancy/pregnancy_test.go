@@ -18,6 +18,127 @@ func (m *MockDB) AddPregnancyEvent(event *models.PregnancyEvent) error {
 	return args.Error(0)
 }
 
+func (m *MockDB) GetPregnancyEvents(horseID int64) ([]models.PregnancyEvent, error) {
+	args := m.Called(horseID)
+	return args.Get(0).([]models.PregnancyEvent), args.Error(1)
+}
+
+func (m *MockDB) GetHorse(id int64) (*models.Horse, error) {
+	args := m.Called(id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Horse), args.Error(1)
+}
+
+func (m *MockDB) GetHorseByName(name string) (*models.Horse, error) {
+	args := m.Called(name)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Horse), args.Error(1)
+}
+
+func (m *MockDB) GetAllHorses() ([]models.Horse, error) {
+	args := m.Called()
+	return args.Get(0).([]models.Horse), args.Error(1)
+}
+
+func (m *MockDB) GetUserHorses(userID int64) ([]models.Horse, error) {
+	args := m.Called(userID)
+	return args.Get(0).([]models.Horse), args.Error(1)
+}
+
+func (m *MockDB) AddHorse(horse *models.Horse) error {
+	args := m.Called(horse)
+	return args.Error(0)
+}
+
+func (m *MockDB) UpdateHorse(horse *models.Horse) error {
+	args := m.Called(horse)
+	return args.Error(0)
+}
+
+func (m *MockDB) DeleteHorse(id int64) error {
+	args := m.Called(id)
+	return args.Error(0)
+}
+
+func (m *MockDB) GetHealthRecords(horseID int64) ([]models.HealthRecord, error) {
+	args := m.Called(horseID)
+	return args.Get(0).([]models.HealthRecord), args.Error(1)
+}
+
+func (m *MockDB) GetUserHealthRecords(userID int64) ([]models.HealthRecord, error) {
+	args := m.Called(userID)
+	return args.Get(0).([]models.HealthRecord), args.Error(1)
+}
+
+func (m *MockDB) AddHealthRecord(record *models.HealthRecord) error {
+	args := m.Called(record)
+	return args.Error(0)
+}
+
+func (m *MockDB) UpdateHealthRecord(record *models.HealthRecord) error {
+	args := m.Called(record)
+	return args.Error(0)
+}
+
+func (m *MockDB) DeleteHealthRecord(id int64) error {
+	args := m.Called(id)
+	return args.Error(0)
+}
+
+func (m *MockDB) GetUserPregnancyEvents(userID int64) ([]models.PregnancyEvent, error) {
+	args := m.Called(userID)
+	return args.Get(0).([]models.PregnancyEvent), args.Error(1)
+}
+
+func (m *MockDB) UpdatePregnancyEvent(event *models.PregnancyEvent) error {
+	args := m.Called(event)
+	return args.Error(0)
+}
+
+func (m *MockDB) DeletePregnancyEvent(id int64) error {
+	args := m.Called(id)
+	return args.Error(0)
+}
+
+func (m *MockDB) GetBreedingCosts(horseID int64) ([]models.BreedingCost, error) {
+	args := m.Called(horseID)
+	return args.Get(0).([]models.BreedingCost), args.Error(1)
+}
+
+func (m *MockDB) AddBreedingCost(cost *models.BreedingCost) error {
+	args := m.Called(cost)
+	return args.Error(0)
+}
+
+func (m *MockDB) UpdateBreedingCost(cost *models.BreedingCost) error {
+	args := m.Called(cost)
+	return args.Error(0)
+}
+
+func (m *MockDB) DeleteBreedingCost(id int64) error {
+	args := m.Called(id)
+	return args.Error(0)
+}
+
+func (m *MockDB) Begin() (models.Transaction, error) {
+	args := m.Called()
+	return args.Get(0).(models.Transaction), args.Error(1)
+}
+
+func (m *MockDB) UpdateUserLastSync(userID int64, t time.Time) error {
+	args := m.Called(userID, t)
+	return args.Error(0)
+}
+
+func (m *MockDB) GetUserLastSync(userID int64) (time.Time, error) {
+	args := m.Called(userID)
+	return args.Get(0).(time.Time), args.Error(1)
+}
+
 func TestGetPregnancyStage(t *testing.T) {
 	service := NewService(nil)
 

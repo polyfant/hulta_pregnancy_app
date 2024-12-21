@@ -210,12 +210,7 @@ var DentalCareGuidelines = []DentalCareSchedule{
 	},
 }
 
-type Service struct {
-	db models.DataStore
-}
-
-// GetHealthAssessment provides a comprehensive health evaluation
-func (s *Service) GetHealthAssessment(horse models.Horse) struct {
+func GetHealthAssessment(horse models.Horse) struct {
 	VitalSignsCategory string
 	Vaccinations      []VaccinationSchedule
 	DentalCare        DentalCareSchedule
@@ -243,7 +238,7 @@ func (s *Service) GetHealthAssessment(horse models.Horse) struct {
 	// Determine special care needs
 	var specialCare []string
 	if horse.ConceptionDate != nil {
-		specialCare = append(specialCare, 
+		specialCare = append(specialCare,
 			"Regular pregnancy checks",
 			"Modified exercise routine",
 			"Increased nutritional requirements",
