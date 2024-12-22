@@ -1,0 +1,252 @@
+:root {
+    --primary-color: #4a90e2;
+    --success-color: #2ecc71;
+    --warning-color: #f1c40f;
+    --danger-color: #e74c3c;
+    --text-color: #2c3e50;
+    --background-color: #f5f6fa;
+    --card-background: #ffffff;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+.container {
+    padding: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.pregnancy-card {
+    background: var(--card-background);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1rem;
+}
+
+h1 {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.progress-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.progress-circle {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: conic-gradient(var(--primary-color) var(--progress), #e0e0e0 0deg);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.progress-circle::before {
+    content: '';
+    position: absolute;
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: var(--card-background);
+}
+
+.progress-value {
+    position: relative;
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.progress-label {
+    position: relative;
+    font-size: 1rem;
+    color: var(--text-color);
+    opacity: 0.8;
+}
+
+.progress-details {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem;
+    background: var(--background-color);
+    border-radius: 0.5rem;
+}
+
+.detail-item .label {
+    font-size: 0.875rem;
+    opacity: 0.8;
+}
+
+.detail-item .value {
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.monitoring-schedule {
+    margin-top: 2rem;
+}
+
+.monitoring-schedule h2 {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.schedule-details {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.schedule-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    background: var(--background-color);
+    border-radius: 0.5rem;
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+}
+
+.schedule-item.active {
+    opacity: 1;
+}
+
+.schedule-item .icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.schedule-item .label {
+    font-size: 0.75rem;
+    text-align: center;
+}
+
+.check-frequency {
+    text-align: center;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background: var(--background-color);
+    margin-top: 1rem;
+}
+
+.priority-Normal {
+    color: var(--primary-color);
+}
+
+.priority-Medium {
+    color: var(--warning-color);
+}
+
+.priority-High {
+    color: var(--danger-color);
+}
+
+.priority-Critical {
+    color: var(--danger-color);
+    font-weight: bold;
+}
+
+.stage-EarlyGestation { color: var(--primary-color); }
+.stage-MidGestation { color: var(--success-color); }
+.stage-LateGestation { color: var(--warning-color); }
+.stage-FinalGestation { color: var(--danger-color); }
+
+/* Error styles */
+.error-card {
+    background: var(--card-background);
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.error-card h1 {
+    color: var(--danger-color);
+    margin-bottom: 1rem;
+}
+
+.error-card p {
+    margin-bottom: 2rem;
+    color: var(--text-color);
+}
+
+.back-button {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background: var(--primary-color);
+    color: white;
+    text-decoration: none;
+    border-radius: 0.5rem;
+    transition: background-color 0.3s ease;
+}
+
+.back-button:hover {
+    background: var(--primary-color-dark);
+}
+
+/* Desktop styles */
+@media (min-width: 768px) {
+    .container {
+        padding: 2rem;
+    }
+
+    .pregnancy-card {
+        padding: 2rem;
+    }
+
+    .progress-container {
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+    .progress-details {
+        width: 50%;
+    }
+
+    .schedule-details {
+        gap: 1.5rem;
+    }
+
+    .schedule-item {
+        padding: 1.5rem;
+    }
+
+    .schedule-item .icon {
+        font-size: 2rem;
+    }
+
+    .schedule-item .label {
+        font-size: 0.875rem;
+    }
+}

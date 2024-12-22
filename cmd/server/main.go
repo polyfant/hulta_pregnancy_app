@@ -16,6 +16,9 @@ func main() {
 	}
 	defer db.Close()
 
+	// Create store
+	store := database.NewSQLiteStore(db)
+
 	// Setup router
 	r := gin.Default()
 
@@ -31,10 +34,12 @@ func main() {
 		c.Next()
 	})
 
-	// Initialize API routes
-	api.SetupRoutes(r, db)
+	// Setup routes
+	api.SetupRoutes(r, store)
+	api.SetupPregnancyRoutes(r) // Add pregnancy tracking frontend routes
 
 	// Start server
+	log.Println("Starting server on :8080...")
 	if err := r.Run(":8080"); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

@@ -17,6 +17,9 @@ type PregnancyGuidelines struct {
 	Exercise    []string
 	Risks       []string
 	Preparation []string
+	Progress    string
+	DaysRemaining string
+	Priority    string
 }
 
 var pregnancyStageGuidelines = map[models.PregnancyStage]PregnancyGuidelines{
@@ -213,11 +216,36 @@ func (s *Service) GetPregnancyGuidelines(horse models.Horse) (*PregnancyGuidelin
 		return nil, fmt.Errorf("horse is not pregnant")
 	}
 
-	stage := s.GetPregnancyStage(horse)
-	guidelines, ok := pregnancyStageGuidelines[stage]
-	if !ok {
-		return nil, fmt.Errorf("no guidelines found for stage: %s", stage)
+	calculator := NewPregnancyCalculator(*horse.ConceptionDate)
+	stage := calculator.GetStage()
+	schedule := calculator.GetMonitoringSchedule()
+	currentDay := calculator.GetCurrentDay()
+	daysRemaining := calculator.GetRemainingDays()
+	progress := calculator.GetProgressPercentage()
+
+	// Get base guidelines for the stage
+	guidelines := pregnancyStageGuidelines[stage]
+
+	// Add dynamic monitoring instructions based on the schedule
+	if schedule.TemperatureCheck {
+		guidelines.Monitoring = append(guidelines.Monitoring,
+			fmt.Sprintf("Check temperature every %d hours", schedule.CheckFrequency))
 	}
+	if schedule.UdderCheck {
+		guidelines.Monitoring = append(guidelines.Monitoring,
+			"Monitor udder development for signs of waxing")
+	}
+	if schedule.VulvaCheck {
+		guidelines.Monitoring = append(guidelines.Monitoring,
+			"Check vulva for relaxation and color changes")
+	}
+
+	// Add progress information
+	guidelines.Progress = fmt.Sprintf("Day %d of pregnancy (%.1f%% complete)", 
+		currentDay, progress)
+	guidelines.DaysRemaining = fmt.Sprintf("%d days until estimated due date", 
+		daysRemaining)
+	guidelines.Priority = schedule.Priority
 
 	return &guidelines, nil
 }
