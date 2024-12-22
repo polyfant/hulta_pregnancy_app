@@ -25,7 +25,7 @@ func getUserIDFromContext(c *gin.Context) int64 {
 type Handler struct {
 	db              models.DataStore
 	breedingService *breeding.Service
-	healthService   *health.Service
+	healthService   *health.HealthService
 	pregnancyService *pregnancy.Service
 }
 
@@ -33,7 +33,7 @@ func NewHandler(db models.DataStore) *Handler {
 	return &Handler{
 		db:              db,
 		breedingService: breeding.NewService(db),
-		healthService:   health.NewService(db),
+		healthService:   health.NewHealthService(db),
 		pregnancyService: pregnancy.NewService(db),
 	}
 }
@@ -139,7 +139,7 @@ func (h *Handler) GetPregnancyGuidelines(c *gin.Context) {
 // @Tags health
 // @Produce json
 // @Param id path int true "Horse ID"
-// @Success 200 {object} health.HealthAssessment
+// @Success 200 {object} health.HealthSummary
 // @Router /horses/{id}/health [get]
 func (h *Handler) GetHealthAssessment(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
@@ -155,7 +155,7 @@ func (h *Handler) GetHealthAssessment(c *gin.Context) {
 		return
 	}
 
-	assessment := h.healthService.GetHealthAssessment(*horse)
+	assessment := h.healthService.GetHealthSummary(*horse)
 	c.JSON(http.StatusOK, assessment)
 }
 
