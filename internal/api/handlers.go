@@ -3,7 +3,6 @@ package api
 import (
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/polyfant/horse_tracking/internal/logger"
@@ -11,7 +10,6 @@ import (
 	"github.com/polyfant/horse_tracking/internal/service/breeding"
 	"github.com/polyfant/horse_tracking/internal/service/health"
 	"github.com/polyfant/horse_tracking/internal/service/pregnancy"
-	"github.com/polyfant/horse_tracking/internal/validation"
 )
 
 // ErrorResponse represents an error response from the API
@@ -44,19 +42,32 @@ func NewHandler(db models.DataStore) *Handler {
 	}
 }
 
-// @Summary Get all horses
-// @Description Get a list of all horses in the system
+// @Summary List all horses
+// @Description Get a list of all horses
 // @Tags horses
 // @Produce json
 // @Success 200 {array} models.Horse
 // @Router /horses [get]
-func (h *Handler) GetHorses(c *gin.Context) {
+func (h *Handler) ListHorses(c *gin.Context) {
 	horses, err := h.db.GetAllHorses()
 	if err != nil {
 		logger.Error(err, "Failed to get horses", nil)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get horses"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to get horses"})
 		return
 	}
+
+	// Calculate additional information for pregnant horses
+	for i := range horses {
+		if horses[i].ConceptionDate != nil {
+			calculator := pregnancy.NewPregnancyCalculator(*horses[i].ConceptionDate)
+			dueDate := calculator.GetDueDate()
+			stage := calculator.GetStage()
+			horses[i].DueDate = &dueDate
+			horses[i].PregnancyStage = string(stage)
+			horses[i].PregnancyProgress = calculator.GetProgressPercentage()
+		}
+	}
+
 	c.JSON(http.StatusOK, horses)
 }
 
@@ -85,8 +96,10 @@ func (h *Handler) GetHorse(c *gin.Context) {
 	// Calculate additional information if horse is pregnant
 	if horse.ConceptionDate != nil {
 		calculator := pregnancy.NewPregnancyCalculator(*horse.ConceptionDate)
-		horse.DueDate = calculator.GetDueDate()
-		horse.PregnancyStage = calculator.GetStage()
+		dueDate := calculator.GetDueDate()
+		stage := calculator.GetStage()
+		horse.DueDate = &dueDate
+		horse.PregnancyStage = string(stage)
 		horse.PregnancyProgress = calculator.GetProgressPercentage()
 	}
 
@@ -117,41 +130,14 @@ func (h *Handler) AddHorse(c *gin.Context) {
 	// Calculate additional information if horse is pregnant
 	if horse.ConceptionDate != nil {
 		calculator := pregnancy.NewPregnancyCalculator(*horse.ConceptionDate)
-		horse.DueDate = calculator.GetDueDate()
-		horse.PregnancyStage = calculator.GetStage()
+		dueDate := calculator.GetDueDate()
+		stage := calculator.GetStage()
+		horse.DueDate = &dueDate
+		horse.PregnancyStage = string(stage)
 		horse.PregnancyProgress = calculator.GetProgressPercentage()
 	}
 
 	c.JSON(http.StatusCreated, horse)
-}
-
-// @Summary Get pregnancy guidelines
-// @Description Get detailed pregnancy guidelines for a specific horse
-// @Tags pregnancy
-// @Produce json
-// @Param id path int true "Horse ID"
-// @Success 200 {object} pregnancy.PregnancyGuidelines
-// @Router /horses/{id}/pregnancy-guidelines [get]
-func (h *Handler) GetPregnancyGuidelines(c *gin.Context) {
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid horse ID"})
-		return
-	}
-
-	horse, err := h.db.GetHorse(id)
-	if err != nil {
-		logger.Error(err, "Failed to get horse", map[string]interface{}{"id": id})
-		c.JSON(http.StatusNotFound, gin.H{"error": "Horse not found"})
-		return
-	}
-
-	guidelines, err := h.pregnancyService.GetPregnancyGuidelines(*horse)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, guidelines)
 }
 
 // @Summary Get health assessment
@@ -164,18 +150,18 @@ func (h *Handler) GetPregnancyGuidelines(c *gin.Context) {
 func (h *Handler) GetHealthAssessment(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
 	horse, err := h.db.GetHorse(id)
 	if err != nil {
 		logger.Error(err, "Failed to get horse", map[string]interface{}{"id": id})
-		c.JSON(http.StatusNotFound, gin.H{"error": "Horse not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "Horse not found"})
 		return
 	}
 
-	assessment := h.healthService.GetHealthSummary(*horse)
+	assessment := h.healthService.GetHealthSummary(horse)
 	c.JSON(http.StatusOK, assessment)
 }
 
@@ -191,23 +177,52 @@ func (h *Handler) GetHealthAssessment(c *gin.Context) {
 func (h *Handler) AddHealthRecord(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
 	var record models.HealthRecord
 	if err := c.ShouldBindJSON(&record); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid health record data"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid health record data"})
 		return
 	}
 
 	record.HorseID = id
 	if err := h.db.AddHealthRecord(&record); err != nil {
 		logger.Error(err, "Failed to add health record", map[string]interface{}{"horseID": id})
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add health record"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to add health record"})
 		return
 	}
 	c.JSON(http.StatusCreated, record)
+}
+
+// @Summary Get pregnancy guidelines
+// @Description Get detailed pregnancy guidelines for a specific horse
+// @Tags pregnancy
+// @Produce json
+// @Param id path int true "Horse ID"
+// @Success 200 {object} pregnancy.PregnancyGuidelines
+// @Router /horses/{id}/pregnancy-guidelines [get]
+func (h *Handler) GetPregnancyGuidelines(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
+		return
+	}
+
+	horse, err := h.db.GetHorse(id)
+	if err != nil {
+		logger.Error(err, "Failed to get horse", map[string]interface{}{"id": id})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "Horse not found"})
+		return
+	}
+
+	guidelines, err := h.pregnancyService.GetPregnancyGuidelines(horse)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, guidelines)
 }
 
 // @Summary Get breeding costs
@@ -220,14 +235,14 @@ func (h *Handler) AddHealthRecord(c *gin.Context) {
 func (h *Handler) GetBreedingCosts(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
 	costs, err := h.db.GetBreedingCosts(id)
 	if err != nil {
 		logger.Error(err, "Failed to get breeding costs", map[string]interface{}{"horseID": id})
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get breeding costs"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to get breeding costs"})
 		return
 	}
 	c.JSON(http.StatusOK, costs)
@@ -245,20 +260,20 @@ func (h *Handler) GetBreedingCosts(c *gin.Context) {
 func (h *Handler) AddBreedingCost(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
 	var cost models.BreedingCost
 	if err := c.ShouldBindJSON(&cost); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid breeding cost data"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid breeding cost data"})
 		return
 	}
 
 	cost.HorseID = id
 	if err := h.db.AddBreedingCost(&cost); err != nil {
 		logger.Error(err, "Failed to add breeding cost", map[string]interface{}{"horseID": id})
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add breeding cost"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to add breeding cost"})
 		return
 	}
 	c.JSON(http.StatusCreated, cost)

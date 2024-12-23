@@ -17,7 +17,7 @@ func NewSQLiteStore(db *sql.DB) *SQLiteStore {
 }
 
 // Horse operations
-func (s *SQLiteStore) GetHorse(id int64) (*models.Horse, error) {
+func (s *SQLiteStore) GetHorse(id int64) (models.Horse, error) {
 	var horse models.Horse
 	var birthDateStr, conceptionDateStr sql.NullString
 
@@ -30,23 +30,23 @@ func (s *SQLiteStore) GetHorse(id int64) (*models.Horse, error) {
 	)
 
 	if err != nil {
-		return nil, fmt.Errorf("error getting horse: %v", err)
+		return models.Horse{}, fmt.Errorf("error getting horse: %v", err)
 	}
 
 	// Parse dates
 	if birthDate, err := parseNullTime(birthDateStr); err != nil {
-		return nil, err
+		return models.Horse{}, err
 	} else if birthDate != nil {
 		horse.DateOfBirth = *birthDate
 	}
 
 	if conceptionDate, err := parseNullTime(conceptionDateStr); err != nil {
-		return nil, err
+		return models.Horse{}, err
 	} else {
 		horse.ConceptionDate = conceptionDate
 	}
 
-	return &horse, nil
+	return horse, nil
 }
 
 func (s *SQLiteStore) GetHorseByName(name string) (*models.Horse, error) {
@@ -353,6 +353,16 @@ func (s *SQLiteStore) DeleteBreedingCost(id int64) error {
 }
 
 // User operations
+func (s *SQLiteStore) GetLastSyncTime(userID int64) (time.Time, error) {
+	// For now, we'll just use GetUserLastSync since they serve the same purpose
+	return s.GetUserLastSync(userID)
+}
+
+func (s *SQLiteStore) GetPendingSyncCount(userID int64) (int, error) {
+	// This is a placeholder implementation
+	return 0, nil
+}
+
 func (s *SQLiteStore) UpdateUserLastSync(userID int64, t time.Time) error {
 	// TODO: Implement when user system is added
 	return fmt.Errorf("not implemented")
@@ -363,12 +373,8 @@ func (s *SQLiteStore) GetUserLastSync(userID int64) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("not implemented")
 }
 
-func (s *SQLiteStore) Begin() (models.Transaction, error) {
-	tx, err := s.db.Begin()
-	if err != nil {
-		return nil, err
-	}
-	return tx, nil
+func (s *SQLiteStore) Begin() (*sql.Tx, error) {
+	return s.db.Begin()
 }
 
 // Helper functions
