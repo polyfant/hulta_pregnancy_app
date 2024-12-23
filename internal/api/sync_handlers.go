@@ -81,11 +81,18 @@ func (h *Handler) SyncData(c *gin.Context) {
 	c.JSON(http.StatusOK, syncData)
 }
 
+// SyncStatus represents the synchronization status
+type SyncStatus struct {
+	LastSync    time.Time `json:"lastSync"`
+	IsUpToDate  bool     `json:"isUpToDate"`
+	PendingSync int      `json:"pendingSync"`
+}
+
 // @Summary Get sync status
 // @Description Get the last sync time and status
 // @Tags sync
 // @Produce json
-// @Success 200 {object} gin.H
+// @Success 200 {object} SyncStatus
 // @Router /sync/status [get]
 func (h *Handler) GetSyncStatus(c *gin.Context) {
 	userID := getUserIDFromContext(c)
@@ -94,16 +101,25 @@ func (h *Handler) GetSyncStatus(c *gin.Context) {
 		return
 	}
 
-	lastSync, err := h.db.GetUserLastSync(userID)
+	lastSync, err := h.db.GetLastSyncTime(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get sync status"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"last_sync": lastSync,
-		"status":    "ok",
-	})
+	pendingChanges, err := h.db.GetPendingSyncCount(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get pending changes"})
+		return
+	}
+
+	status := SyncStatus{
+		LastSync:    lastSync,
+		IsUpToDate:  pendingChanges == 0,
+		PendingSync: pendingChanges,
+	}
+
+	c.JSON(http.StatusOK, status)
 }
 
 // @Summary Restore user data

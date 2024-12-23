@@ -1,0 +1,376 @@
+basePath: /
+definitions:
+  api.SyncStatus:
+    properties:
+      isUpToDate:
+        type: boolean
+      lastSync:
+        type: string
+      pendingSync:
+        type: integer
+    type: object
+  health.HealthSummary:
+    properties:
+      lastCheckup:
+        type: string
+      recentIssues:
+        items:
+          $ref: '#/definitions/models.HealthRecord'
+        type: array
+      totalRecords:
+        type: integer
+      vaccinationStatus:
+        $ref: '#/definitions/health.VaccinationStatus'
+    type: object
+  health.VaccinationStatus:
+    properties:
+      dueDate:
+        type: string
+      isUpToDate:
+        type: boolean
+      lastDate:
+        type: string
+    type: object
+  models.BreedingCost:
+    properties:
+      amount:
+        type: number
+      date:
+        type: string
+      description:
+        type: string
+      horseId:
+        type: integer
+      id:
+        type: integer
+    type: object
+  models.HealthRecord:
+    properties:
+      date:
+        type: string
+      horseId:
+        type: integer
+      id:
+        type: integer
+      notes:
+        type: string
+      type:
+        type: string
+    type: object
+  models.Horse:
+    properties:
+      breed:
+        type: string
+      conception_date:
+        type: string
+      date_of_birth:
+        type: string
+      fatherId:
+        type: integer
+      id:
+        type: integer
+      motherId:
+        type: integer
+      name:
+        type: string
+      weight:
+        type: number
+    type: object
+  models.PregnancyEvent:
+    properties:
+      date:
+        type: string
+      description:
+        type: string
+      horseId:
+        type: integer
+      id:
+        type: integer
+    type: object
+  models.PregnancyStage:
+    enum:
+    - EARLY_GESTATION
+    - MID_GESTATION
+    - LATE_GESTATION
+    - FINAL_GESTATION
+    type: string
+    x-enum-varnames:
+    - EarlyGestation
+    - MidGestation
+    - LateGestation
+    - FinalGestation
+  models.SyncData:
+    properties:
+      events:
+        items:
+          $ref: '#/definitions/models.PregnancyEvent'
+        type: array
+      health:
+        items:
+          $ref: '#/definitions/models.HealthRecord'
+        type: array
+      horses:
+        items:
+          $ref: '#/definitions/models.Horse'
+        type: array
+      timestamp:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  pregnancy.PregnancyGuidelines:
+    properties:
+      dayRange:
+        type: string
+      daysRemaining:
+        type: string
+      exercise:
+        items:
+          type: string
+        type: array
+      monitoring:
+        items:
+          type: string
+        type: array
+      nutrition:
+        items:
+          type: string
+        type: array
+      preparation:
+        items:
+          type: string
+        type: array
+      priority:
+        type: string
+      progress:
+        type: string
+      risks:
+        items:
+          type: string
+        type: array
+      stage:
+        $ref: '#/definitions/models.PregnancyStage'
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API for tracking horse pregnancies and related information
+  title: Hulta Pregnancy App API
+  version: "1.0"
+paths:
+  /horses:
+    get:
+      description: Get a list of all horses in the system
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Horse'
+            type: array
+      summary: Get all horses
+      tags:
+      - horses
+    post:
+      consumes:
+      - application/json
+      description: Add a new horse to the system
+      parameters:
+      - description: Horse object
+        in: body
+        name: horse
+        required: true
+        schema:
+          $ref: '#/definitions/models.Horse'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Horse'
+      summary: Create a new horse
+      tags:
+      - horses
+  /horses/{id}:
+    get:
+      description: Get detailed information about a specific horse
+      parameters:
+      - description: Horse ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Horse'
+      summary: Get a horse by ID
+      tags:
+      - horses
+  /horses/{id}/breeding-costs:
+    get:
+      description: Get all breeding costs for a specific horse
+      parameters:
+      - description: Horse ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.BreedingCost'
+            type: array
+      summary: Get breeding costs
+      tags:
+      - breeding
+    post:
+      consumes:
+      - application/json
+      description: Add a new breeding cost for a specific horse
+      parameters:
+      - description: Horse ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Breeding cost
+        in: body
+        name: cost
+        required: true
+        schema:
+          $ref: '#/definitions/models.BreedingCost'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.BreedingCost'
+      summary: Add breeding cost
+      tags:
+      - breeding
+  /horses/{id}/health:
+    get:
+      description: Get comprehensive health assessment for a specific horse
+      parameters:
+      - description: Horse ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/health.HealthSummary'
+      summary: Get health assessment
+      tags:
+      - health
+  /horses/{id}/health-records:
+    post:
+      consumes:
+      - application/json
+      description: Add a new health record for a specific horse
+      parameters:
+      - description: Horse ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Health record
+        in: body
+        name: record
+        required: true
+        schema:
+          $ref: '#/definitions/models.HealthRecord'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.HealthRecord'
+      summary: Add health record
+      tags:
+      - health
+  /horses/{id}/pregnancy-guidelines:
+    get:
+      description: Get detailed pregnancy guidelines for a specific horse
+      parameters:
+      - description: Horse ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pregnancy.PregnancyGuidelines'
+      summary: Get pregnancy guidelines
+      tags:
+      - pregnancy
+  /sync:
+    post:
+      consumes:
+      - application/json
+      description: Synchronize local data with server
+      parameters:
+      - description: Sync data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/models.SyncData'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SyncData'
+      summary: Sync user data
+      tags:
+      - sync
+  /sync/restore:
+    get:
+      description: Restore all user data from server
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SyncData'
+      summary: Restore user data
+      tags:
+      - sync
+  /sync/status:
+    get:
+      description: Get the last sync time and status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.SyncStatus'
+      summary: Get sync status
+      tags:
+      - sync
+swagger: "2.0"

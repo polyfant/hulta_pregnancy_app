@@ -8,6 +8,14 @@ import (
 	"github.com/polyfant/horse_tracking/internal/models"
 )
 
+// HealthSummary represents a comprehensive health summary for a horse
+type HealthSummary struct {
+	TotalRecords      int                  `json:"totalRecords"`
+	LastCheckup       *time.Time           `json:"lastCheckup"`
+	VaccinationStatus VaccinationStatus    `json:"vaccinationStatus"`
+	RecentIssues      []models.HealthRecord `json:"recentIssues"`
+}
+
 type Service struct {
 	db models.DataStore
 }
@@ -62,23 +70,13 @@ func (s *HealthService) GetVaccinationStatus(horse models.Horse) VaccinationStat
 	}
 }
 
-func (s *HealthService) GetHealthSummary(horse models.Horse) struct {
-	TotalRecords        int
-	LastCheckup        *time.Time
-	VaccinationStatus  VaccinationStatus
-	RecentIssues       []models.HealthRecord
-} {
+func (s *HealthService) GetHealthSummary(horse models.Horse) HealthSummary {
 	records, err := s.db.GetHealthRecords(horse.ID)
 	if err != nil {
 		logger.Error(err, "Failed to get health records", map[string]interface{}{
 			"horseID": horse.ID,
 		})
-		return struct {
-			TotalRecords       int
-			LastCheckup        *time.Time
-			VaccinationStatus  VaccinationStatus
-			RecentIssues       []models.HealthRecord
-		}{}
+		return HealthSummary{}
 	}
 
 	var lastCheckup *time.Time
@@ -94,12 +92,7 @@ func (s *HealthService) GetHealthSummary(horse models.Horse) struct {
 		}
 	}
 
-	return struct {
-		TotalRecords       int
-		LastCheckup        *time.Time
-		VaccinationStatus  VaccinationStatus
-		RecentIssues       []models.HealthRecord
-	}{
+	return HealthSummary{
 		TotalRecords:      len(records),
 		LastCheckup:       lastCheckup,
 		VaccinationStatus: s.GetVaccinationStatus(horse),
