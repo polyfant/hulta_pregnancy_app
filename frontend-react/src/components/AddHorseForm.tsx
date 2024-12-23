@@ -3,15 +3,21 @@ import { TextInput, Select, Button, Stack } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { horsesApi } from '../api/horses';
-import { CreateHorseInput } from '../types/horse';
+import { CreateHorseInput, Horse } from '../types/horse';
 
-export function AddHorseForm() {
+interface AddHorseFormProps {
+    initialValues?: Horse;
+    onSubmit?: (values: CreateHorseInput) => void;
+    submitButtonText?: string;
+}
+
+export function AddHorseForm({ initialValues, onSubmit, submitButtonText = 'Add Horse' }: AddHorseFormProps) {
     const queryClient = useQueryClient();
     const form = useForm<CreateHorseInput>({
-        initialValues: {
+        initialValues: initialValues ?? {
             name: '',
             breed: '',
-            gender: 'Mare',
+            gender: 'MARE',
             dateOfBirth: '',
         },
         validate: {
@@ -28,8 +34,16 @@ export function AddHorseForm() {
         },
     });
 
+    const handleSubmit = (values: CreateHorseInput) => {
+        if (onSubmit) {
+            onSubmit(values);
+        } else {
+            mutation.mutate(values);
+        }
+    };
+
     return (
-        <form onSubmit={form.onSubmit((values) => mutation.mutate(values))}>
+        <form onSubmit={form.onSubmit(handleSubmit)}>
             <Stack>
                 <TextInput
                     label="Name"
@@ -47,9 +61,9 @@ export function AddHorseForm() {
                     label="Gender"
                     required
                     data={[
-                        { value: 'Mare', label: 'Mare' },
-                        { value: 'Stallion', label: 'Stallion' },
-                        { value: 'Gelding', label: 'Gelding' },
+                        { value: 'MARE', label: 'Mare' },
+                        { value: 'STALLION', label: 'Stallion' },
+                        { value: 'GELDING', label: 'Gelding' },
                     ]}
                     {...form.getInputProps('gender')}
                 />
@@ -59,7 +73,7 @@ export function AddHorseForm() {
                     {...form.getInputProps('dateOfBirth')}
                 />
                 <Button type="submit" loading={mutation.isPending}>
-                    Add Horse
+                    {submitButtonText}
                 </Button>
             </Stack>
         </form>

@@ -22,4 +22,9 @@ export const horsesApi = {
     delete: async (id: number): Promise<void> => {
         await axios.delete(`${API_URL}/horses/${id}`);
     },
+
+    update: async (id: number, horse: CreateHorseInput): Promise<Horse> => {
+        const response = await axios.put(`${API_URL}/horses/${id}`, horse);
+        return response.data;
+    },
 };
