@@ -2,35 +2,53 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-// SetupRouter configures all the routes for the application
-func SetupRouter(handler *Handler) *gin.Engine {
+// SetupRouter sets up the routing for our API
+func SetupRouter(h *Handler) *gin.Engine {
 	router := gin.Default()
 
-	// Swagger documentation
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	// Enable CORS
+	router.Use(corsMiddleware())
 
-	// Horse management endpoints
-	horses := router.Group("/horses")
+	// API routes
+	api := router.Group("/api")
 	{
-		horses.GET("", handler.ListHorses)
-		horses.POST("", handler.AddHorse)
-		horses.GET("/:id", handler.GetHorse)
+		// Dashboard route
+		api.GET("/dashboard", h.GetDashboardStats)
+
+		// Horse routes
+		api.GET("/horses", h.ListHorses)
+		api.POST("/horses", h.AddHorse)
+		api.GET("/horses/:id", h.GetHorse)
+		api.DELETE("/horses/:id", h.DeleteHorse)
+		api.GET("/horses/:id/offspring", h.GetHorseOffspring)
+		api.GET("/horses/:id/family", h.GetHorseFamilyTree)
 
 		// Health routes
-		horses.GET("/:id/health", handler.GetHealthAssessment)
-		horses.POST("/:id/health-records", handler.AddHealthRecord)
+		api.GET("/horses/:id/health", h.GetHealthAssessment)
+		api.POST("/horses/:id/health", h.AddHealthRecord)
 
-		// Pregnancy routes
-		horses.GET("/:id/pregnancy-guidelines", handler.GetPregnancyGuidelines)
-
-		// Breeding routes
-		horses.GET("/:id/breeding-costs", handler.GetBreedingCosts)
-		horses.POST("/:id/breeding-costs", handler.AddBreedingCost)
+		// Breeding cost routes
+		api.GET("/horses/:id/breeding-costs", h.GetBreedingCosts)
+		api.POST("/horses/:id/breeding-costs", h.AddBreedingCost)
 	}
 
 	return router
+}
+
+// corsMiddleware handles CORS headers
+func corsMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	}
 }

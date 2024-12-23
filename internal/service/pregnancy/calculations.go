@@ -122,6 +122,29 @@ type MonitoringSchedule struct {
 	Priority          string // Monitoring priority level
 }
 
+// CalculateGuidelines returns pregnancy guidelines based on the current stage
+func (pc *PregnancyCalculator) CalculateGuidelines() map[string]string {
+	stage := pc.GetStage()
+	guidelines := make(map[string]string)
+
+	switch stage {
+	case models.EarlyGestation:
+		guidelines["Feeding"] = "Maintain normal feeding routine"
+		guidelines["Exercise"] = "Continue regular exercise"
+		guidelines["Monitoring"] = "Watch for signs of morning sickness"
+	case models.MidGestation:
+		guidelines["Feeding"] = "Increase feed quality, not quantity"
+		guidelines["Exercise"] = "Light to moderate exercise"
+		guidelines["Monitoring"] = "Regular vet checks recommended"
+	case models.LateGestation:
+		guidelines["Feeding"] = "Gradual increase in feed quality and quantity"
+		guidelines["Exercise"] = "Light exercise only"
+		guidelines["Monitoring"] = "Weekly vet checks, prepare for foaling"
+	}
+
+	return guidelines
+}
+
 // GetRemainingDays calculates days remaining until due date
 func (pc *PregnancyCalculator) GetRemainingDays() int {
 	dueDate := pc.GetDueDate()

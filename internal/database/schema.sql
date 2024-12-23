@@ -3,11 +3,14 @@ CREATE TABLE IF NOT EXISTS horses (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     breed TEXT,
+    gender TEXT NOT NULL,
     date_of_birth TEXT NOT NULL,
     weight REAL,
     conception_date TEXT,
     mother_id INTEGER,
     father_id INTEGER,
+    external_mother TEXT,
+    external_father TEXT,
     FOREIGN KEY (mother_id) REFERENCES horses(id),
     FOREIGN KEY (father_id) REFERENCES horses(id)
 );
