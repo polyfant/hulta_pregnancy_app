@@ -1,12 +1,19 @@
 package pregnancy
 
 import (
+	"math"
 	"testing"
 	"time"
 
 	"github.com/polyfant/horse_tracking/internal/models"
 	"github.com/stretchr/testify/assert"
 )
+
+// floatEquals checks if two floats are equal within a small epsilon
+func floatEquals(a, b float64) bool {
+	epsilon := 0.0001
+	return math.Abs(a-b) < epsilon
+}
 
 func TestPregnancyCalculator(t *testing.T) {
 	// Setup a fixed current time for testing
@@ -38,7 +45,7 @@ func TestPregnancyCalculator(t *testing.T) {
 				currentDay:    50,
 				stage:        models.EarlyGestation,
 				daysRemaining: 290,
-				progress:     14.71, // 50/340 * 100
+				progress:     14.71,
 				monitoring: MonitoringSchedule{
 					CheckFrequency:    24,
 					TemperatureCheck:  false,
@@ -63,7 +70,7 @@ func TestPregnancyCalculator(t *testing.T) {
 				currentDay:    150,
 				stage:        models.MidGestation,
 				daysRemaining: 190,
-				progress:     44.12, // 150/340 * 100
+				progress:     44.12,
 				monitoring: MonitoringSchedule{
 					CheckFrequency:    24,
 					TemperatureCheck:  false,
@@ -88,7 +95,7 @@ func TestPregnancyCalculator(t *testing.T) {
 				currentDay:    250,
 				stage:        models.LateGestation,
 				daysRemaining: 90,
-				progress:     73.53, // 250/340 * 100
+				progress:     73.53,
 				monitoring: MonitoringSchedule{
 					CheckFrequency:    24,
 					TemperatureCheck:  false,
@@ -113,7 +120,7 @@ func TestPregnancyCalculator(t *testing.T) {
 				currentDay:    315,
 				stage:        models.FinalGestation,
 				daysRemaining: 25,
-				progress:     92.65, // 315/340 * 100
+				progress:     92.65,
 				monitoring: MonitoringSchedule{
 					CheckFrequency:    24,
 					TemperatureCheck:  true,
@@ -138,7 +145,7 @@ func TestPregnancyCalculator(t *testing.T) {
 				currentDay:    325,
 				stage:        models.FinalGestation,
 				daysRemaining: 15,
-				progress:     95.59, // 325/340 * 100
+				progress:     95.59,
 				monitoring: MonitoringSchedule{
 					CheckFrequency:    6,
 					TemperatureCheck:  true,
@@ -163,7 +170,7 @@ func TestPregnancyCalculator(t *testing.T) {
 				currentDay:    335,
 				stage:        models.FinalGestation,
 				daysRemaining: 5,
-				progress:     98.53, // 335/340 * 100
+				progress:     98.53,
 				monitoring: MonitoringSchedule{
 					CheckFrequency:    2,
 					TemperatureCheck:  true,
@@ -181,27 +188,22 @@ func TestPregnancyCalculator(t *testing.T) {
 			calculator := NewPregnancyCalculator(tt.conceptionDate)
 			calculator.SetCurrentTime(tt.currentTime)
 
-			// Test GetCurrentDay
-			assert.Equal(t, tt.expectedTests.currentDay, calculator.GetCurrentDay(), 
-				"Current day calculation incorrect")
+			currentDay := calculator.GetCurrentDay()
+			assert.Equal(t, tt.expectedTests.currentDay, currentDay, "Current day calculation incorrect")
 
-			// Test GetStage
-			assert.Equal(t, tt.expectedTests.stage, calculator.GetStage(), 
-				"Pregnancy stage incorrect")
+			stage := calculator.GetStage()
+			assert.Equal(t, tt.expectedTests.stage, stage, "Stage calculation incorrect")
 
-			// Test GetRemainingDays
-			assert.Equal(t, tt.expectedTests.daysRemaining, calculator.GetRemainingDays(), 
-				"Remaining days calculation incorrect")
+			daysRemaining := calculator.GetRemainingDays()
+			assert.Equal(t, tt.expectedTests.daysRemaining, daysRemaining, "Days remaining calculation incorrect")
 
-			// Test GetProgressPercentage (using approximate equality due to floating point)
 			progress := calculator.GetProgressPercentage()
-			assert.InDelta(t, tt.expectedTests.progress, progress, 0.01, 
-				"Progress percentage calculation incorrect")
+			assert.True(t, floatEquals(tt.expectedTests.progress, progress), 
+				"Progress percentage calculation incorrect: expected %v, got %v", 
+				tt.expectedTests.progress, progress)
 
-			// Test GetMonitoringSchedule
-			schedule := calculator.GetMonitoringSchedule()
-			assert.Equal(t, tt.expectedTests.monitoring, schedule, 
-				"Monitoring schedule incorrect")
+			monitoring := calculator.GetMonitoringSchedule()
+			assert.Equal(t, tt.expectedTests.monitoring, monitoring, "Monitoring schedule incorrect")
 
 			// Test IsInCriticalPeriod
 			expectedCritical := tt.expectedTests.currentDay >= CriticalMonitoringStart
@@ -225,7 +227,9 @@ func TestEdgeCases(t *testing.T) {
 		assert.Equal(t, 0, calculator.GetCurrentDay())
 		assert.Equal(t, models.EarlyGestation, calculator.GetStage())
 		assert.Equal(t, AveragePregnancyDays, calculator.GetRemainingDays())
-		assert.InDelta(t, 0.0, calculator.GetProgressPercentage(), 0.01)
+		assert.True(t, floatEquals(0.0, calculator.GetProgressPercentage()), 
+			"Progress percentage calculation incorrect: expected 0.0, got %v", 
+			calculator.GetProgressPercentage())
 	})
 
 	t.Run("Over Due Date", func(t *testing.T) {
@@ -243,6 +247,8 @@ func TestEdgeCases(t *testing.T) {
 		assert.Equal(t, -30, calculator.GetCurrentDay())
 		assert.Equal(t, models.EarlyGestation, calculator.GetStage())
 		assert.Equal(t, AveragePregnancyDays+30, calculator.GetRemainingDays())
-		assert.Equal(t, 0.0, calculator.GetProgressPercentage())
+		assert.True(t, floatEquals(0.0, calculator.GetProgressPercentage()), 
+			"Progress percentage calculation incorrect: expected 0.0, got %v", 
+			calculator.GetProgressPercentage())
 	})
 }

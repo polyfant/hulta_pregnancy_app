@@ -1,16 +1,23 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 type Horse struct {
-	ID             int64      `json:"id" db:"id"`
-	Name           string     `json:"name" db:"name"`
-	Breed          string     `json:"breed" db:"breed"`
-	DateOfBirth    time.Time  `json:"date_of_birth" db:"date_of_birth"`
-	Weight         float64    `json:"weight" db:"weight"`
-	ConceptionDate *time.Time `json:"conception_date,omitempty" db:"conception_date"`
-	MotherID       *int64     `json:"motherId,omitempty" db:"mother_id"`
-	FatherID       *int64     `json:"fatherId,omitempty" db:"father_id"`
+	ID                int64      `json:"id" db:"id"`
+	Name              string     `json:"name" db:"name"`
+	Breed             string     `json:"breed" db:"breed"`
+	DateOfBirth       time.Time  `json:"dateOfBirth" db:"date_of_birth"`
+	Weight            float64    `json:"weight" db:"weight"`
+	ConceptionDate    *time.Time `json:"conceptionDate,omitempty" db:"conception_date"`
+	DueDate           *time.Time `json:"dueDate,omitempty" db:"due_date"`
+	PregnancyStage    string     `json:"pregnancyStage,omitempty" db:"pregnancy_stage"`
+	PregnancyProgress float64    `json:"pregnancyProgress,omitempty" db:"pregnancy_progress"`
+	CreatedAt         time.Time  `json:"createdAt" db:"created_at"`
+	UpdatedAt         time.Time  `json:"updatedAt" db:"updated_at"`
+	MotherID          *int64     `json:"motherId,omitempty" db:"mother_id"`
+	FatherID          *int64     `json:"fatherId,omitempty" db:"father_id"`
 }
 
 type PregnancyStage string

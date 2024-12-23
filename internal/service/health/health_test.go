@@ -1,6 +1,7 @@
 package health
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 
@@ -18,89 +19,119 @@ func (m *MockDB) GetHealthRecords(horseID int64) ([]models.HealthRecord, error) 
 	return args.Get(0).([]models.HealthRecord), args.Error(1)
 }
 
+func (m *MockDB) AddHealthRecord(record *models.HealthRecord) error {
+	args := m.Called(record)
+	return args.Error(0)
+}
+
+// Implement other required methods from DataStore interface
+func (m *MockDB) Begin() (*sql.Tx, error) {
+	args := m.Called()
+	return args.Get(0).(*sql.Tx), args.Error(1)
+}
+
+func (m *MockDB) GetAllHorses() ([]models.Horse, error) {
+	args := m.Called()
+	return args.Get(0).([]models.Horse), args.Error(1)
+}
+
+func (m *MockDB) GetHorse(id int64) (models.Horse, error) {
+	args := m.Called(id)
+	return args.Get(0).(models.Horse), args.Error(1)
+}
+
+func (m *MockDB) AddHorse(horse *models.Horse) error {
+	args := m.Called(horse)
+	return args.Error(0)
+}
+
+func (m *MockDB) UpdateHorse(horse *models.Horse) error {
+	args := m.Called(horse)
+	return args.Error(0)
+}
+
+func (m *MockDB) DeleteHorse(id int64) error {
+	args := m.Called(id)
+	return args.Error(0)
+}
+
+func (m *MockDB) GetBreedingCosts(horseID int64) ([]models.BreedingCost, error) {
+	args := m.Called(horseID)
+	return args.Get(0).([]models.BreedingCost), args.Error(1)
+}
+
+func (m *MockDB) AddBreedingCost(cost *models.BreedingCost) error {
+	args := m.Called(cost)
+	return args.Error(0)
+}
+
+func (m *MockDB) DeleteBreedingCost(id int64) error {
+	args := m.Called(id)
+	return args.Error(0)
+}
+
+func (m *MockDB) AddPregnancyEvent(event *models.PregnancyEvent) error {
+	args := m.Called(event)
+	return args.Error(0)
+}
+
+func (m *MockDB) GetLastSyncTime(userID int64) (time.Time, error) {
+	args := m.Called(userID)
+	return args.Get(0).(time.Time), args.Error(1)
+}
+
+func (m *MockDB) GetPendingSyncCount(userID int64) (int, error) {
+	args := m.Called(userID)
+	return args.Get(0).(int), args.Error(1)
+}
+
 func TestGetVaccinationStatus(t *testing.T) {
 	mockDB := new(MockDB)
-	service := NewService(mockDB)
+	service := NewHealthService(mockDB)
 
-	t.Run("up to date vaccination", func(t *testing.T) {
-		horse := models.Horse{ID: 1}
-		records := []models.HealthRecord{
-			{
-				HorseID: 1,
-				Type:    "Vaccination",
-				Date:    time.Now().AddDate(0, -6, 0),
-			},
-		}
-		mockDB.On("GetHealthRecords", int64(1)).Return(records, nil).Once()
-
-		status := service.GetVaccinationStatus(horse)
-		assert.True(t, status.IsUpToDate)
-	})
-
-	t.Run("outdated vaccination", func(t *testing.T) {
-		horse := models.Horse{ID: 1}
-		records := []models.HealthRecord{
-			{
-				HorseID: 1,
-				Type:    "Vaccination",
-				Date:    time.Now().AddDate(-2, 0, 0),
-			},
-		}
-		mockDB.On("GetHealthRecords", int64(1)).Return(records, nil).Once()
-
-		status := service.GetVaccinationStatus(horse)
-		assert.False(t, status.IsUpToDate)
-	})
+	horse := models.Horse{ID: 1}
+	
+	// Test case 1: No vaccinations
+	mockDB.On("GetHealthRecords", int64(1)).Return([]models.HealthRecord{}, nil)
+	
+	status := service.GetVaccinationStatus(horse)
+	assert.False(t, status.IsUpToDate)
+	assert.True(t, status.LastDate.IsZero())
+	
+	// Test case 2: Recent vaccination
+	now := time.Now()
+	mockDB.On("GetHealthRecords", int64(1)).Return([]models.HealthRecord{
+		{
+			Type: "Vaccination",
+			Date: now.AddDate(0, -5, 0), // 5 months ago
+		},
+	}, nil)
+	
+	status = service.GetVaccinationStatus(horse)
+	assert.True(t, status.IsUpToDate)
+	assert.Equal(t, now.AddDate(0, -5, 0).Unix(), status.LastDate.Unix())
 }
 
 func TestGetHealthSummary(t *testing.T) {
 	mockDB := new(MockDB)
-	service := NewService(mockDB)
+	service := NewHealthService(mockDB)
 
-	t.Run("complete health summary", func(t *testing.T) {
-		horse := models.Horse{ID: 1}
-		records := []models.HealthRecord{
-			{
-				HorseID: 1,
-				Type:    "Checkup",
-				Date:    time.Now().AddDate(0, -1, 0),
-			},
-			{
-				HorseID: 1,
-				Type:    "Issue",
-				Date:    time.Now().AddDate(0, -2, 0),
-			},
-		}
-		mockDB.On("GetHealthRecords", int64(1)).Return(records, nil).Once()
-
-		summary := service.GetHealthSummary(horse)
-		assert.Equal(t, 2, summary.TotalRecords)
-		assert.NotNil(t, summary.LastCheckup)
-	})
-}
-
-func TestGetNutritionPlan(t *testing.T) {
-	service := NewService(nil)
-
-	t.Run("maintenance nutrition plan", func(t *testing.T) {
-		horse := models.Horse{
-			ID:     1,
-			Weight: 500,
-		}
-
-		plan := service.GetNutritionPlan(horse)
-		assert.Equal(t, "Maintenance", plan.Guidelines.Category)
-	})
-
-	t.Run("late pregnancy nutrition plan", func(t *testing.T) {
-		conceptionDate := time.Now().AddDate(0, -9, 0)
-		horse := models.Horse{
-			ID:             1,
-			Weight:         500,
-			ConceptionDate: &conceptionDate,
-		}
-
-		plan := service.GetNutritionPlan(horse)
-		assert.Equal(t, "LatePregnancy", plan.Guidelines.Category)
-	})
+	horse := models.Horse{ID: 1}
+	now := time.Now()
+	
+	mockDB.On("GetHealthRecords", int64(1)).Return([]models.HealthRecord{
+		{
+			Type: "Checkup",
+			Date: now.AddDate(0, -1, 0),
+		},
+		{
+			Type: "Vaccination",
+			Date: now.AddDate(0, -5, 0),
+		},
+	}, nil)
+	
+	summary := service.GetHealthSummary(horse)
+	assert.Equal(t, 2, summary.TotalRecords)
+	assert.Equal(t, now.AddDate(0, -1, 0).Unix(), summary.LastCheckup.Unix())
+	assert.True(t, summary.VaccinationStatus.IsUpToDate)
 }

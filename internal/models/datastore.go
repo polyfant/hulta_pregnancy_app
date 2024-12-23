@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"time"
 )
 
@@ -10,10 +11,10 @@ type Transaction interface {
 }
 
 type DataStore interface {
-	Begin() (Transaction, error)
+	Begin() (*sql.Tx, error)
 	
 	// Horse operations
-	GetHorse(id int64) (*Horse, error)
+	GetHorse(id int64) (Horse, error)
 	GetHorseByName(name string) (*Horse, error)
 	GetAllHorses() ([]Horse, error)
 	GetUserHorses(userID int64) ([]Horse, error)
@@ -44,6 +45,8 @@ type DataStore interface {
 	// User operations
 	UpdateUserLastSync(userID int64, time time.Time) error
 	GetUserLastSync(userID int64) (time.Time, error)
+	GetLastSyncTime(userID int64) (time.Time, error)
+	GetPendingSyncCount(userID int64) (int, error)
 }
 
 type BreedingCost struct {
@@ -53,3 +56,5 @@ type BreedingCost struct {
 	Amount      float64   `json:"amount" db:"amount"`
 	Date        time.Time `json:"date" db:"date"`
 }
+
+var ErrNotFound = sql.ErrNoRows

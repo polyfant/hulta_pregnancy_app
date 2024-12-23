@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/polyfant/horse_tracking/internal/logger"
@@ -12,6 +13,11 @@ import (
 	"github.com/polyfant/horse_tracking/internal/service/pregnancy"
 	"github.com/polyfant/horse_tracking/internal/validation"
 )
+
+// ErrorResponse represents an error response from the API
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
 
 func getUserIDFromContext(c *gin.Context) int64 {
 	if id, exists := c.Get("userID"); exists {
@@ -54,54 +60,68 @@ func (h *Handler) GetHorses(c *gin.Context) {
 	c.JSON(http.StatusOK, horses)
 }
 
-// @Summary Get a horse by ID
-// @Description Get detailed information about a specific horse
+// @Summary Get horse details
+// @Description Get details of a specific horse
 // @Tags horses
+// @Accept json
 // @Produce json
 // @Param id path int true "Horse ID"
 // @Success 200 {object} models.Horse
+// @Failure 404 {object} ErrorResponse
 // @Router /horses/{id} [get]
 func (h *Handler) GetHorse(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
 	horse, err := h.db.GetHorse(id)
 	if err != nil {
-		logger.Error(err, "Failed to get horse", map[string]interface{}{"id": id})
-		c.JSON(http.StatusNotFound, gin.H{"error": "Horse not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "Horse not found"})
 		return
 	}
+
+	// Calculate additional information if horse is pregnant
+	if horse.ConceptionDate != nil {
+		calculator := pregnancy.NewPregnancyCalculator(*horse.ConceptionDate)
+		horse.DueDate = calculator.GetDueDate()
+		horse.PregnancyStage = calculator.GetStage()
+		horse.PregnancyProgress = calculator.GetProgressPercentage()
+	}
+
 	c.JSON(http.StatusOK, horse)
 }
 
-// @Summary Create a new horse
-// @Description Add a new horse to the system
+// @Summary Add new horse
+// @Description Add a new horse to the database
 // @Tags horses
 // @Accept json
 // @Produce json
 // @Param horse body models.Horse true "Horse object"
 // @Success 201 {object} models.Horse
+// @Failure 400 {object} ErrorResponse
 // @Router /horses [post]
-func (h *Handler) CreateHorse(c *gin.Context) {
+func (h *Handler) AddHorse(c *gin.Context) {
 	var horse models.Horse
 	if err := c.ShouldBindJSON(&horse); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid horse data"})
-		return
-	}
-
-	if err := validation.ValidateHorse(&horse); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse data"})
 		return
 	}
 
 	if err := h.db.AddHorse(&horse); err != nil {
-		logger.Error(err, "Failed to create horse", nil)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create horse"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to add horse"})
 		return
 	}
+
+	// Calculate additional information if horse is pregnant
+	if horse.ConceptionDate != nil {
+		calculator := pregnancy.NewPregnancyCalculator(*horse.ConceptionDate)
+		horse.DueDate = calculator.GetDueDate()
+		horse.PregnancyStage = calculator.GetStage()
+		horse.PregnancyProgress = calculator.GetProgressPercentage()
+	}
+
 	c.JSON(http.StatusCreated, horse)
 }
 

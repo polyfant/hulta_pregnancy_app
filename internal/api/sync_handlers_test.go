@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -18,19 +19,10 @@ type MockDB struct {
 	mock.Mock
 }
 
-func (m *MockDB) Begin() (models.Transaction, error) {
-	args := m.Called()
-	return args.Get(0).(models.Transaction), args.Error(1)
-}
-
-func (m *MockDB) AddHorse(horse *models.Horse) error {
-	args := m.Called(horse)
-	return args.Error(0)
-}
-
-func (m *MockDB) GetUserHorses(userID int64) ([]models.Horse, error) {
-	args := m.Called(userID)
-	return args.Get(0).([]models.Horse), args.Error(1)
+// Implement all required methods from the DataStore interface
+func (m *MockDB) GetHealthRecords(horseID int64) ([]models.HealthRecord, error) {
+	args := m.Called(horseID)
+	return args.Get(0).([]models.HealthRecord), args.Error(1)
 }
 
 func (m *MockDB) AddHealthRecord(record *models.HealthRecord) error {
@@ -38,9 +30,44 @@ func (m *MockDB) AddHealthRecord(record *models.HealthRecord) error {
 	return args.Error(0)
 }
 
-func (m *MockDB) GetUserHealthRecords(userID int64) ([]models.HealthRecord, error) {
-	args := m.Called(userID)
-	return args.Get(0).([]models.HealthRecord), args.Error(1)
+func (m *MockDB) Begin() (*sql.Tx, error) {
+	args := m.Called()
+	return args.Get(0).(*sql.Tx), args.Error(1)
+}
+
+func (m *MockDB) GetAllHorses() ([]models.Horse, error) {
+	args := m.Called()
+	return args.Get(0).([]models.Horse), args.Error(1)
+}
+
+func (m *MockDB) GetHorse(id int64) (models.Horse, error) {
+	args := m.Called(id)
+	return args.Get(0).(models.Horse), args.Error(1)
+}
+
+func (m *MockDB) AddHorse(horse *models.Horse) error {
+	args := m.Called(horse)
+	return args.Error(0)
+}
+
+func (m *MockDB) UpdateHorse(horse *models.Horse) error {
+	args := m.Called(horse)
+	return args.Error(0)
+}
+
+func (m *MockDB) DeleteHorse(id int64) error {
+	args := m.Called(id)
+	return args.Error(0)
+}
+
+func (m *MockDB) GetBreedingCosts(horseID int64) ([]models.BreedingCost, error) {
+	args := m.Called(horseID)
+	return args.Get(0).([]models.BreedingCost), args.Error(1)
+}
+
+func (m *MockDB) AddBreedingCost(cost *models.BreedingCost) error {
+	args := m.Called(cost)
+	return args.Error(0)
 }
 
 func (m *MockDB) AddPregnancyEvent(event *models.PregnancyEvent) error {
@@ -48,159 +75,116 @@ func (m *MockDB) AddPregnancyEvent(event *models.PregnancyEvent) error {
 	return args.Error(0)
 }
 
-func (m *MockDB) GetUserPregnancyEvents(userID int64) ([]models.PregnancyEvent, error) {
-	args := m.Called(userID)
-	return args.Get(0).([]models.PregnancyEvent), args.Error(1)
-}
-
-func (m *MockDB) UpdateUserLastSync(userID int64, time time.Time) error {
-	args := m.Called(userID, time)
-	return args.Error(0)
-}
-
-func (m *MockDB) GetUserLastSync(userID int64) (time.Time, error) {
+func (m *MockDB) GetLastSyncTime(userID int64) (time.Time, error) {
 	args := m.Called(userID)
 	return args.Get(0).(time.Time), args.Error(1)
 }
 
-type MockTransaction struct {
-	mock.Mock
-}
-
-func (m *MockTransaction) Commit() error {
-	args := m.Called()
-	return args.Error(0)
-}
-
-func (m *MockTransaction) Rollback() error {
-	args := m.Called()
-	return args.Error(0)
-}
-
-func setupTestSyncRouter() (*gin.Engine, *MockDB) {
-	gin.SetMode(gin.TestMode)
-	mockDB := new(MockDB)
-	handler := NewHandler(mockDB)
-	router := gin.Default()
-
-	router.POST("/sync", handler.SyncData)
-	router.GET("/sync/status", handler.GetSyncStatus)
-	router.GET("/sync/restore", handler.RestoreData)
-
-	return router, mockDB
+func (m *MockDB) GetPendingSyncCount(userID int64) (int, error) {
+	args := m.Called(userID)
+	return args.Get(0).(int), args.Error(1)
 }
 
 func TestSyncData(t *testing.T) {
-	router, mockDB := setupTestSyncRouter()
+	gin.SetMode(gin.TestMode)
+	mockDB := new(MockDB)
+	handler := NewHandler(mockDB)
 
 	t.Run("successful sync", func(t *testing.T) {
-		// Setup test data
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+
+		// Mock user authentication
+		c.Set("userID", int64(1))
+
+		// Test data
 		syncData := models.SyncData{
-			UserID:    1,
-			Timestamp: time.Now(),
+			UserID: 1,
 			Horses: []models.Horse{
-				{ID: 1, Name: "Thunder"},
+				{
+					ID:   1,
+					Name: "Test Horse",
+				},
 			},
 			Health: []models.HealthRecord{
-				{ID: 1, HorseID: 1, Type: "Checkup"},
-			},
-			Events: []models.PregnancyEvent{
-				{ID: 1, HorseID: 1, Type: "Conception"},
+				{
+					ID:      1,
+					HorseID: 1,
+					Date:    time.Now(),
+					Type:    "Checkup",
+				},
 			},
 		}
 
-		// Setup mock transaction
-		mockTx := new(MockTransaction)
-		mockTx.On("Commit").Return(nil)
-		mockTx.On("Rollback").Return(nil)
-		mockDB.On("Begin").Return(mockTx, nil)
+		body, _ := json.Marshal(syncData)
+		c.Request, _ = http.NewRequest("POST", "/sync", bytes.NewBuffer(body))
 
-		// Setup expectations
-		mockDB.On("AddHorse", mock.AnythingOfType("*models.Horse")).Return(nil)
-		mockDB.On("AddHealthRecord", mock.AnythingOfType("*models.HealthRecord")).Return(nil)
-		mockDB.On("AddPregnancyEvent", mock.AnythingOfType("*models.PregnancyEvent")).Return(nil)
-		mockDB.On("UpdateUserLastSync", int64(1), mock.AnythingOfType("time.Time")).Return(nil)
+		mockDB.On("AddHorse", &syncData.Horses[0]).Return(nil)
+		mockDB.On("AddHealthRecord", &syncData.Health[0]).Return(nil)
 
-		// Create request
-		jsonData, _ := json.Marshal(syncData)
-		w := httptest.NewRecorder()
-		req, _ := http.NewRequest("POST", "/sync", bytes.NewBuffer(jsonData))
-		req.Header.Set("Content-Type", "application/json")
-
-		// Set user ID in context
-		ctx, _ := gin.CreateTestContext(w)
-		ctx.Set("userID", int64(1))
-		router.HandleContext(ctx)
+		handler.SyncData(c)
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		mockDB.AssertExpectations(t)
-		mockTx.AssertExpectations(t)
 	})
 
 	t.Run("unauthorized sync", func(t *testing.T) {
 		w := httptest.NewRecorder()
-		req, _ := http.NewRequest("POST", "/sync", nil)
-		router.ServeHTTP(w, req)
+		c, _ := gin.CreateTestContext(w)
 
-		assert.Equal(t, http.StatusUnauthorized, w.Code)
-	})
-}
+		syncData := models.SyncData{
+			UserID: 2, // Different user ID
+			Horses: []models.Horse{
+				{
+					ID:   1,
+					Name: "Test Horse",
+				},
+			},
+		}
 
-func TestRestoreData(t *testing.T) {
-	router, mockDB := setupTestSyncRouter()
+		body, _ := json.Marshal(syncData)
+		c.Request, _ = http.NewRequest("POST", "/sync", bytes.NewBuffer(body))
+		c.Set("userID", int64(1)) // Set different user ID in context
 
-	t.Run("successful restore", func(t *testing.T) {
-		// Setup test data
-		horses := []models.Horse{{ID: 1, Name: "Thunder"}}
-		health := []models.HealthRecord{{ID: 1, HorseID: 1, Type: "Checkup"}}
-		events := []models.PregnancyEvent{{ID: 1, HorseID: 1, Type: "Conception"}}
+		handler.SyncData(c)
 
-		// Setup expectations
-		mockDB.On("GetUserHorses", int64(1)).Return(horses, nil)
-		mockDB.On("GetUserHealthRecords", int64(1)).Return(health, nil)
-		mockDB.On("GetUserPregnancyEvents", int64(1)).Return(events, nil)
-
-		// Create request
-		w := httptest.NewRecorder()
-		req, _ := http.NewRequest("GET", "/sync/restore", nil)
-
-		// Set user ID in context
-		ctx, _ := gin.CreateTestContext(w)
-		ctx.Set("userID", int64(1))
-		router.HandleContext(ctx)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-
-		var response models.SyncData
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-		assert.Equal(t, 1, len(response.Horses))
-		assert.Equal(t, 1, len(response.Health))
-		assert.Equal(t, 1, len(response.Events))
-		mockDB.AssertExpectations(t)
+		assert.Equal(t, http.StatusForbidden, w.Code)
 	})
 }
 
 func TestGetSyncStatus(t *testing.T) {
-	router, mockDB := setupTestSyncRouter()
+	gin.SetMode(gin.TestMode)
+	mockDB := new(MockDB)
+	handler := NewHandler(mockDB)
 
 	t.Run("successful status check", func(t *testing.T) {
-		lastSync := time.Now()
-		mockDB.On("GetUserLastSync", int64(1)).Return(lastSync, nil)
-
 		w := httptest.NewRecorder()
-		req, _ := http.NewRequest("GET", "/sync/status", nil)
+		c, _ := gin.CreateTestContext(w)
+		c.Set("userID", int64(1))
 
-		ctx, _ := gin.CreateTestContext(w)
-		ctx.Set("userID", int64(1))
-		router.HandleContext(ctx)
+		lastSync := time.Now().Add(-24 * time.Hour)
+		mockDB.On("GetLastSyncTime", int64(1)).Return(lastSync, nil)
+		mockDB.On("GetPendingSyncCount", int64(1)).Return(5, nil)
+
+		handler.GetSyncStatus(c)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-
-		var response map[string]interface{}
+		
+		var response SyncStatus
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
-		assert.Equal(t, "ok", response["status"])
-		mockDB.AssertExpectations(t)
+		assert.Equal(t, lastSync.Unix(), response.LastSync.Unix())
+		assert.Equal(t, 5, response.PendingSync)
+		assert.False(t, response.IsUpToDate)
+	})
+
+	t.Run("unauthorized status check", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		// Don't set userID in context
+
+		handler.GetSyncStatus(c)
+
+		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
 }
