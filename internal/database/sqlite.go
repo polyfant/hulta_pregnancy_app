@@ -17,6 +17,11 @@ type SQLiteStore struct {
 	db *sql.DB
 }
 
+// UpdatePreFoalingSign implements models.DataStore.
+func (s *SQLiteStore) UpdatePreFoalingSign(sign *models.PreFoalingSign) error {
+	panic("unimplemented")
+}
+
 func NewSQLiteStore(dbPath string) (*SQLiteStore, error) {
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
@@ -329,8 +334,8 @@ func (s *SQLiteStore) GetFamilyTree(horseID int64) (models.FamilyTree, error) {
 				Breed:       mother.Breed,
 				Gender:      mother.Gender,
 				DateOfBirth: mother.DateOfBirth,
-				Age:        mother.CalculateAge(time.Now()),
-				IsExternal: false,
+				Age:         mother.CalculateAge(time.Now()),
+				IsExternal:  false,
 			}
 		}
 	} else if horse.ExternalMother != "" {
@@ -351,8 +356,8 @@ func (s *SQLiteStore) GetFamilyTree(horseID int64) (models.FamilyTree, error) {
 				Breed:       father.Breed,
 				Gender:      father.Gender,
 				DateOfBirth: father.DateOfBirth,
-				Age:        father.CalculateAge(time.Now()),
-				IsExternal: false,
+				Age:         father.CalculateAge(time.Now()),
+				IsExternal:  false,
 			}
 		}
 	} else if horse.ExternalFather != "" {
@@ -373,8 +378,8 @@ func (s *SQLiteStore) GetFamilyTree(horseID int64) (models.FamilyTree, error) {
 				Breed:       child.Breed,
 				Gender:      child.Gender,
 				DateOfBirth: child.DateOfBirth,
-				Age:        child.CalculateAge(time.Now()),
-				IsExternal: false,
+				Age:         child.CalculateAge(time.Now()),
+				IsExternal:  false,
 			})
 		}
 	}
@@ -390,7 +395,7 @@ func (s *SQLiteStore) GetFamilyTree(horseID int64) (models.FamilyTree, error) {
 			)
 			ORDER BY h.date_of_birth
 		`
-		rows, err := s.db.Query(query, horseID, 
+		rows, err := s.db.Query(query, horseID,
 			horse.MotherID, horse.MotherID,
 			horse.FatherID, horse.FatherID)
 		if err == nil {
@@ -478,13 +483,16 @@ func (s *SQLiteStore) DeleteHealthRecord(id int64) error {
 }
 
 func (s *SQLiteStore) GetPregnancyEvents(horseID int64) ([]models.PregnancyEvent, error) {
-	rows, err := s.db.Query(`
-		SELECT id, horse_id, date, description
-		FROM pregnancy_events 
+	query := `
+		SELECT id, horse_id, date, type, description, notes
+		FROM pregnancy_events
 		WHERE horse_id = ?
-		ORDER BY date DESC`, horseID)
+		ORDER BY date DESC
+	`
+
+	rows, err := s.db.Query(query, horseID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error querying pregnancy events: %v", err)
 	}
 	defer rows.Close()
 
@@ -492,17 +500,28 @@ func (s *SQLiteStore) GetPregnancyEvents(horseID int64) ([]models.PregnancyEvent
 	for rows.Next() {
 		var event models.PregnancyEvent
 		var dateStr string
-		err := rows.Scan(&event.ID, &event.HorseID, &dateStr, &event.Description)
+		err := rows.Scan(
+			&event.ID,
+			&event.HorseID,
+			&dateStr,
+			&event.Type,
+			&event.Description,
+			&event.Notes,
+		)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error scanning pregnancy event: %v", err)
 		}
-		event.Date, err = s.parseDate(dateStr)
+
+		date, err := s.parseDate(dateStr)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error parsing date: %v", err)
 		}
+		event.Date = date
+
 		events = append(events, event)
 	}
-	return events, rows.Err()
+
+	return events, nil
 }
 
 func (s *SQLiteStore) GetUserPregnancyEvents(userID int64) ([]models.PregnancyEvent, error) {
@@ -510,28 +529,33 @@ func (s *SQLiteStore) GetUserPregnancyEvents(userID int64) ([]models.PregnancyEv
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (s *SQLiteStore) AddPregnancyEvent(event *models.PregnancyEvent) error {
-	result, err := s.db.Exec(`
-		INSERT INTO pregnancy_events (horse_id, date, description)
-		VALUES (?, ?, ?)`,
-		event.HorseID, s.formatDate(event.Date), event.Description)
+func (s *SQLiteStore) AddPregnancyEvent(event models.PregnancyEvent) error {
+	query := `
+		INSERT INTO pregnancy_events (horse_id, date, type, description, notes)
+		VALUES (?, ?, ?, ?, ?)
+	`
+
+	_, err := s.db.Exec(query,
+		event.HorseID,
+		s.formatDate(event.Date),
+		event.Type,
+		event.Description,
+		event.Notes,
+	)
+
 	if err != nil {
-		return err
+		return fmt.Errorf("error inserting pregnancy event: %v", err)
 	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return err
-	}
-	event.ID = id
+
 	return nil
 }
 
 func (s *SQLiteStore) UpdatePregnancyEvent(event *models.PregnancyEvent) error {
 	_, err := s.db.Exec(`
 		UPDATE pregnancy_events 
-		SET horse_id = ?, date = ?, description = ?
+		SET horse_id = ?, date = ?, type = ?, description = ?, notes = ?
 		WHERE id = ?`,
-		event.HorseID, s.formatDate(event.Date), event.Description, event.ID)
+		event.HorseID, s.formatDate(event.Date), event.Type, event.Description, event.Notes, event.ID)
 	return err
 }
 
@@ -662,10 +686,13 @@ func (s *SQLiteStore) GetDashboardStats() (models.DashboardStats, error) {
 		if err != nil {
 			return stats, fmt.Errorf("error scanning pregnancy summary: %v", err)
 		}
-		summary.DueDate, err = s.parseDate(dueDateStr)
+
+		date, err := s.parseDate(dueDateStr)
 		if err != nil {
 			return stats, fmt.Errorf("error parsing due date: %v", err)
 		}
+		summary.DueDate = date
+
 		stats.UpcomingDueDates = append(stats.UpcomingDueDates, summary)
 	}
 
@@ -689,10 +716,13 @@ func (s *SQLiteStore) GetDashboardStats() (models.DashboardStats, error) {
 		if err != nil {
 			return stats, fmt.Errorf("error scanning health summary: %v", err)
 		}
-		summary.Date, err = s.parseDate(dateStr)
+
+		date, err := s.parseDate(dateStr)
 		if err != nil {
 			return stats, fmt.Errorf("error parsing health date: %v", err)
 		}
+		summary.Date = date
+
 		stats.RecentHealth = append(stats.RecentHealth, summary)
 	}
 
@@ -722,4 +752,100 @@ func nullString(s string) sql.NullString {
 		String: s,
 		Valid:  s != "",
 	}
+}
+
+func (s *SQLiteStore) UpdateHorseConceptionDate(horseID int64, conceptionDate time.Time) error {
+	query := `UPDATE horses SET conception_date = ? WHERE id = ?`
+
+	var dateStr *string
+	if !conceptionDate.IsZero() {
+		str := s.formatDate(conceptionDate)
+		dateStr = &str
+	}
+
+	_, err := s.db.Exec(query, dateStr, horseID)
+	if err != nil {
+		return fmt.Errorf("error updating conception date: %v", err)
+	}
+
+	return nil
+}
+
+func (s *SQLiteStore) GetPreFoalingSigns(horseID int64) ([]models.PreFoalingSign, error) {
+	query := `
+		SELECT id, horse_id, name, observed, date_observed, notes
+		FROM pre_foaling_signs
+		WHERE horse_id = ?
+		ORDER BY date_observed DESC
+	`
+
+	rows, err := s.db.Query(query, horseID)
+	if err != nil {
+		return nil, fmt.Errorf("error querying pre-foaling signs: %v", err)
+	}
+	defer rows.Close()
+
+	var signs []models.PreFoalingSign
+	for rows.Next() {
+		var sign models.PreFoalingSign
+		var dateStr string
+		err := rows.Scan(
+			&sign.ID,
+			&sign.HorseID,
+			&sign.Name,
+			&sign.Observed,
+			&dateStr,
+			&sign.Notes,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning pre-foaling sign: %v", err)
+		}
+
+		date, err := s.parseDate(dateStr)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing date: %v", err)
+		}
+		sign.DateObserved = date
+
+		signs = append(signs, sign)
+	}
+
+	return signs, nil
+}
+
+func (s *SQLiteStore) AddPreFoalingSign(sign models.PreFoalingSign) error {
+	query := `
+		INSERT INTO pre_foaling_signs (horse_id, name, observed, date_observed, notes)
+		VALUES (?, ?, ?, ?, ?)
+	`
+
+	_, err := s.db.Exec(query,
+		sign.HorseID,
+		sign.Name,
+		sign.Observed,
+		s.formatDate(sign.DateObserved),
+		sign.Notes,
+	)
+
+	if err != nil {
+		return fmt.Errorf("error inserting pre-foaling sign: %v", err)
+	}
+
+	return nil
+}
+
+func (s *SQLiteStore) UpdateHorsePregnancyStatus(horseID int64, isPregnant bool, conceptionDate time.Time) error {
+	query := `
+        UPDATE horses 
+        SET is_pregnant = ?,
+            conception_date = ?
+        WHERE id = ?`
+
+	formatted := s.formatDate(conceptionDate)
+	_, err := s.db.Exec(query, isPregnant, formatted, horseID)
+	if err != nil {
+		return fmt.Errorf("error updating horse pregnancy status: %v", err)
+	}
+
+	return nil
 }

@@ -1,6 +1,7 @@
 package breeding
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/polyfant/horse_tracking/internal/logger"
 )
 
+// Pregnancy stage thresholds in days
 const (
 	EarlyPregnancyDays = 113
 	MidPregnancyDays   = 226
@@ -16,23 +18,18 @@ const (
 	OverdueDays        = 365
 )
 
-type BreedingService struct {
-	db models.DataStore
-}
-
+// Service handles breeding-related operations
 type Service struct {
 	db models.DataStore
 }
 
+// NewService creates a new breeding service instance
 func NewService(db models.DataStore) *Service {
 	return &Service{db: db}
 }
 
-func NewBreedingService(db models.DataStore) *BreedingService {
-	return &BreedingService{db: db}
-}
-
-func (s *BreedingService) CalculatePregnancySuccessRate(horses []models.Horse) float64 {
+// CalculatePregnancySuccessRate calculates the success rate of pregnancies
+func (s *Service) CalculatePregnancySuccessRate(horses []models.Horse) float64 {
 	if len(horses) == 0 {
 		return 0.0
 	}
@@ -41,7 +38,6 @@ func (s *BreedingService) CalculatePregnancySuccessRate(horses []models.Horse) f
 	for _, horse := range horses {
 		if horse.ConceptionDate != nil {
 			pregnantCount++
-			// Check pregnancy events for successful birth
 			events, err := s.db.GetPregnancyEvents(horse.ID)
 			if err != nil {
 				logger.Error(err, "Failed to get pregnancy events", map[string]interface{}{
@@ -49,8 +45,9 @@ func (s *BreedingService) CalculatePregnancySuccessRate(horses []models.Horse) f
 				})
 				continue
 			}
+
 			for _, event := range events {
-				if containsIgnoreCase(event.Description, "successful birth") {
+				if strings.EqualFold(event.Type, models.EventFoaling) && event.Description == "SUCCESSFUL" {
 					successfulBirths++
 					break
 				}
@@ -64,7 +61,8 @@ func (s *BreedingService) CalculatePregnancySuccessRate(horses []models.Horse) f
 	return float64(successfulBirths) / float64(pregnantCount) * 100
 }
 
-func (s *BreedingService) GetUpcomingMilestones(horse models.Horse) []string {
+// GetUpcomingMilestones returns a list of upcoming pregnancy milestones
+func (s *Service) GetUpcomingMilestones(horse models.Horse) []string {
 	if horse.ConceptionDate == nil {
 		return nil
 	}
@@ -72,29 +70,33 @@ func (s *BreedingService) GetUpcomingMilestones(horse models.Horse) []string {
 	daysPregnant := int(time.Since(*horse.ConceptionDate).Hours() / 24)
 	var milestones []string
 
-	// Define milestones with their day ranges
-	milestonePeriods := []struct {
-		start, end int
-		message    string
+	// Define milestones with their days and descriptions
+	milestoneDefs := []struct {
+		days int
+		desc string
 	}{
-		{80, 100, "First trimester check"},
-		{130, 145, "Vaccination booster"},
-		{145, 170, "Begin increasing feed"},
-		{270, 300, "Check for udder development"},
-		{310, 330, "Prepare foaling area"},
-		{330, 365, "Monitor for signs of imminent foaling"},
+		{14, "First ultrasound check"},
+		{30, "Second ultrasound check"},
+		{45, "Gender determination possible"},
+		{60, "Fetal movement check"},
+		{90, "Vaccination review"},
+		{EarlyPregnancyDays, "End of early pregnancy stage"},
+		{MidPregnancyDays, "End of mid pregnancy stage"},
+		{LatePregnancyDays, "Prepare for foaling"},
 	}
 
-	for _, period := range milestonePeriods {
-		if daysPregnant >= period.start && daysPregnant < period.end {
-			milestones = append(milestones, period.message)
+	for _, m := range milestoneDefs {
+		if daysPregnant <= m.days {
+			daysUntil := m.days - daysPregnant
+			milestones = append(milestones, fmt.Sprintf("%s (in %d days)", m.desc, daysUntil))
 		}
 	}
 
 	return milestones
 }
 
-func (s *BreedingService) GetPregnancyStage(horse models.Horse) models.PregnancyStage {
+// GetPregnancyStage determines the current stage of pregnancy
+func (s *Service) GetPregnancyStage(horse models.Horse) models.PregnancyStage {
 	if horse.ConceptionDate == nil {
 		return ""
 	}
@@ -102,18 +104,21 @@ func (s *BreedingService) GetPregnancyStage(horse models.Horse) models.Pregnancy
 	daysPregnant := int(time.Since(*horse.ConceptionDate).Hours() / 24)
 
 	switch {
-	case daysPregnant < 114:
+	case daysPregnant <= EarlyPregnancyDays:
 		return models.EarlyGestation
-	case daysPregnant < 226:
+	case daysPregnant <= MidPregnancyDays:
 		return models.MidGestation
-	case daysPregnant < 310:
+	case daysPregnant <= LatePregnancyDays:
 		return models.LateGestation
+	case daysPregnant <= OverdueDays:
+		return models.PreFoaling
 	default:
-		return models.FinalGestation
+		return models.Foaling
 	}
 }
 
-func (s *BreedingService) GetHighBreedingCosts(horses []models.Horse, threshold float64, startDate, endDate time.Time) []struct {
+// GetHighBreedingCosts returns a list of high breeding costs
+func (s *Service) GetHighBreedingCosts(horses []models.Horse, threshold float64, startDate, endDate time.Time) []struct {
 	HorseName   string
 	Description string
 	Amount      float64
@@ -134,7 +139,7 @@ func (s *BreedingService) GetHighBreedingCosts(horses []models.Horse, threshold 
 		}
 
 		for _, cost := range costs {
-			if cost.Amount > threshold && !cost.Date.Before(startDate) && !cost.Date.After(endDate) {
+			if cost.Amount >= threshold && cost.Date.After(startDate) && cost.Date.Before(endDate) {
 				highCosts = append(highCosts, struct {
 					HorseName   string
 					Description string
@@ -148,28 +153,24 @@ func (s *BreedingService) GetHighBreedingCosts(horses []models.Horse, threshold 
 		}
 	}
 
-	// Sort by amount descending and limit to top 5
 	sortByAmount(highCosts)
-	if len(highCosts) > 5 {
-		highCosts = highCosts[:5]
-	}
-
 	return highCosts
 }
 
-func (s *BreedingService) GetPregnantHorses(horses []models.Horse) []models.Horse {
-	var pregnant []models.Horse
+// GetPregnantHorses returns a list of currently pregnant horses
+func (s *Service) GetPregnantHorses(horses []models.Horse) []models.Horse {
+	var pregnantHorses []models.Horse
 	for _, horse := range horses {
-		if horse.ConceptionDate != nil {
-			pregnant = append(pregnant, horse)
+		if horse.IsPregnant && horse.ConceptionDate != nil {
+			pregnantHorses = append(pregnantHorses, horse)
 		}
 	}
-	return pregnant
+	return pregnantHorses
 }
 
+// Helper functions
 func containsIgnoreCase(s, substr string) bool {
-	s, substr = strings.ToLower(s), strings.ToLower(substr)
-	return strings.Contains(s, substr)
+	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
 }
 
 func sortByAmount(costs []struct {

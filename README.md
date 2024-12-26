@@ -1,6 +1,6 @@
 # Horse Tracking Application
 
-A modern web application for tracking horses, breeding, and health records. This application helps horse owners and breeders manage their horses' information, health records, breeding costs, and pregnancy monitoring.
+A comprehensive web application for tracking horses, breeding, and health records. This application helps horse owners and breeders manage their horses' information, health records, breeding costs, and provides detailed pregnancy monitoring with stage-specific guidelines.
 
 ## Current Features
 
@@ -9,6 +9,21 @@ A modern web application for tracking horses, breeding, and health records. This
 - View all horses in a clean, sortable table
 - Edit existing horse information
 - Delete horses from the system
+
+### Pregnancy Monitoring
+- Track pregnancy stages (Early, Mid, Late, Pre-Foaling, Foaling)
+- Detailed guidelines for each pregnancy stage
+- Record and monitor pre-foaling signs
+- Track conception dates and calculate due dates
+- Monitor health events throughout pregnancy
+- Nutrition and exercise recommendations by stage
+- Warning signs and health checkpoints
+
+### Breeding Management
+- Record breeding events and outcomes
+- Track breeding costs and expenses
+- Monitor breeding history
+- Manage breeding schedules
 
 ## Upcoming Features
 
@@ -24,17 +39,6 @@ A modern web application for tracking horses, breeding, and health records. This
 - Manage health records and checkups
 - View comprehensive health summaries
 
-### Breeding Management
-- Track breeding costs
-- Record breeding-related expenses
-- Monitor breeding history
-- Breeding schedule management
-
-### Pregnancy Monitoring
-- Track pregnancy milestones
-- Get pregnancy guidelines
-- Monitor conception and due dates
-
 ## API Endpoints
 
 ### Currently Implemented
@@ -43,35 +47,42 @@ A modern web application for tracking horses, breeding, and health records. This
 - `PUT /api/horses/{id}` - Update a horse
 - `DELETE /api/horses/{id}` - Delete a horse
 - `GET /api/horses/{id}` - Get details of a specific horse
+- `POST /api/horses/{id}/pregnancy/start` - Start pregnancy tracking
+- `POST /api/horses/{id}/pregnancy/events` - Add pregnancy event
+- `GET /api/horses/{id}/pregnancy/status` - Get pregnancy status
+- `GET /api/horses/{id}/pregnancy/guidelines` - Get stage-specific guidelines
+- `POST /api/horses/{id}/pregnancy/pre-foaling-signs` - Record pre-foaling signs
 
 ### Planned Endpoints
 - `GET /api/horses/{id}/family-tree` - Get family tree for a horse
 - `GET /api/horses/{id}/health` - Get health summary
 - `POST /api/horses/{id}/health-records` - Add health record
 - `GET /api/horses/{id}/breeding-costs` - View breeding costs
-- `POST /api/horses/{id}/breeding-costs` - Add breeding cost
-- `GET /api/horses/{id}/pregnancy-guidelines` - Get pregnancy guidelines
 
 ## Project Structure
 ```
 horse_tracking_go/
-├── backend/              # Go backend server
-│   ├── cmd/             # Application entry points
-│   ├── internal/        # Internal packages
-│   └── pkg/             # Public packages
-└── frontend-react/      # React frontend application
-    ├── src/
-    │   ├── components/  # React components
-    │   ├── api/         # API integration
-    │   └── types/       # TypeScript types
-    └── public/          # Static assets
+├── cmd/                 # Application entry points
+│   └── server/         # Main server application
+├── internal/           # Internal packages
+│   ├── api/           # API handlers and routing
+│   ├── database/      # Database implementation (SQLite)
+│   ├── models/        # Data models and types
+│   └── service/       # Business logic services
+│       ├── pregnancy/ # Pregnancy tracking service
+│       └── breeding/  # Breeding management service
+├── frontend-react/    # React frontend application
+└── data/             # Data storage directory
 ```
 
 ## Tech Stack
+
 ### Backend
 - Go 1.21+
-- Gin web framework
-- SQLite database
+- Gin web framework for HTTP routing
+- SQLite3 for data storage
+- Zerolog for structured logging
+- Clean architecture with service-based design
 
 ### Frontend
 - React 18
@@ -86,6 +97,7 @@ horse_tracking_go/
 1. Go 1.21 or later
 2. Node.js 18+ and npm
 3. Git for version control
+4. SQLite3
 
 ### Installation & Development
 1. Clone the repository:
@@ -94,117 +106,54 @@ horse_tracking_go/
    cd horse_tracking_go
    ```
 
-2. Start the backend:
+2. Install backend dependencies:
    ```bash
-   cd backend
+   go mod download
+   ```
+
+3. Start the backend:
+   ```bash
    go run cmd/server/main.go
    ```
 
-3. Start the frontend:
+4. Install frontend dependencies:
    ```bash
    cd frontend-react
    npm install
+   ```
+
+5. Start the frontend development server:
+   ```bash
    npm run dev
    ```
 
-4. Access the application:
-   - Frontend: `http://localhost:5173`
-   - Backend API: `http://localhost:8080`
-
-## Testing
-### Frontend Tests
-```bash
-cd frontend-react
-npm test           # Run tests in watch mode
-npm run test:ui    # Run tests with UI
-npm run coverage   # Generate coverage report
-```
-
-### Backend Tests
-```bash
-cd backend
-go test ./...
-```
-
 ## Development Status
-- ✅ Basic CRUD operations for horses
-- ✅ Modern UI with Mantine components
-- ✅ Comprehensive test suite
-- 🚧 Family tree visualization (In Progress)
-- 📅 Health tracking (Planned)
-- 📅 Breeding management (Planned)
-- 📅 Pregnancy monitoring (Planned)
 
-## Comprehensive Breeding & Monitoring Features
+The application is currently in active development with a focus on the following areas:
 
-### 🗓️ Pregnancy Timeline Tracking
-- Interactive timeline showing current stage and upcoming milestones
-- Smart notifications for critical dates and actions
-- Customizable vaccination schedule with reminders
-- Stage-specific nutritional guidelines with:
-  - Daily feed recommendations
-  - Supplement requirements
-  - Hydration monitoring
-  - Weight gain targets
+### Completed
+- Core horse management functionality
+- Basic database schema and SQLite integration
+- Pregnancy tracking service with stage-specific guidelines
+- Pre-foaling sign monitoring
+- Event-based pregnancy tracking
 
-### 🏥 Health Monitoring System
-- Beginner-friendly daily health checklist
-- Photo-based guide for visual health indicators
-- Temperature and vital signs tracking
-- Exercise planning with:
-  - Safe activity recommendations by trimester
-  - Warning signs to watch for
-  - Automated exercise logs
-- Weight tracking with visual progress charts
+### In Progress
+- Breeding management service implementation
+- Frontend UI components for pregnancy tracking
+- API endpoint implementation for all services
+- Integration testing
 
-### 📚 Educational Hub
-- Step-by-step guides for new breeders
-- Video tutorials for common procedures
-- Interactive learning modules covering:
-  - Basic mare care
-  - Pregnancy stages
-  - Common complications
-  - Emergency situations
-- Direct vet consultation booking
-- Community Q&A section
+### Planned
+- Family tree visualization
+- Health record management
+- Comprehensive breeding cost tracking
+- Mobile-responsive UI improvements
 
-### 📸 Documentation Center
-- Structured photo documentation:
-  - Weekly condition photos
-  - Ultrasound image storage
-  - Medical record attachments
-- Digital veterinary record keeping
-- Expense tracking categories:
-  - Routine care
-  - Emergency services
-  - Medications
-  - Supplements
+## Contributing
 
-### 👶 Pre and Post-Foaling Guide
-- Interactive foaling preparation checklist
-- Emergency contact card generator
-- Foaling kit inventory manager
-- Post-birth care timeline:
-  - First 24 hours checklist
-  - First week monitoring
-  - Mare recovery tracking
-  - Foal development milestones
+This project is under active development. Feel free to submit issues and pull requests.
 
-### 💰 Financial Planning Tools
-- Comprehensive cost calculator
-- Insurance requirement checker
-- Emergency fund planning guide
-- Budget templates for:
-  - Pre-breeding costs
-  - Pregnancy care
-  - Foaling expenses
-  - Post-birth care
+## License
 
-All features include:
-- Beginner-friendly explanations
-- Visual guides and references
-- Emergency action plans
-- Professional veterinary guidelines
-- Community support integration
-- Mobile-friendly interface
-- Offline access to critical information
+[Add your license information here]

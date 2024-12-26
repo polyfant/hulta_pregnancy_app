@@ -64,7 +64,7 @@ func (pc *PregnancyCalculator) GetStage() models.PregnancyStage {
 	case currentDay <= LateGestationEnd:
 		return models.LateGestation
 	default:
-		return models.FinalGestation
+		return models.Foaling
 	}
 }
 

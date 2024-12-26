@@ -30,7 +30,20 @@ CREATE TABLE IF NOT EXISTS pregnancy_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     horse_id INTEGER NOT NULL,
     date TEXT NOT NULL,
+    event_type TEXT NOT NULL,
     description TEXT NOT NULL,
+    notes TEXT,
+    FOREIGN KEY (horse_id) REFERENCES horses(id)
+);
+
+-- Pre-foaling signs table
+CREATE TABLE IF NOT EXISTS pre_foaling_signs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    horse_id INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    sign_type TEXT NOT NULL,
+    description TEXT NOT NULL,
+    urgency INTEGER DEFAULT 0,
     FOREIGN KEY (horse_id) REFERENCES horses(id)
 );
 

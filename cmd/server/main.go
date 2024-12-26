@@ -20,8 +20,8 @@ func main() {
 	// Initialize handler with dependencies
 	handler := api.NewHandler(db)
 
-	// Setup router with the handler
-	router := api.SetupRouter(handler)
+	// Setup router with the handler and store
+	router := api.SetupRouter(handler, db)
 
 	// Start server
 	log.Println("Starting server on :8080")

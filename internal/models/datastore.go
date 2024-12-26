@@ -12,7 +12,7 @@ type Transaction interface {
 
 type DataStore interface {
 	Begin() (*sql.Tx, error)
-	
+
 	// Horse operations
 	GetHorse(id int64) (Horse, error)
 	GetHorseByName(name string) (*Horse, error)
@@ -20,6 +20,7 @@ type DataStore interface {
 	GetUserHorses(userID int64) ([]Horse, error)
 	AddHorse(horse *Horse) error
 	UpdateHorse(horse *Horse) error
+	UpdateHorsePregnancyStatus(horseID int64, isPregnant bool, conceptionDate time.Time) error
 	DeleteHorse(id int64) error
 
 	// Health record operations
@@ -29,12 +30,14 @@ type DataStore interface {
 	UpdateHealthRecord(record *HealthRecord) error
 	DeleteHealthRecord(id int64) error
 
-	// Pregnancy event operations
+	// Pregnancy operations
+	AddPregnancyEvent(event *PregnancyEvent) error
 	GetPregnancyEvents(horseID int64) ([]PregnancyEvent, error)
 	GetUserPregnancyEvents(userID int64) ([]PregnancyEvent, error)
-	AddPregnancyEvent(event *PregnancyEvent) error
 	UpdatePregnancyEvent(event *PregnancyEvent) error
 	DeletePregnancyEvent(id int64) error
+	GetPreFoalingSigns(horseID int64) ([]PreFoalingSign, error)
+	UpdatePreFoalingSign(sign *PreFoalingSign) error
 
 	// Breeding cost operations
 	GetBreedingCosts(horseID int64) ([]BreedingCost, error)

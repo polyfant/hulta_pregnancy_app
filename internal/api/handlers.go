@@ -14,13 +14,15 @@ import (
 
 // Handler handles HTTP requests
 type Handler struct {
-	db *database.SQLiteStore
+	db              *database.SQLiteStore
+	pregnancyService *pregnancy.Service
 }
 
 // NewHandler creates a new Handler instance
 func NewHandler(db *database.SQLiteStore) *Handler {
 	return &Handler{
-		db: db,
+		db:              db,
+		pregnancyService: pregnancy.NewService(db),
 	}
 }
 
@@ -136,27 +138,41 @@ func (h *Handler) AddHealthRecord(c *gin.Context) {
 }
 
 func (h *Handler) GetPregnancyGuidelines(c *gin.Context) {
-	id := c.Param("id")
-	horseID, err := strconv.ParseInt(id, 10, 64)
+	horseID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
+		log.Printf("Invalid horse ID: %v", err)
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
 	horse, err := h.db.GetHorse(horseID)
 	if err != nil {
-		log.Printf("Error getting horse %d: %v", horseID, err)
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: fmt.Sprintf("Horse not found: %v", err)})
+		log.Printf("Error fetching horse: %v", err)
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to fetch horse details"})
 		return
 	}
 
-	if horse.ConceptionDate == nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Horse is not pregnant"})
+	// If stage is provided in query params, use GetPregnancyGuidelinesByStage
+	stage := c.Query("stage")
+	if stage != "" {
+		guidelines, err := h.pregnancyService.GetPregnancyGuidelinesByStage(stage)
+		if err != nil {
+			log.Printf("Error getting pregnancy guidelines by stage: %v", err)
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, guidelines)
 		return
 	}
 
-	calculator := pregnancy.NewPregnancyCalculator(*horse.ConceptionDate)
-	guidelines := calculator.CalculateGuidelines()
+	// Otherwise, get guidelines based on horse's pregnancy status
+	stage = h.pregnancyService.GetPregnancyStage(*horse)
+	guidelines, err := h.pregnancyService.GetPregnancyGuidelinesByStage(string(stage))
+	if err != nil {
+		log.Printf("Error getting pregnancy guidelines for horse: %v", err)
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
 
 	c.JSON(http.StatusOK, guidelines)
 }
