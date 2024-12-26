@@ -91,6 +91,88 @@ horse_tracking_go/
 - TanStack Query for API integration
 - Vite for building and development
 
+## Future Database Architecture
+
+### Overview
+The application will implement a hybrid database approach, optimizing for both offline capability and data safety:
+
+#### Local Storage (Offline-First)
+- Individual SQLite database for each user
+- Enables full offline functionality
+- Fast local operations
+- Uses LiteStream for continuous SQLite replication
+
+#### Cloud Backend
+- PostgreSQL as the central database
+  - Robust replication capabilities
+  - Complex query support
+  - Built-in backup solutions
+
+#### Sync Strategy
+- Timestamp-based change tracking
+- Automatic conflict resolution
+- Offline change queuing
+- Real-time updates via WebSocket
+- Automatic sync when online
+
+#### Docker Deployment
+```yaml
+services:
+  backend:
+    build: ./backend
+    depends_on:
+      - postgres
+  frontend:
+    build: ./frontend-react
+    depends_on:
+      - backend
+  postgres:
+    image: postgres:latest
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+```
+
+#### Data Safety Measures
+- Data change versioning
+- Regular backups to object storage
+- Multiple regional replicas
+- Automated backup scheduling
+
+#### High-Level Architecture
+```
+User Device
+├── SQLite DB (Local)
+├── LiteStream (Replication)
+└── Sync Service
+     │
+     ▼
+Load Balancer
+     │
+     ▼
+Backend (Go)
+├── API Server
+├── Sync Manager
+└── Database Gateway
+     │
+     ▼
+PostgreSQL Cluster
+├── Primary DB
+└── Read Replicas
+```
+
+### Implementation Phases
+1. Local SQLite + LiteStream setup
+2. PostgreSQL deployment
+3. Basic sync implementation
+4. Replication and backup systems
+5. Scaling optimizations
+
+### Cloud Hosting
+- Initial deployment on DigitalOcean/Linode
+- Managed database services
+- S3-compatible object storage for backups
+- Multi-region capability
+
 ## Getting Started
 
 ### Prerequisites
