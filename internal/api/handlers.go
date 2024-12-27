@@ -267,3 +267,155 @@ func (h *Handler) GetHorseFamilyTree(c *gin.Context) {
 
 	c.JSON(http.StatusOK, tree)
 }
+
+// PregnancyProgress represents the pregnancy progress response
+type PregnancyProgress struct {
+	DueDate       time.Time `json:"dueDate"`
+	Progress      float64   `json:"progress"`
+	DaysRemaining int       `json:"daysRemaining"`
+	Stage         string    `json:"stage"`
+}
+
+// GetPregnancyProgress returns the due date and progress for a pregnant horse
+func (h *Handler) GetPregnancyProgress(c *gin.Context) {
+	horseID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
+		return
+	}
+
+	horse, err := h.db.GetHorse(horseID)
+	if err != nil {
+		log.Printf("Error fetching horse: %v", err)
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to fetch horse details"})
+		return
+	}
+
+	if !horse.IsPregnant || horse.ConceptionDate == nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Horse is not pregnant"})
+		return
+	}
+
+	// Get custom gestation days if provided, otherwise use default
+	gestationDays := c.Query("gestationDays")
+	customDays := pregnancy.DefaultGestationDays
+	if gestationDays != "" {
+		if days, err := strconv.Atoi(gestationDays); err == nil && days > 0 {
+			customDays = days
+		}
+	}
+
+	dueDate := pregnancy.CalculateDueDate(*horse.ConceptionDate, customDays)
+	progress, daysRemaining := pregnancy.CalculateGestationProgress(*horse.ConceptionDate, customDays)
+	stage := h.pregnancyService.GetPregnancyStage(horse)
+
+	response := PregnancyProgress{
+		DueDate:       dueDate,
+		Progress:      progress,
+		DaysRemaining: daysRemaining,
+		Stage:         string(stage),
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// GetPreFoalingChecklist returns the pre-foaling checklist for a horse
+func (h *Handler) GetPreFoalingChecklist(c *gin.Context) {
+	horseID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
+		return
+	}
+
+	items, err := h.db.GetPreFoalingChecklist(horseID)
+	if err != nil {
+		log.Printf("Error fetching pre-foaling checklist: %v", err)
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to fetch checklist"})
+		return
+	}
+
+	// If no items exist yet, return the default checklist
+	if len(items) == 0 {
+		defaultItems := make([]models.PreFoalingChecklistItem, len(models.DefaultPreFoalingChecklist))
+		dueDate := time.Now().AddDate(0, 0, 7) // Default due date is 1 week from now
+		
+		for i, desc := range models.DefaultPreFoalingChecklist {
+			defaultItems[i] = models.PreFoalingChecklistItem{
+				HorseID:     horseID,
+				Description: desc,
+				IsCompleted: false,
+				DueDate:     dueDate,
+				Priority:    "MEDIUM",
+			}
+		}
+		c.JSON(http.StatusOK, defaultItems)
+		return
+	}
+
+	c.JSON(http.StatusOK, items)
+}
+
+// AddPreFoalingChecklistItem adds a new item to the checklist
+func (h *Handler) AddPreFoalingChecklistItem(c *gin.Context) {
+	horseID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
+		return
+	}
+
+	var item models.PreFoalingChecklistItem
+	if err := c.ShouldBindJSON(&item); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	item.HorseID = horseID
+	if err := h.db.AddPreFoalingChecklistItem(&item); err != nil {
+		log.Printf("Error adding pre-foaling checklist item: %v", err)
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to add checklist item"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, item)
+}
+
+// UpdatePreFoalingChecklistItem updates an existing checklist item
+func (h *Handler) UpdatePreFoalingChecklistItem(c *gin.Context) {
+	itemID, err := strconv.ParseInt(c.Param("itemId"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid item ID"})
+		return
+	}
+
+	var item models.PreFoalingChecklistItem
+	if err := c.ShouldBindJSON(&item); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	item.ID = itemID
+	if err := h.db.UpdatePreFoalingChecklistItem(&item); err != nil {
+		log.Printf("Error updating pre-foaling checklist item: %v", err)
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to update checklist item"})
+		return
+	}
+
+	c.JSON(http.StatusOK, item)
+}
+
+// DeletePreFoalingChecklistItem deletes a checklist item
+func (h *Handler) DeletePreFoalingChecklistItem(c *gin.Context) {
+	itemID, err := strconv.ParseInt(c.Param("itemId"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid item ID"})
+		return
+	}
+
+	if err := h.db.DeletePreFoalingChecklistItem(itemID); err != nil {
+		log.Printf("Error deleting pre-foaling checklist item: %v", err)
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to delete checklist item"})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}

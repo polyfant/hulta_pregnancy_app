@@ -54,6 +54,12 @@ type DataStore interface {
 
 	// Horse pregnancy operations
 	UpdateHorseConceptionDate(horseID int64, conceptionDate time.Time) error
+
+	// Pre-foaling checklist operations
+	GetPreFoalingChecklist(horseID int64) ([]PreFoalingChecklistItem, error)
+	AddPreFoalingChecklistItem(item *PreFoalingChecklistItem) error
+	UpdatePreFoalingChecklistItem(item *PreFoalingChecklistItem) error
+	DeletePreFoalingChecklistItem(id int64) error
 }
 
 type BreedingCost struct {

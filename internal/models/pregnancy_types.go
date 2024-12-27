@@ -50,6 +50,17 @@ type PreFoalingSign struct {
 	Notes        string    `json:"notes,omitempty" db:"notes"`
 }
 
+// PreFoalingChecklistItem represents a single item in the pre-foaling checklist
+type PreFoalingChecklistItem struct {
+	ID          int64     `json:"id" db:"id"`
+	HorseID     int64     `json:"horseId" db:"horse_id"`
+	Description string    `json:"description" db:"description"`
+	IsCompleted bool      `json:"isCompleted" db:"is_completed"`
+	DueDate     time.Time `json:"dueDate" db:"due_date"`
+	Priority    string    `json:"priority" db:"priority"` // High, Medium, Low
+	Notes       string    `json:"notes,omitempty" db:"notes"`
+}
+
 // PregnancyGuideline contains comprehensive guidelines for each stage
 type PregnancyGuideline struct {
 	Stage           string   `json:"stage"`
@@ -68,6 +79,25 @@ type PregnancyGuidelines struct {
 	HealthChecks     []string `json:"healthChecks"`
 	WarningSignsList []string `json:"warningSignsList"`
 	Preparations     []string `json:"preparations"`
+}
+
+// DefaultPreFoalingChecklist contains standard items that should be prepared
+var DefaultPreFoalingChecklist = []string{
+	"Prepare foaling kit with clean towels and equipment",
+	"Clean and disinfect foaling stall",
+	"Check lighting in foaling area",
+	"Verify veterinarian contact information",
+	"Stock essential medical supplies",
+	"Install foaling/barn camera if using",
+	"Test emergency lights/power backup",
+	"Clean water buckets and ensure fresh water supply",
+	"Stock hay and feed supplies",
+	"Prepare mare tail wrap",
+	"Check temperature monitoring equipment",
+	"Review foaling emergency procedures",
+	"Prepare identification materials for foal",
+	"Clean and organize milk testing supplies",
+	"Check stall padding and bedding supplies",
 }
 
 // Common pregnancy event types

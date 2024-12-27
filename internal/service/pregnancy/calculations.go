@@ -10,6 +10,9 @@ const (
 	// Average pregnancy duration for horses
 	AveragePregnancyDays = 340
 
+	// DefaultGestationDays is the average gestation period for horses (340 days)
+	DefaultGestationDays = 340
+
 	// Stage durations in days
 	EarlyGestationStart  = 0
 	EarlyGestationEnd    = 113
@@ -172,4 +175,26 @@ func (pc *PregnancyCalculator) GetProgressPercentage() float64 {
 // SetCurrentTime sets the current time for testing purposes
 func (pc *PregnancyCalculator) SetCurrentTime(t time.Time) {
 	pc.currentTime = t
+}
+
+// CalculateDueDate calculates the expected foaling date based on conception date
+// gestationDays parameter allows for breed-specific or mare-specific adjustments
+func CalculateDueDate(conceptionDate time.Time, gestationDays int) time.Time {
+	if gestationDays <= 0 {
+		gestationDays = DefaultGestationDays
+	}
+	return conceptionDate.AddDate(0, 0, gestationDays)
+}
+
+// CalculateGestationProgress returns the current progress as a percentage and days remaining
+func CalculateGestationProgress(conceptionDate time.Time, gestationDays int) (float64, int) {
+	if gestationDays <= 0 {
+		gestationDays = DefaultGestationDays
+	}
+	
+	daysPregnant := int(time.Since(conceptionDate).Hours() / 24)
+	progress := float64(daysPregnant) / float64(gestationDays) * 100
+	daysRemaining := gestationDays - daysPregnant
+
+	return progress, daysRemaining
 }

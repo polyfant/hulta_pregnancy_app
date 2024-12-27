@@ -853,3 +853,109 @@ func (s *SQLiteStore) UpdateHorsePregnancyStatus(horseID int64, isPregnant bool,
 
 	return nil
 }
+
+func (s *SQLiteStore) GetPreFoalingChecklist(horseID int64) ([]models.PreFoalingChecklistItem, error) {
+	query := `SELECT id, horse_id, description, is_completed, due_date, priority, notes 
+			 FROM pre_foaling_checklist 
+			 WHERE horse_id = ? 
+			 ORDER BY due_date ASC, priority DESC`
+	
+	rows, err := s.db.Query(query, horseID)
+	if err != nil {
+		return nil, fmt.Errorf("error querying pre-foaling checklist: %w", err)
+	}
+	defer rows.Close()
+
+	var items []models.PreFoalingChecklistItem
+	for rows.Next() {
+		var item models.PreFoalingChecklistItem
+		err := rows.Scan(
+			&item.ID,
+			&item.HorseID,
+			&item.Description,
+			&item.IsCompleted,
+			&item.DueDate,
+			&item.Priority,
+			&item.Notes,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning pre-foaling checklist row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating pre-foaling checklist rows: %w", err)
+	}
+	return items, nil
+}
+
+func (s *SQLiteStore) AddPreFoalingChecklistItem(item *models.PreFoalingChecklistItem) error {
+	query := `INSERT INTO pre_foaling_checklist 
+			 (horse_id, description, is_completed, due_date, priority, notes) 
+			 VALUES (?, ?, ?, ?, ?, ?)`
+	
+	result, err := s.db.Exec(query, 
+		item.HorseID,
+		item.Description,
+		item.IsCompleted,
+		item.DueDate,
+		item.Priority,
+		item.Notes)
+	
+	if err != nil {
+		return fmt.Errorf("error adding pre-foaling checklist item: %w", err)
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("error getting last insert id: %w", err)
+	}
+	item.ID = id
+	return nil
+}
+
+func (s *SQLiteStore) UpdatePreFoalingChecklistItem(item *models.PreFoalingChecklistItem) error {
+	query := `UPDATE pre_foaling_checklist 
+			 SET description = ?, is_completed = ?, due_date = ?, priority = ?, notes = ? 
+			 WHERE id = ? AND horse_id = ?`
+	
+	result, err := s.db.Exec(query,
+		item.Description,
+		item.IsCompleted,
+		item.DueDate,
+		item.Priority,
+		item.Notes,
+		item.ID,
+		item.HorseID)
+	
+	if err != nil {
+		return fmt.Errorf("error updating pre-foaling checklist item: %w", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error getting rows affected: %w", err)
+	}
+	if rows == 0 {
+		return fmt.Errorf("checklist item not found")
+	}
+	return nil
+}
+
+func (s *SQLiteStore) DeletePreFoalingChecklistItem(id int64) error {
+	query := `DELETE FROM pre_foaling_checklist WHERE id = ?`
+	
+	result, err := s.db.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("error deleting pre-foaling checklist item: %w", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error getting rows affected: %w", err)
+	}
+	if rows == 0 {
+		return fmt.Errorf("checklist item not found")
+	}
+	return nil
+}
