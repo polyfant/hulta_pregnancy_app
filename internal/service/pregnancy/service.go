@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/polyfant/horse_tracking/internal/logger"
+
 	"github.com/polyfant/horse_tracking/internal/models"
 )
 
@@ -120,8 +120,8 @@ var pregnancyStageGuidelines = map[models.PregnancyStage]internalPregnancyGuidel
 			"Have veterinarian contacts ready",
 		},
 	},
-	models.FinalGestation: {
-		Stage:    models.FinalGestation,
+	models.PreFoaling: {
+		Stage:    models.PreFoaling,
 		DayRange: "311-340 days",
 		Monitoring: []string{
 			"Check udder development twice daily",
@@ -316,11 +316,17 @@ func (s *Service) RecordPreFoalingSign(horseID int64, signName string) error {
 	}
 
 	// Record the sign
-	sign := models.PreFoalingSign{
+	signRecord := models.PreFoalingSign{
 		HorseID:      horseID,
 		Name:         signName,
 		Observed:     true,
 		DateObserved: time.Now(),
+	}
+
+	// Save the pre-foaling sign
+	err := s.db.AddPreFoalingSign(&signRecord)
+	if err != nil {
+		return fmt.Errorf("error recording pre-foaling sign: %v", err)
 	}
 
 	// Add the sign to pregnancy events for tracking
@@ -452,7 +458,7 @@ func (s *Service) EndPregnancyTracking(horseID int64, outcome string) error {
 	return s.db.AddPregnancyEvent(event)
 }
 
-func (s *Service) GetPregnancyGuidelinesByStage(stage string) ([]models.PregnancyGuideline, error) {
+func (s *Service) GetPregnancyGuidelinesByStage(stage models.PregnancyStage) ([]models.PregnancyGuideline, error) {
 	guidelines := []models.PregnancyGuideline{
 		{
 			Stage:       string(models.EarlyGestation),
@@ -551,14 +557,16 @@ func (s *Service) GetPregnancyGuidelinesByStage(stage string) ([]models.Pregnanc
 		},
 	}
 
-	if stage == "" {
-		return guidelines, nil
-	}
-
-	for _, g := range guidelines {
-		if g.Stage == stage {
-			return []models.PregnancyGuideline{g}, nil
-		}
+	if stage == models.EarlyGestation {
+		return []models.PregnancyGuideline{guidelines[0]}, nil
+	} else if stage == models.MidGestation {
+		return []models.PregnancyGuideline{guidelines[1]}, nil
+	} else if stage == models.LateGestation {
+		return []models.PregnancyGuideline{guidelines[2]}, nil
+	} else if stage == models.PreFoaling {
+		return []models.PregnancyGuideline{guidelines[3]}, nil
+	} else if stage == models.Foaling {
+		return []models.PregnancyGuideline{guidelines[4]}, nil
 	}
 
 	return nil, fmt.Errorf("invalid pregnancy stage: %s", stage)

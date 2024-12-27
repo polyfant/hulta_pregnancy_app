@@ -236,6 +236,3 @@ The application is currently in active development with a focus on the following
 
 This project is under active development. Feel free to submit issues and pull requests.
 
-## License
-
-[Add your license information here]

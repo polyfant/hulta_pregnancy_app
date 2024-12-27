@@ -529,24 +529,28 @@ func (s *SQLiteStore) GetUserPregnancyEvents(userID int64) ([]models.PregnancyEv
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (s *SQLiteStore) AddPregnancyEvent(event models.PregnancyEvent) error {
+func (s *SQLiteStore) AddPregnancyEvent(event *models.PregnancyEvent) error {
 	query := `
 		INSERT INTO pregnancy_events (horse_id, date, type, description, notes)
 		VALUES (?, ?, ?, ?, ?)
 	`
-
-	_, err := s.db.Exec(query,
+	result, err := s.db.Exec(query,
 		event.HorseID,
-		s.formatDate(event.Date),
+		event.Date,
 		event.Type,
 		event.Description,
-		event.Notes,
+		nullString(event.Notes),
 	)
-
 	if err != nil {
-		return fmt.Errorf("error inserting pregnancy event: %v", err)
+		return fmt.Errorf("error adding pregnancy event: %v", err)
 	}
 
+	id, err := result.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("error getting last insert id: %v", err)
+	}
+
+	event.ID = id
 	return nil
 }
 
@@ -813,7 +817,7 @@ func (s *SQLiteStore) GetPreFoalingSigns(horseID int64) ([]models.PreFoalingSign
 	return signs, nil
 }
 
-func (s *SQLiteStore) AddPreFoalingSign(sign models.PreFoalingSign) error {
+func (s *SQLiteStore) AddPreFoalingSign(sign *models.PreFoalingSign) error {
 	query := `
 		INSERT INTO pre_foaling_signs (horse_id, name, observed, date_observed, notes)
 		VALUES (?, ?, ?, ?, ?)

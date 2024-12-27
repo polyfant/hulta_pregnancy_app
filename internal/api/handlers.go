@@ -153,8 +153,9 @@ func (h *Handler) GetPregnancyGuidelines(c *gin.Context) {
 	}
 
 	// If stage is provided in query params, use GetPregnancyGuidelinesByStage
-	stage := c.Query("stage")
-	if stage != "" {
+	stageStr := c.Query("stage")
+	if stageStr != "" {
+		stage := models.PregnancyStage(stageStr)
 		guidelines, err := h.pregnancyService.GetPregnancyGuidelinesByStage(stage)
 		if err != nil {
 			log.Printf("Error getting pregnancy guidelines by stage: %v", err)
@@ -166,8 +167,8 @@ func (h *Handler) GetPregnancyGuidelines(c *gin.Context) {
 	}
 
 	// Otherwise, get guidelines based on horse's pregnancy status
-	stage = h.pregnancyService.GetPregnancyStage(*horse)
-	guidelines, err := h.pregnancyService.GetPregnancyGuidelinesByStage(string(stage))
+	stage := h.pregnancyService.GetPregnancyStage(horse)
+	guidelines, err := h.pregnancyService.GetPregnancyGuidelinesByStage(stage)
 	if err != nil {
 		log.Printf("Error getting pregnancy guidelines for horse: %v", err)
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})

@@ -38,6 +38,7 @@ type DataStore interface {
 	DeletePregnancyEvent(id int64) error
 	GetPreFoalingSigns(horseID int64) ([]PreFoalingSign, error)
 	UpdatePreFoalingSign(sign *PreFoalingSign) error
+	AddPreFoalingSign(sign *PreFoalingSign) error
 
 	// Breeding cost operations
 	GetBreedingCosts(horseID int64) ([]BreedingCost, error)
@@ -50,6 +51,9 @@ type DataStore interface {
 	GetUserLastSync(userID int64) (time.Time, error)
 	GetLastSyncTime(userID int64) (time.Time, error)
 	GetPendingSyncCount(userID int64) (int, error)
+
+	// Horse pregnancy operations
+	UpdateHorseConceptionDate(horseID int64, conceptionDate time.Time) error
 }
 
 type BreedingCost struct {
