@@ -1,146 +1,121 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Title,
-  Accordion,
-  List,
-  ThemeIcon,
-  Text,
-  Alert,
-  Loader,
-  Stack,
-  Badge,
-  Group
-} from '@mantine/core';
-import {
-  IconCircleCheck,
-  IconAlertTriangle,
-  IconList
-} from '@tabler/icons-react';
-import { PregnancyGuideline } from '../../types/pregnancy';
+import { Card, Title, Text, Stack, List, ThemeIcon } from '@mantine/core';
+import { IconCircleCheck } from '@tabler/icons-react';
 
-interface PregnancyGuidelinesProps {
-  horseId: string;
-}
-
-const PregnancyGuidelines: React.FC<PregnancyGuidelinesProps> = ({ horseId }) => {
-  const [guidelines, setGuidelines] = useState<PregnancyGuideline[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchGuidelines = async () => {
-      try {
-        const response = await fetch(`/api/horses/${horseId}/pregnancy/guidelines`);
-        if (!response.ok) throw new Error('Failed to fetch guidelines');
-        const data = await response.json();
-        setGuidelines(data);
-      } catch (err) {
-        setError('Failed to load pregnancy guidelines');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchGuidelines();
-  }, [horseId]);
-
-  if (loading) {
-    return (
-      <Box style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
-        <Loader />
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert color="red" title="Error">
-        {error}
-      </Alert>
-    );
-  }
+export function PregnancyGuidelines() {
+  const guidelines = {
+    nutrition: [
+      'Provide high-quality forage (hay or pasture)',
+      'Feed grain according to body condition',
+      'Ensure access to fresh, clean water',
+      'Provide salt and mineral supplements',
+      'Monitor body condition score regularly'
+    ],
+    exercise: [
+      'Maintain regular light exercise until late pregnancy',
+      'Avoid strenuous activities',
+      'Allow daily turnout for movement',
+      'Monitor for signs of discomfort'
+    ],
+    healthcare: [
+      'Schedule regular veterinary check-ups',
+      'Keep vaccinations up to date',
+      'Monitor for signs of complications',
+      'Maintain proper hoof care',
+      'Keep deworming schedule current'
+    ],
+    environment: [
+      'Provide clean, safe housing',
+      'Ensure adequate ventilation',
+      'Maintain consistent routine',
+      'Prepare foaling area in advance',
+      'Monitor environmental temperatures'
+    ]
+  };
 
   return (
-    <Box>
-      <Title order={3} mb="md">Pregnancy Guidelines</Title>
+    <Stack spacing="lg">
+      <Title order={2}>Pregnancy Care Guidelines</Title>
 
-      <Accordion>
-        {guidelines.map((guideline) => (
-          <Accordion.Item key={guideline.stage} value={guideline.stage}>
-            <Accordion.Control>
-              <Group>
-                <Text fw={500}>{guideline.title}</Text>
-                <Badge>{guideline.stage}</Badge>
-              </Group>
-            </Accordion.Control>
-            <Accordion.Panel>
-              <Stack spacing="md">
-                <Text size="sm">{guideline.description}</Text>
+      <Card withBorder>
+        <Title order={3} mb="md">Nutrition</Title>
+        <List
+          spacing="xs"
+          size="sm"
+          center
+          icon={
+            <ThemeIcon color="teal" size={24} radius="xl">
+              <IconCircleCheck size="1rem" />
+            </ThemeIcon>
+          }
+        >
+          {guidelines.nutrition.map((item, index) => (
+            <List.Item key={index}>{item}</List.Item>
+          ))}
+        </List>
+      </Card>
 
-                {guideline.recommendations.length > 0 && (
-                  <Box>
-                    <Text fw={500} mb="xs">Recommendations</Text>
-                    <List
-                      spacing="xs"
-                      size="sm"
-                      icon={
-                        <ThemeIcon color="teal" size={20} radius="xl">
-                          <IconCircleCheck size={12} />
-                        </ThemeIcon>
-                      }
-                    >
-                      {guideline.recommendations.map((rec, index) => (
-                        <List.Item key={index}>{rec}</List.Item>
-                      ))}
-                    </List>
-                  </Box>
-                )}
+      <Card withBorder>
+        <Title order={3} mb="md">Exercise</Title>
+        <List
+          spacing="xs"
+          size="sm"
+          center
+          icon={
+            <ThemeIcon color="blue" size={24} radius="xl">
+              <IconCircleCheck size="1rem" />
+            </ThemeIcon>
+          }
+        >
+          {guidelines.exercise.map((item, index) => (
+            <List.Item key={index}>{item}</List.Item>
+          ))}
+        </List>
+      </Card>
 
-                {guideline.warnings.length > 0 && (
-                  <Box>
-                    <Text fw={500} mb="xs">Warnings</Text>
-                    <List
-                      spacing="xs"
-                      size="sm"
-                      icon={
-                        <ThemeIcon color="red" size={20} radius="xl">
-                          <IconAlertTriangle size={12} />
-                        </ThemeIcon>
-                      }
-                    >
-                      {guideline.warnings.map((warning, index) => (
-                        <List.Item key={index}>{warning}</List.Item>
-                      ))}
-                    </List>
-                  </Box>
-                )}
+      <Card withBorder>
+        <Title order={3} mb="md">Healthcare</Title>
+        <List
+          spacing="xs"
+          size="sm"
+          center
+          icon={
+            <ThemeIcon color="green" size={24} radius="xl">
+              <IconCircleCheck size="1rem" />
+            </ThemeIcon>
+          }
+        >
+          {guidelines.healthcare.map((item, index) => (
+            <List.Item key={index}>{item}</List.Item>
+          ))}
+        </List>
+      </Card>
 
-                {guideline.checkpoints.length > 0 && (
-                  <Box>
-                    <Text fw={500} mb="xs">Checkpoints</Text>
-                    <List
-                      spacing="xs"
-                      size="sm"
-                      icon={
-                        <ThemeIcon color="blue" size={20} radius="xl">
-                          <IconList size={12} />
-                        </ThemeIcon>
-                      }
-                    >
-                      {guideline.checkpoints.map((checkpoint, index) => (
-                        <List.Item key={index}>{checkpoint}</List.Item>
-                      ))}
-                    </List>
-                  </Box>
-                )}
-              </Stack>
-            </Accordion.Panel>
-          </Accordion.Item>
-        ))}
-      </Accordion>
-    </Box>
+      <Card withBorder>
+        <Title order={3} mb="md">Environment</Title>
+        <List
+          spacing="xs"
+          size="sm"
+          center
+          icon={
+            <ThemeIcon color="grape" size={24} radius="xl">
+              <IconCircleCheck size="1rem" />
+            </ThemeIcon>
+          }
+        >
+          {guidelines.environment.map((item, index) => (
+            <List.Item key={index}>{item}</List.Item>
+          ))}
+        </List>
+      </Card>
+
+      <Card withBorder>
+        <Title order={3} mb="md">Important Notes</Title>
+        <Text size="sm" c="dimmed">
+          These guidelines are general recommendations. Always consult with your veterinarian for
+          specific advice tailored to your mare's needs. Pay attention to any changes in behavior
+          or condition and report concerns to your vet promptly.
+        </Text>
+      </Card>
+    </Stack>
   );
-};
-
-export default PregnancyGuidelines;
+}

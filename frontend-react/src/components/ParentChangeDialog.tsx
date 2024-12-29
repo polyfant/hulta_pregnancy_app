@@ -1,77 +1,79 @@
-import React from 'react';
 import {
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    Button,
-    Typography,
-    Box,
-} from '@mui/material';
+  Modal,
+  Text,
+  Stack,
+  Button,
+  Group
+} from '@mantine/core';
 import { Horse } from '../types/horse';
 import { HorsePreviewCard } from './HorsePreviewCard';
 
 interface ParentChangeDialogProps {
-    open: boolean;
-    onClose: () => void;
-    onConfirm: () => void;
-    parentType: 'mother' | 'father';
-    currentParent?: Horse | null;
-    newParent?: Horse | null;
-    currentExternalParent?: string;
-    newExternalParent?: string;
+  opened: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  parentType: 'mother' | 'father';
+  currentParent?: Horse | null;
+  newParent?: Horse | null;
+  currentExternalParent?: string;
+  newExternalParent?: string;
 }
 
-export const ParentChangeDialog: React.FC<ParentChangeDialogProps> = ({
-    open,
-    onClose,
-    onConfirm,
-    parentType,
-    currentParent,
-    newParent,
-    currentExternalParent,
-    newExternalParent,
-}) => {
-    const parentTitle = parentType === 'mother' ? 'Mother' : 'Father';
+export function ParentChangeDialog({
+  opened,
+  onClose,
+  onConfirm,
+  parentType,
+  currentParent,
+  newParent,
+  currentExternalParent,
+  newExternalParent,
+}: ParentChangeDialogProps) {
+  const parentTitle = parentType === 'mother' ? 'Mother' : 'Father';
 
-    return (
-        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-            <DialogTitle>Change {parentTitle}</DialogTitle>
-            <DialogContent>
-                <Typography variant="body1" gutterBottom>
-                    Are you sure you want to change this horse's {parentType}?
-                </Typography>
+  return (
+    <Modal 
+      opened={opened} 
+      onClose={onClose} 
+      title={`Change ${parentTitle}`}
+      size="lg"
+    >
+      <Stack gap="md">
+        <Text>
+          Are you sure you want to change this horse's {parentType}?
+        </Text>
 
-                <Box mt={2}>
-                    <Typography variant="subtitle2" color="text.secondary">
-                        Current {parentTitle}:
-                    </Typography>
-                    <HorsePreviewCard
-                        horse={currentParent}
-                        externalName={currentExternalParent}
-                        role={parentType}
-                    />
-                </Box>
+        <Stack gap="xs">
+          <Text fw={500} size="sm" c="dimmed">
+            Current {parentTitle}:
+          </Text>
+          <HorsePreviewCard
+            horse={currentParent}
+            externalName={currentExternalParent}
+            role={parentType}
+          />
+        </Stack>
 
-                <Box mt={2}>
-                    <Typography variant="subtitle2" color="text.secondary">
-                        New {parentTitle}:
-                    </Typography>
-                    <HorsePreviewCard
-                        horse={newParent}
-                        externalName={newExternalParent}
-                        role={parentType}
-                    />
-                </Box>
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose} color="inherit">
-                    Cancel
-                </Button>
-                <Button onClick={onConfirm} color="primary" variant="contained">
-                    Confirm Change
-                </Button>
-            </DialogActions>
-        </Dialog>
-    );
-};
+        <Stack gap="xs">
+          <Text fw={500} size="sm" c="dimmed">
+            New {parentTitle}:
+          </Text>
+          <HorsePreviewCard
+            horse={newParent}
+            externalName={newExternalParent}
+            role={parentType}
+          />
+        </Stack>
+
+        <Group justify="flex-end" mt="xl">
+          <Button variant="default" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={onConfirm}>
+            Confirm Change
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+  );
+}

@@ -421,10 +421,20 @@ func (s *Service) GetPostFoalingChecklist() []string {
 }
 
 func (s *Service) StartPregnancyTracking(horseID int64, conceptionDate time.Time) error {
-	// Update horse's conception date
-	err := s.db.UpdateHorseConceptionDate(horseID, conceptionDate)
+	// Check if horse exists and is a mare
+	horse, err := s.db.GetHorse(horseID)
 	if err != nil {
-		return fmt.Errorf("error updating conception date: %v", err)
+		return fmt.Errorf("failed to get horse: %w", err)
+	}
+
+	if horse.Gender != models.GenderMare {
+		return fmt.Errorf("only mares can be pregnant")
+	}
+
+	// Update horse's pregnancy status and conception date
+	err = s.db.UpdateHorsePregnancyStatus(horseID, true, conceptionDate)
+	if err != nil {
+		return fmt.Errorf("error updating pregnancy status: %w", err)
 	}
 
 	// Add initial pregnancy event
@@ -436,12 +446,16 @@ func (s *Service) StartPregnancyTracking(horseID int64, conceptionDate time.Time
 		Notes:       fmt.Sprintf("Conception date recorded as %s", conceptionDate.Format("2006-01-02")),
 	}
 
-	return s.db.AddPregnancyEvent(event)
+	if err := s.db.AddPregnancyEvent(event); err != nil {
+		return fmt.Errorf("failed to add pregnancy event: %w", err)
+	}
+
+	return nil
 }
 
 func (s *Service) EndPregnancyTracking(horseID int64, outcome string) error {
 	// Clear conception date
-	err := s.db.UpdateHorseConceptionDate(horseID, time.Time{})
+	err := s.db.UpdateHorsePregnancyStatus(horseID, false, time.Time{})
 	if err != nil {
 		return fmt.Errorf("error clearing conception date: %v", err)
 	}

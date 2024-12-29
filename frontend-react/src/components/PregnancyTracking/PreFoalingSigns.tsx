@@ -1,168 +1,136 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Box,
-  Title,
-  Paper,
+  Card,
   Stack,
-  Switch,
-  Text,
-  Alert,
-  Loader,
   Group,
-  Badge,
-  Textarea,
+  Title,
+  Text,
   Button,
-  Modal
+  Checkbox,
+  Modal,
+  TextInput,
+  Textarea
 } from '@mantine/core';
-import { format } from 'date-fns';
-import { PreFoalingSign } from '../../types/pregnancy';
+import { IconPlus } from '@tabler/icons-react';
+import { notifications } from '@mantine/notifications';
 
 interface PreFoalingSignsProps {
   horseId: string;
 }
 
-const PreFoalingSigns: React.FC<PreFoalingSignsProps> = ({ horseId }) => {
-  const [signs, setSigns] = useState<PreFoalingSign[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedSign, setSelectedSign] = useState<PreFoalingSign | null>(null);
-  const [notes, setNotes] = useState('');
-  const [openDialog, setOpenDialog] = useState(false);
+interface PreFoalingSign {
+  id: string;
+  description: string;
+  date: string;
+  notes?: string;
+}
 
-  const fetchSigns = async () => {
-    try {
-      const response = await fetch(`/api/horses/${horseId}/pregnancy/foaling-signs`);
+export function PreFoalingSigns({ horseId }: PreFoalingSignsProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newSign, setNewSign] = useState<Partial<PreFoalingSign>>({});
+  const queryClient = useQueryClient();
+
+  const { data: signs = [], isLoading } = useQuery<PreFoalingSign[]>({
+    queryKey: ['preFoalingSigns', horseId],
+    queryFn: async () => {
+      const response = await fetch(`/api/horses/${horseId}/pre-foaling-signs`);
       if (!response.ok) throw new Error('Failed to fetch pre-foaling signs');
-      const data = await response.json();
-      setSigns(data);
-    } catch (err) {
-      setError('Failed to load pre-foaling signs');
-    } finally {
-      setLoading(false);
-    }
-  };
+      return response.json();
+    },
+  });
 
-  useEffect(() => {
-    fetchSigns();
-  }, [horseId]);
-
-  const handleToggleSign = async (sign: PreFoalingSign) => {
-    if (!sign.observed) {
-      setSelectedSign(sign);
-      setOpenDialog(true);
-    } else {
-      await updateSign(sign, false);
-    }
-  };
-
-  const handleSubmitNotes = async () => {
-    if (selectedSign) {
-      await updateSign(selectedSign, true);
-      setOpenDialog(false);
-      setSelectedSign(null);
-      setNotes('');
-    }
-  };
-
-  const updateSign = async (sign: PreFoalingSign, observed: boolean) => {
-    try {
-      const response = await fetch(`/api/horses/${horseId}/pregnancy/foaling-signs/${sign.id}`, {
-        method: 'PUT',
+  const addSignMutation = useMutation({
+    mutationFn: async (sign: Partial<PreFoalingSign>) => {
+      const response = await fetch(`/api/horses/${horseId}/pre-foaling-signs`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          observed,
-          notes: observed ? notes : undefined,
-          dateObserved: observed ? new Date().toISOString() : undefined
-        })
+        body: JSON.stringify(sign),
       });
-      
-      if (!response.ok) throw new Error('Failed to update pre-foaling sign');
-      
-      fetchSigns();
-    } catch (err) {
-      setError('Failed to update pre-foaling sign');
+      if (!response.ok) throw new Error('Failed to add pre-foaling sign');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['preFoalingSigns', horseId] });
+      notifications.show({
+        title: 'Success',
+        message: 'Pre-foaling sign added',
+        color: 'green',
+      });
+      setIsModalOpen(false);
+      setNewSign({});
+    },
+  });
+
+  const handleSubmit = () => {
+    if (!newSign.description) {
+      notifications.show({
+        title: 'Error',
+        message: 'Description is required',
+        color: 'red',
+      });
+      return;
     }
+    addSignMutation.mutate(newSign);
   };
-
-  if (loading) {
-    return (
-      <Box style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
-        <Loader />
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert color="red" title="Error">
-        {error}
-      </Alert>
-    );
-  }
 
   return (
-    <Box>
-      <Title order={3} mb="md">Pre-Foaling Signs</Title>
+    <Stack gap="lg">
+      <Group justify="space-between" mb="md">
+        <Title order={3}>Pre-Foaling Signs</Title>
+        <Button
+          onClick={() => setIsModalOpen(true)}
+          leftSection={<IconPlus size="1rem" />}
+          variant="light"
+        >
+          Add Sign
+        </Button>
+      </Group>
 
-      <Stack>
-        {signs.map((sign) => (
-          <Paper key={sign.id} p="md" withBorder>
-            <Group position="apart">
-              <Box>
-                <Group spacing="xs">
-                  <Text fw={500}>{sign.signName}</Text>
-                  {sign.observed && (
-                    <Badge color="green">
-                      Observed on {format(new Date(sign.dateObserved!), 'MMM d, yyyy')}
-                    </Badge>
-                  )}
-                </Group>
-                {sign.notes && (
-                  <Text size="sm" c="dimmed" mt={4}>
-                    {sign.notes}
-                  </Text>
-                )}
-              </Box>
-              <Switch
-                checked={sign.observed}
-                onChange={() => handleToggleSign(sign)}
-                size="lg"
-              />
+      {signs.map((sign) => (
+        <Card key={sign.id} withBorder>
+          <Stack gap="md">
+            <Group justify="space-between">
+              <Text fw={500}>{sign.description}</Text>
+              <Text size="sm" c="dimmed">
+                {new Date(sign.date).toLocaleDateString()}
+              </Text>
             </Group>
-          </Paper>
-        ))}
-      </Stack>
+            {sign.notes && <Text size="sm">{sign.notes}</Text>}
+          </Stack>
+        </Card>
+      ))}
 
       <Modal
-        opened={openDialog}
-        onClose={() => {
-          setOpenDialog(false);
-          setSelectedSign(null);
-          setNotes('');
-        }}
-        title="Add Notes"
-        size="md"
+        opened={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Add Pre-Foaling Sign"
       >
-        <Stack>
-          <Text>
-            Add notes for: {selectedSign?.signName}
-          </Text>
+        <Stack gap="md">
+          <TextInput
+            label="Description"
+            placeholder="Enter sign description"
+            required
+            value={newSign.description || ''}
+            onChange={(e) => setNewSign({ ...newSign, description: e.target.value })}
+          />
 
           <Textarea
             label="Notes"
-            placeholder="Enter any additional observations or notes"
-            value={notes}
-            onChange={(event) => setNotes(event.currentTarget.value)}
-            minRows={3}
+            placeholder="Additional notes (optional)"
+            value={newSign.notes || ''}
+            onChange={(e) => setNewSign({ ...newSign, notes: e.target.value })}
           />
 
-          <Button onClick={handleSubmitNotes} fullWidth>
-            Save
+          <Button
+            onClick={handleSubmit}
+            loading={addSignMutation.isPending}
+            mt="md"
+          >
+            Add Sign
           </Button>
         </Stack>
       </Modal>
-    </Box>
+    </Stack>
   );
-};
-
-export default PreFoalingSigns;
+}

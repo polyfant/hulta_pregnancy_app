@@ -1,60 +1,61 @@
-import React, { useState } from 'react';
-import { Modal, Button, Stack } from '@mantine/core';
-import { DateInput } from '@mantine/dates';
+import { Modal, Stack, Button, Text } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
+import { useState } from 'react';
 
 interface StartPregnancyDialogProps {
   opened: boolean;
   onClose: () => void;
-  onSubmit: (conceptionDate: string) => void;
+  onSubmit: (date: string) => void;
+  isLoading: boolean;
 }
 
-const StartPregnancyDialog: React.FC<StartPregnancyDialogProps> = ({
+export function StartPregnancyDialog({
   opened,
   onClose,
-  onSubmit
-}) => {
-  const [conceptionDate, setConceptionDate] = useState<Date | null>(null);
+  onSubmit,
+  isLoading
+}: StartPregnancyDialogProps) {
+  const [conceptionDate, setConceptionDate] = useState<Date | null>(new Date());
 
   const handleSubmit = () => {
     if (conceptionDate) {
-      onSubmit(conceptionDate.toISOString().split('T')[0]);
+      // Format date as YYYY-MM-DD
+      const formattedDate = conceptionDate.toISOString().split('T')[0];
+      onSubmit(formattedDate);
     }
   };
 
   return (
-    <Modal 
+    <Modal
       opened={opened}
       onClose={onClose}
       title="Start Pregnancy Tracking"
-      size="sm"
+      size="md"
     >
       <Stack>
-        <DateInput
+        <Text size="sm">
+          Please select the conception date to begin tracking this mare's pregnancy.
+          This will help us calculate important milestones and the expected due date.
+        </Text>
+
+        <DatePickerInput
           label="Conception Date"
           placeholder="Select date"
           value={conceptionDate}
           onChange={setConceptionDate}
           maxDate={new Date()}
+          required
         />
 
         <Button
-          onClick={onClose}
-          variant="subtle"
-          fullWidth
-        >
-          Cancel
-        </Button>
-
-        <Button
           onClick={handleSubmit}
+          loading={isLoading}
           disabled={!conceptionDate}
-          fullWidth
+          mt="md"
         >
           Start Tracking
         </Button>
       </Stack>
     </Modal>
   );
-};
-
-export default StartPregnancyDialog;
+}

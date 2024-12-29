@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS horses (
     gender TEXT NOT NULL,
     date_of_birth TEXT NOT NULL,
     weight REAL,
+    is_pregnant BOOLEAN DEFAULT FALSE,
     conception_date TEXT,
     mother_id INTEGER,
     father_id INTEGER,

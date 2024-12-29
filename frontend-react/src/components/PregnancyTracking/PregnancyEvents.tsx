@@ -1,184 +1,216 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Box,
+  Card,
   Title,
-  Stack,
-  Button,
-  ActionIcon,
-  Modal,
-  Select,
-  Textarea,
-  Loader,
-  Alert,
-  Timeline,
   Text,
-  Group
+  Stack,
+  Group,
+  Button,
+  Modal,
+  TextInput,
+  Textarea,
+  Select,
+  LoadingOverlay,
+  Timeline,
+  ThemeIcon
 } from '@mantine/core';
-import { IconPlus, IconCalendar } from '@tabler/icons-react';
-import { format } from 'date-fns';
-import { PregnancyEvent } from '../../types/pregnancy';
-
-const eventTypes = [
-  { value: 'CONCEPTION', label: 'Conception' },
-  { value: 'VET_CHECK', label: 'Veterinary Check' },
-  { value: 'VACCINATION', label: 'Vaccination' },
-  { value: 'ULTRASOUND', label: 'Ultrasound' },
-  { value: 'BEHAVIORAL_CHANGE', label: 'Behavioral Change' },
-  { value: 'COMPLICATION', label: 'Complication' },
-  { value: 'PRE_FOALING_CHANGES', label: 'Pre-Foaling Changes' },
-  { value: 'FOALING', label: 'Foaling' },
-  { value: 'POST_FOALING_CHECK', label: 'Post-Foaling Check' }
-];
+import { DatePickerInput } from '@mantine/dates';
+import { notifications } from '@mantine/notifications';
+import {
+  IconCalendarEvent,
+  IconStethoscope,
+  IconAlertTriangle,
+  IconPlus
+} from '@tabler/icons-react';
 
 interface PregnancyEventsProps {
   horseId: string;
 }
 
-const PregnancyEvents: React.FC<PregnancyEventsProps> = ({ horseId }) => {
-  const [events, setEvents] = useState<PregnancyEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [newEvent, setNewEvent] = useState({
-    eventType: '',
-    description: '',
-    notes: ''
+interface PregnancyEvent {
+  id: number;
+  date: string;
+  type: 'checkup' | 'milestone' | 'warning';
+  title: string;
+  description: string;
+}
+
+export function PregnancyEvents({ horseId }: PregnancyEventsProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newEvent, setNewEvent] = useState<Partial<PregnancyEvent>>({
+    type: 'checkup',
+    date: new Date().toISOString(),
   });
 
-  const fetchEvents = async () => {
-    try {
+  const queryClient = useQueryClient();
+
+  const { data: events = [], isLoading } = useQuery<PregnancyEvent[]>({
+    queryKey: ['pregnancy-events', horseId],
+    queryFn: async () => {
       const response = await fetch(`/api/horses/${horseId}/pregnancy/events`);
-      if (!response.ok) throw new Error('Failed to fetch events');
-      const data = await response.json();
-      setEvents(data);
-    } catch (err) {
-      setError('Failed to load pregnancy events');
-    } finally {
-      setLoading(false);
+      if (!response.ok) throw new Error('Failed to fetch pregnancy events');
+      return response.json();
     }
-  };
+  });
 
-  useEffect(() => {
-    fetchEvents();
-  }, [horseId]);
-
-  const handleAddEvent = async () => {
-    try {
+  const addEventMutation = useMutation({
+    mutationFn: async (event: Omit<PregnancyEvent, 'id'>) => {
       const response = await fetch(`/api/horses/${horseId}/pregnancy/events`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newEvent)
+        body: JSON.stringify(event)
       });
-      
       if (!response.ok) throw new Error('Failed to add event');
-      
-      setOpenDialog(false);
-      setNewEvent({ eventType: '', description: '', notes: '' });
-      fetchEvents();
-    } catch (err) {
-      setError('Failed to add pregnancy event');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pregnancy-events', horseId] });
+      setIsModalOpen(false);
+      setNewEvent({ type: 'checkup', date: new Date().toISOString() });
+      notifications.show({
+        title: 'Success',
+        message: 'Event added successfully',
+        color: 'green'
+      });
+    },
+    onError: (error) => {
+      notifications.show({
+        title: 'Error',
+        message: error.message,
+        color: 'red'
+      });
+    }
+  });
+
+  const getEventIcon = (type: string) => {
+    switch (type) {
+      case 'checkup':
+        return <IconStethoscope size="1rem" />;
+      case 'milestone':
+        return <IconCalendarEvent size="1rem" />;
+      case 'warning':
+        return <IconAlertTriangle size="1rem" />;
+      default:
+        return <IconCalendarEvent size="1rem" />;
     }
   };
 
-  if (loading) {
-    return (
-      <Box style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
-        <Loader />
-      </Box>
-    );
-  }
+  const getEventColor = (type: string) => {
+    switch (type) {
+      case 'checkup':
+        return 'blue';
+      case 'milestone':
+        return 'green';
+      case 'warning':
+        return 'red';
+      default:
+        return 'gray';
+    }
+  };
 
-  if (error) {
-    return (
-      <Alert color="red" title="Error">
-        {error}
-      </Alert>
-    );
-  }
+  const handleSubmit = () => {
+    if (!newEvent.title || !newEvent.type || !newEvent.date) {
+      notifications.show({
+        title: 'Error',
+        message: 'Please fill in all required fields',
+        color: 'red'
+      });
+      return;
+    }
+
+    addEventMutation.mutate(newEvent as Omit<PregnancyEvent, 'id'>);
+  };
 
   return (
-    <Box>
-      <Group justify="space-between" mb="md">
-        <Title order={3}>Pregnancy Events</Title>
-        <ActionIcon 
-          variant="filled" 
-          color="blue" 
-          onClick={() => setOpenDialog(true)}
-          size="lg"
-        >
-          <IconPlus size={20} />
-        </ActionIcon>
-      </Group>
-
-      <Timeline active={events.length} bulletSize={24}>
-        {events.map((event) => (
-          <Timeline.Item
-            key={event.id}
-            bullet={<IconCalendar size={12} />}
-            title={
-              <Group gap="xs">
-                <Text fw={500}>
-                  {eventTypes.find(t => t.value === event.eventType)?.label || event.eventType}
-                </Text>
-                <Text size="sm" c="dimmed">
-                  {format(new Date(event.date), 'MMM d, yyyy')}
-                </Text>
-              </Group>
-            }
-          >
-            <Text size="sm">{event.description}</Text>
-            {event.notes && (
-              <Text size="sm" c="dimmed" mt={4}>
-                {event.notes}
-              </Text>
-            )}
-          </Timeline.Item>
-        ))}
-      </Timeline>
-
-      <Modal
-        opened={openDialog}
-        onClose={() => setOpenDialog(false)}
-        title="Add Pregnancy Event"
-        size="md"
-      >
-        <Stack>
-          <Select
-            label="Event Type"
-            placeholder="Select event type"
-            data={eventTypes}
-            value={newEvent.eventType}
-            onChange={(value) => setNewEvent({ ...newEvent, eventType: value || '' })}
-            required
-          />
-
-          <Textarea
-            label="Description"
-            placeholder="Enter event description"
-            value={newEvent.description}
-            onChange={(event) => setNewEvent({ ...newEvent, description: event.currentTarget.value })}
-            required
-          />
-
-          <Textarea
-            label="Notes (Optional)"
-            placeholder="Enter additional notes"
-            value={newEvent.notes}
-            onChange={(event) => setNewEvent({ ...newEvent, notes: event.currentTarget.value })}
-            minRows={3}
-          />
-
+    <Card withBorder>
+      <LoadingOverlay visible={isLoading} />
+      
+      <Stack gap="md">
+        <Group justify="space-between" mb="md">
+          <Title order={3}>Pregnancy Events</Title>
           <Button
-            onClick={handleAddEvent}
-            disabled={!newEvent.eventType || !newEvent.description}
-            fullWidth
+            leftSection={<IconPlus size="1rem" />}
+            onClick={() => setIsModalOpen(true)}
           >
             Add Event
           </Button>
-        </Stack>
-      </Modal>
-    </Box>
-  );
-};
+        </Group>
 
-export default PregnancyEvents;
+        {events.length === 0 ? (
+          <Text c="dimmed" ta="center" py="xl">
+            No events recorded yet
+          </Text>
+        ) : (
+          <Timeline active={events.length - 1}>
+            {events.map((event) => (
+              <Timeline.Item
+                key={event.id}
+                title={event.title}
+                bullet={
+                  <ThemeIcon size={24} color={getEventColor(event.type)} radius="xl">
+                    {getEventIcon(event.type)}
+                  </ThemeIcon>
+                }
+              >
+                <Text size="sm" mt={4}>{event.description}</Text>
+                <Text size="xs" mt={4} c="dimmed">
+                  {new Date(event.date).toLocaleDateString()}
+                </Text>
+              </Timeline.Item>
+            ))}
+          </Timeline>
+        )}
+
+        <Modal
+          opened={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          title="Add Pregnancy Event"
+        >
+          <Stack>
+            <Select
+              label="Event Type"
+              required
+              data={[
+                { value: 'checkup', label: 'Checkup' },
+                { value: 'milestone', label: 'Milestone' },
+                { value: 'warning', label: 'Warning' }
+              ]}
+              value={newEvent.type}
+              onChange={(value) => setNewEvent({ ...newEvent, type: value as PregnancyEvent['type'] })}
+            />
+
+            <DatePickerInput
+              label="Date"
+              required
+              value={newEvent.date ? new Date(newEvent.date) : null}
+              onChange={(date) => setNewEvent({ ...newEvent, date: date?.toISOString() })}
+              maxDate={new Date()}
+            />
+
+            <TextInput
+              label="Title"
+              required
+              value={newEvent.title || ''}
+              onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+            />
+
+            <Textarea
+              label="Description"
+              value={newEvent.description || ''}
+              onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+            />
+
+            <Button
+              onClick={handleSubmit}
+              loading={addEventMutation.isPending}
+              mt="md"
+            >
+              Add Event
+            </Button>
+          </Stack>
+        </Modal>
+      </Stack>
+    </Card>
+  );
+}

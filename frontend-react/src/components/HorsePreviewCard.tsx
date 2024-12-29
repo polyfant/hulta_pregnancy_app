@@ -1,70 +1,62 @@
-import React from 'react';
 import {
-    Box,
-    Card,
-    CardContent,
-    Typography,
-    Chip,
-} from '@mui/material';
-import {
-    Female as FemaleIcon,
-    Male as MaleIcon,
-} from '@mui/icons-material';
+  Card,
+  Group,
+  Text,
+  Badge,
+  Stack
+} from '@mantine/core';
+import { IconMars, IconVenus } from '@tabler/icons-react';
 import { Horse } from '../types/horse';
 
 interface HorsePreviewCardProps {
-    horse: Horse | null;
-    externalName?: string;
-    role: 'mother' | 'father';
+  horse: Horse | null;
+  externalName?: string;
+  role: 'mother' | 'father';
 }
 
-export const HorsePreviewCard: React.FC<HorsePreviewCardProps> = ({
-    horse,
-    externalName,
-    role,
-}) => {
-    if (!horse && !externalName) return null;
+export function HorsePreviewCard({ horse, externalName, role }: HorsePreviewCardProps) {
+  if (!horse && !externalName) return null;
 
-    const isExternal = !horse && externalName;
-    const gender = role === 'mother' ? 'MARE' : 'STALLION';
+  const isExternal = !horse && externalName;
+  const gender = role === 'mother' ? 'MARE' : 'STALLION';
+  const color = role === 'mother' ? 'pink' : 'blue';
 
-    return (
-        <Card variant="outlined" sx={{ 
-            mt: 1,
-            backgroundColor: role === 'mother' ? 'rgba(233, 30, 99, 0.08)' : 'rgba(33, 150, 243, 0.08)',
-        }}>
-            <CardContent>
-                <Box display="flex" alignItems="center" gap={1}>
-                    {gender === 'MARE' ? (
-                        <FemaleIcon color="primary" />
-                    ) : (
-                        <MaleIcon color="primary" />
-                    )}
-                    <Typography variant="subtitle1">
-                        {isExternal ? externalName : horse?.name}
-                    </Typography>
-                    {isExternal && (
-                        <Chip
-                            label="External"
-                            size="small"
-                            variant="outlined"
-                            color="primary"
-                        />
-                    )}
-                </Box>
-                {!isExternal && horse && (
-                    <Box mt={1}>
-                        <Typography variant="body2" color="text.secondary">
-                            Breed: {horse.breed}
-                        </Typography>
-                        {horse.age && (
-                            <Typography variant="body2" color="text.secondary">
-                                Age: {horse.age}
-                            </Typography>
-                        )}
-                    </Box>
-                )}
-            </CardContent>
-        </Card>
-    );
-};
+  return (
+    <Card
+      withBorder
+      mt="sm"
+      bg={role === 'mother' ? 'pink.0' : 'blue.0'}
+    >
+      <Stack gap="xs">
+        <Group>
+          {gender === 'MARE' ? (
+            <IconVenus size="1.2rem" color="var(--mantine-color-pink-6)" />
+          ) : (
+            <IconMars size="1.2rem" color="var(--mantine-color-blue-6)" />
+          )}
+          <Text fw={500}>
+            {isExternal ? externalName : horse?.name}
+          </Text>
+          {isExternal && (
+            <Badge variant="outline" color={color}>
+              External
+            </Badge>
+          )}
+        </Group>
+
+        {!isExternal && horse && (
+          <Stack gap={4}>
+            <Text size="sm" c="dimmed">
+              Breed: {horse.breed}
+            </Text>
+            {horse.age && (
+              <Text size="sm" c="dimmed">
+                Age: {horse.age}
+              </Text>
+            )}
+          </Stack>
+        )}
+      </Stack>
+    </Card>
+  );
+}

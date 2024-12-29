@@ -1,43 +1,44 @@
+import { BrowserRouter as Router } from 'react-router-dom';
 import { MantineProvider } from '@mantine/core';
+import { Notifications } from '@mantine/notifications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AddHorseForm } from './components/AddHorseForm';
-import { HorseList } from './components/HorseList';
-import PregnancyTracking from './components/PregnancyTracking/PregnancyTracking';
+import { AppShell } from '@mantine/core';
+
+import { Navbar } from './components/Navbar/Navbar';
+import { AppRoutes } from './routes';
+
+// Import Mantine styles
 import '@mantine/core/styles.css';
+import '@mantine/notifications/styles.css';
 import '@mantine/dates/styles.css';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 1
+    }
+  }
+});
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <MantineProvider>
+        <Notifications />
         <Router>
-          <div style={{ padding: '2rem' }}>
-            <h1>Horse Management</h1>
-            <Routes>
-              <Route
-                path="/"
-                element={
-                  <>
-                    <div style={{ marginBottom: '2rem' }}>
-                      <h2>Add New Horse</h2>
-                      <AddHorseForm />
-                    </div>
-                    <div>
-                      <h2>Horses</h2>
-                      <HorseList />
-                    </div>
-                  </>
-                }
-              />
-              <Route
-                path="/horses/:id/pregnancy"
-                element={<PregnancyTracking />}
-              />
-            </Routes>
-          </div>
+          <AppShell
+            header={{ height: 60 }}
+            padding="md"
+          >
+            <AppShell.Header>
+              <Navbar />
+            </AppShell.Header>
+
+            <AppShell.Main>
+              <AppRoutes />
+            </AppShell.Main>
+          </AppShell>
         </Router>
       </MantineProvider>
     </QueryClientProvider>

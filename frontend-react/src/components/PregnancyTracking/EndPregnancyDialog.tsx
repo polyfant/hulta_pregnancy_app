@@ -1,34 +1,24 @@
-import React, { useState } from 'react';
-import { Modal, Button, Stack, Select, Textarea } from '@mantine/core';
+import { Modal, Stack, Button, Text, Select, Textarea } from '@mantine/core';
+import { useState } from 'react';
 
 interface EndPregnancyDialogProps {
   opened: boolean;
   onClose: () => void;
-  onSubmit: (outcome: string) => void;
+  onConfirm: () => void;
+  isLoading: boolean;
 }
 
-const outcomes = [
-  { value: 'SUCCESSFUL_BIRTH', label: 'Successful Birth' },
-  { value: 'STILLBIRTH', label: 'Stillbirth' },
-  { value: 'MISCARRIAGE', label: 'Miscarriage' },
-  { value: 'MEDICAL_TERMINATION', label: 'Medical Termination' },
-  { value: 'OTHER', label: 'Other' }
-];
-
-const EndPregnancyDialog: React.FC<EndPregnancyDialogProps> = ({
+export function EndPregnancyDialog({
   opened,
   onClose,
-  onSubmit
-}) => {
-  const [outcome, setOutcome] = useState<string | null>(null);
+  onConfirm,
+  isLoading
+}: EndPregnancyDialogProps) {
+  const [reason, setReason] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
 
-  const handleSubmit = () => {
-    if (outcome) {
-      onSubmit(outcome);
-      setOutcome(null);
-      setNotes('');
-    }
+  const handleConfirm = () => {
+    onConfirm();
   };
 
   return (
@@ -36,40 +26,55 @@ const EndPregnancyDialog: React.FC<EndPregnancyDialogProps> = ({
       opened={opened}
       onClose={onClose}
       title="End Pregnancy Tracking"
-      size="sm"
+      size="md"
     >
       <Stack>
+        <Text size="sm" c="dimmed">
+          Are you sure you want to end pregnancy tracking for this mare?
+          This action cannot be undone.
+        </Text>
+
         <Select
-          label="Pregnancy Outcome"
-          placeholder="Select outcome"
-          data={outcomes}
-          value={outcome}
-          onChange={setOutcome}
+          label="Reason"
+          placeholder="Select reason"
+          data={[
+            { value: 'foaling', label: 'Successful Foaling' },
+            { value: 'loss', label: 'Pregnancy Loss' },
+            { value: 'error', label: 'Tracking Error' },
+            { value: 'other', label: 'Other' }
+          ]}
+          value={reason}
+          onChange={setReason}
           required
         />
 
         <Textarea
           label="Additional Notes"
-          placeholder="Enter any additional notes"
+          placeholder="Enter any additional notes or observations"
           value={notes}
           onChange={(event) => setNotes(event.currentTarget.value)}
           minRows={3}
         />
 
-        <Button
-          onClick={handleSubmit}
-          disabled={!outcome}
-          color="red"
-          fullWidth
-        >
-          End Tracking
-        </Button>
-        <Button onClick={onClose} fullWidth>
-          Cancel
-        </Button>
+        <Button.Group>
+          <Button
+            variant="light"
+            onClick={onClose}
+            style={{ flex: 1 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            color="red"
+            onClick={handleConfirm}
+            loading={isLoading}
+            disabled={!reason}
+            style={{ flex: 1 }}
+          >
+            End Tracking
+          </Button>
+        </Button.Group>
       </Stack>
     </Modal>
   );
-};
-
-export default EndPregnancyDialog;
+}

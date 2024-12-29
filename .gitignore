@@ -49,21 +49,33 @@ Thumbs.db
 *.db
 *.sqlite
 *.sqlite3
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+/data/*.db
+/data/backup/
 
-# Logs
+# Logs and debugging
 *.log
 logs/
 log/
+debug/
+*.debug
+debug.test
+/frontend-react/debug.log
 
 # Build output
 /build/
 /tmp/
 /temp/
+/frontend-react/build/
+/frontend-react/dist/
 
 # Coverage reports
 coverage/
 *.cover
 *.coverprofile
+.nyc_output/
 
 # Dependency directories
 jspm_packages/
@@ -85,7 +97,90 @@ jspm_packages/
 
 # dotenv environment variable files
 .env*
+.env.local
+.env.*.local
+*.env
+.env.development
+.env.test
+.env.production
+.env.staging
 
 # parcel-bundler cache
 .cache
 .parcel-cache
+
+# Security and sensitive data
+*.pem
+*.key
+*.crt
+*.csr
+*.der
+*.p12
+*.pfx
+*.p7b
+*.p7r
+*.spc
+*.sst
+*.cert
+/certs/
+/keys/
+/secrets/
+*.password
+*.secret
+*_rsa
+*_dsa
+*_ed25519
+*_ecdsa
+jwt_private_key*
+jwt_public_key*
+
+# User data and uploads
+/uploads/
+/user_data/
+/media/
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.pdf
+/frontend-react/public/uploads/
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+*.temp
+/backup/
+*.swp
+*.swo
+*~
+
+# Local development
+.localdev/
+*.local
+local.properties
+
+# Test data
+/test/data/
+/test/fixtures/
+mock_*.go
+*.mock.ts
+*.mock.tsx
+
+# Generated files
+*.generated.*
+generated/
+*.gen.go
+*.gen.ts
+*.gen.tsx
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Docker
+.docker/
+docker-compose.override.yml

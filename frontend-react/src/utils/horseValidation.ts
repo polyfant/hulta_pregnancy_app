@@ -1,6 +1,6 @@
 import { Horse } from '../types/horse';
 
-interface HorseWithParents extends Horse {
+interface HorseWithParents extends Omit<Horse, 'motherId' | 'fatherId'> {
     motherId?: number | null;
     fatherId?: number | null;
 }

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/polyfant/horse_tracking/internal/service/pregnancy"
 	"github.com/polyfant/horse_tracking/internal/models"
@@ -10,8 +11,12 @@ import (
 func SetupRouter(h *Handler, store models.DataStore) *gin.Engine {
 	router := gin.Default()
 
-	// Enable CORS
-	router.Use(corsMiddleware())
+	// Add CORS middleware with more permissive settings for development
+	config := cors.DefaultConfig()
+	config.AllowOrigins = []string{"*"} // Allow all origins in development
+	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept"}
+	router.Use(cors.New(config))
 
 	// Create pregnancy handler
 	pregnancyHandler := NewPregnancyHandler(pregnancy.NewService(store), store)
@@ -52,20 +57,4 @@ func SetupRouter(h *Handler, store models.DataStore) *gin.Engine {
 	}
 
 	return router
-}
-
-// corsMiddleware handles CORS headers
-func corsMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type")
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-
-		c.Next()
-	}
 }

@@ -1,142 +1,149 @@
-import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
-  Box,
-  Typography,
-  LinearProgress,
-  List,
-  ListItem,
-  ListItemText,
-  Divider,
-  Chip
-} from '@mui/material';
-import { format, differenceInDays } from 'date-fns';
+  Card,
+  Text,
+  Group,
+  Stack,
+  Timeline,
+  Badge,
+  Title,
+  LoadingOverlay
+} from '@mantine/core';
+import {
+  IconCalendarEvent,
+  IconStethoscope,
+  IconBabyCarriage,
+  IconAlertTriangle
+} from '@tabler/icons-react';
 
 interface PregnancyStatusProps {
-  status: {
-    conceptionDate: string;
-    currentStage: string;
-    daysInPregnancy: number;
-    expectedDueDate: string;
-    lastEvent?: {
-      date: string;
-      eventType: string;
-      description: string;
-    };
-  };
+  horseId: number;
 }
 
-const PregnancyStatus: React.FC<PregnancyStatusProps> = ({ status }) => {
-  const totalPregnancyDays = 340; // ~11 months
-  const progress = (status.daysInPregnancy / totalPregnancyDays) * 100;
-  const daysUntilDue = differenceInDays(new Date(status.expectedDueDate), new Date());
+interface PregnancyStatus {
+  currentStage: string;
+  nextMilestone: {
+    date: string;
+    event: string;
+  };
+  recentEvents: Array<{
+    date: string;
+    event: string;
+    type: 'milestone' | 'checkup' | 'warning';
+  }>;
+  upcomingEvents: Array<{
+    date: string;
+    event: string;
+    type: 'milestone' | 'checkup' | 'warning';
+  }>;
+}
 
-  const getStageColor = (stage: string) => {
-    switch (stage) {
-      case 'EARLY':
-        return '#4CAF50';
-      case 'MIDDLE':
-        return '#2196F3';
-      case 'LATE':
-        return '#FF9800';
-      case 'NEARTERM':
-        return '#F44336';
-      case 'FOALING':
-        return '#9C27B0';
+export function PregnancyStatus({ horseId }: PregnancyStatusProps) {
+  const { data, isLoading } = useQuery<PregnancyStatus>({
+    queryKey: ['pregnancy-status', horseId],
+    queryFn: async () => {
+      const response = await fetch(`/api/horses/${horseId}/pregnancy/status`);
+      if (!response.ok) throw new Error('Failed to fetch pregnancy status');
+      return response.json();
+    }
+  });
+
+  const getEventIcon = (type: string) => {
+    switch (type) {
+      case 'milestone':
+        return <IconCalendarEvent size="1.2rem" />;
+      case 'checkup':
+        return <IconStethoscope size="1.2rem" />;
+      case 'warning':
+        return <IconAlertTriangle size="1.2rem" />;
       default:
-        return '#757575';
+        return <IconBabyCarriage size="1.2rem" />;
     }
   };
 
+  const getEventColor = (type: string) => {
+    switch (type) {
+      case 'milestone':
+        return 'blue';
+      case 'checkup':
+        return 'green';
+      case 'warning':
+        return 'yellow';
+      default:
+        return 'gray';
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card withBorder radius="md" pos="relative" h={400}>
+        <LoadingOverlay visible />
+      </Card>
+    );
+  }
+
+  if (!data) {
+    return (
+      <Card withBorder radius="md">
+        <Text c="dimmed">No pregnancy status available</Text>
+      </Card>
+    );
+  }
+
   return (
-    <Box>
-      <Typography variant="h6" gutterBottom>
-        Pregnancy Status
-      </Typography>
+    <Stack gap="lg">
+      <Card withBorder radius="md">
+        <Stack gap="xs">
+          <Group justify="space-between">
+            <Text c="dimmed">Current Stage:</Text>
+            <Badge size="lg">{data.currentStage}</Badge>
+          </Group>
+          <Group justify="space-between">
+            <Text c="dimmed">Next Milestone:</Text>
+            <Group spacing="xs">
+              <Text>{new Date(data.nextMilestone.date).toLocaleDateString()}</Text>
+              <Text>-</Text>
+              <Text>{data.nextMilestone.event}</Text>
+            </Group>
+          </Group>
+        </Stack>
+      </Card>
 
-      <Box sx={{ mb: 3 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-          <Typography variant="body2" color="textSecondary">
-            Progress ({status.daysInPregnancy} days)
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            {Math.round(progress)}%
-          </Typography>
-        </Box>
-        <LinearProgress 
-          variant="determinate" 
-          value={progress} 
-          sx={{ height: 10, borderRadius: 5 }}
-        />
-      </Box>
+      <Card withBorder radius="md">
+        <Title order={3} mb="md">Timeline</Title>
+        <Timeline active={data.recentEvents.length - 1} bulletSize={24}>
+          {data.recentEvents.map((event, index) => (
+            <Timeline.Item
+              key={index}
+              bullet={getEventIcon(event.type)}
+              title={event.event}
+              color={getEventColor(event.type)}
+            >
+              <Text size="sm" mt={4}>
+                {new Date(event.date).toLocaleDateString()}
+              </Text>
+            </Timeline.Item>
+          ))}
+        </Timeline>
+      </Card>
 
-      <List>
-        <ListItem>
-          <ListItemText
-            primary="Current Stage"
-            secondary={
-              <Chip
-                label={status.currentStage}
-                sx={{
-                  bgcolor: getStageColor(status.currentStage),
-                  color: 'white',
-                  mt: 1
-                }}
-              />
-            }
-          />
-        </ListItem>
-        
-        <Divider />
-        
-        <ListItem>
-          <ListItemText
-            primary="Conception Date"
-            secondary={format(new Date(status.conceptionDate), 'MMMM d, yyyy')}
-          />
-        </ListItem>
-        
-        <Divider />
-        
-        <ListItem>
-          <ListItemText
-            primary="Expected Due Date"
-            secondary={
-              <>
-                {format(new Date(status.expectedDueDate), 'MMMM d, yyyy')}
-                <Typography variant="body2" color="textSecondary">
-                  ({daysUntilDue} days remaining)
-                </Typography>
-              </>
-            }
-          />
-        </ListItem>
-
-        {status.lastEvent && (
-          <>
-            <Divider />
-            <ListItem>
-              <ListItemText
-                primary="Last Event"
-                secondary={
-                  <>
-                    <Typography variant="body2">
-                      {status.lastEvent.eventType}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      {format(new Date(status.lastEvent.date), 'MMMM d, yyyy')}
-                    </Typography>
-                    <Typography variant="body2">
-                      {status.lastEvent.description}
-                    </Typography>
-                  </>
-                }
-              />
-            </ListItem>
-          </>
-        )}
-      </List>
-    </Box>
+      <Card withBorder radius="md">
+        <Title order={3} mb="md">Upcoming Events</Title>
+        <Timeline bulletSize={24}>
+          {data.upcomingEvents.map((event, index) => (
+            <Timeline.Item
+              key={index}
+              bullet={getEventIcon(event.type)}
+              title={event.event}
+              color={getEventColor(event.type)}
+            >
+              <Text size="sm" mt={4}>
+                {new Date(event.date).toLocaleDateString()}
+              </Text>
+            </Timeline.Item>
+          ))}
+        </Timeline>
+      </Card>
+    </Stack>
   );
-};
-
-export default PregnancyStatus;
+}

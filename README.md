@@ -2,6 +2,10 @@
 
 A comprehensive web application for tracking horses, breeding, and health records. This application helps horse owners and breeders manage their horses' information, health records, breeding costs, and provides detailed pregnancy monitoring with stage-specific guidelines.
 
+## Project Status: Private Development
+
+This is a private, closed-source project under active development. All code, designs, and documentation are proprietary and confidential.
+
 ## Current Features
 
 ### Horse Management
@@ -9,6 +13,8 @@ A comprehensive web application for tracking horses, breeding, and health record
 - View all horses in a clean, sortable table
 - Edit existing horse information
 - Delete horses from the system
+- Family tree visualization with parent tracking
+- Support for external parent references
 
 ### Pregnancy Monitoring
 - Track pregnancy stages (Early, Mid, Late, Pre-Foaling, Foaling)
@@ -18,12 +24,16 @@ A comprehensive web application for tracking horses, breeding, and health record
 - Monitor health events throughout pregnancy
 - Nutrition and exercise recommendations by stage
 - Warning signs and health checkpoints
+- Timeline view of pregnancy events
+- Pre-foaling signs tracking
 
 ### Breeding Management
 - Record breeding events and outcomes
 - Track breeding costs and expenses
 - Monitor breeding history
 - Manage breeding schedules
+- Parent selection with validation
+- External parent support
 
 ## Upcoming Features
 
@@ -59,6 +69,61 @@ A comprehensive web application for tracking horses, breeding, and health record
 - `POST /api/horses/{id}/health-records` - Add health record
 - `GET /api/horses/{id}/breeding-costs` - View breeding costs
 
+## Tech Stack
+
+### Backend
+- Go 1.21+
+- Gin web framework for HTTP routing
+- SQLite3 for data storage
+- Zerolog for structured logging
+- Clean architecture with service-based design
+
+### Frontend
+- React 18
+- TypeScript for type safety
+- Mantine v7 for UI components
+- TanStack Query for API integration
+- Vite for building and development
+- Day.js for date handling
+- React Router v6 for routing
+
+## Security Features
+
+### Data Protection
+- Secure local storage with SQLite
+- Planned encryption at rest
+- Future user authentication system
+- Role-based access control (planned)
+
+### API Security
+- Input validation and sanitization
+- Error handling with secure error messages
+- Rate limiting (planned)
+- JWT authentication (planned)
+
+## Development Progress
+
+### Completed
+- Core horse management features
+- Pregnancy tracking system
+- Family tree visualization
+- Pre-foaling signs monitoring
+- Migration to Mantine v7
+- TypeScript type safety improvements
+- Component architecture refinement
+
+### In Progress
+- User authentication system
+- Advanced breeding cost tracking
+- Health record management
+- Data encryption implementation
+
+### Planned
+- Multi-user support
+- Cloud synchronization
+- Mobile application
+- Advanced reporting features
+
 ## Project Structure
 ```
 horse_tracking_go/
@@ -72,24 +137,13 @@ horse_tracking_go/
 │       ├── pregnancy/ # Pregnancy tracking service
 │       └── breeding/  # Breeding management service
 ├── frontend-react/    # React frontend application
+│   ├── src/          # Source code
+│   │   ├── components/   # React components
+│   │   ├── types/       # TypeScript types
+│   │   ├── api/         # API integration
+│   │   └── utils/       # Utility functions
 └── data/             # Data storage directory
 ```
-
-## Tech Stack
-
-### Backend
-- Go 1.21+
-- Gin web framework for HTTP routing
-- SQLite3 for data storage
-- Zerolog for structured logging
-- Clean architecture with service-based design
-
-### Frontend
-- React 18
-- TypeScript
-- Mantine UI components
-- TanStack Query for API integration
-- Vite for building and development
 
 ## Future Database Architecture
 
@@ -182,12 +236,7 @@ PostgreSQL Cluster
 4. SQLite3
 
 ### Installation & Development
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd horse_tracking_go
-   ```
-
+1. Clone the repository (requires authorization)
 2. Install backend dependencies:
    ```bash
    go mod download
@@ -209,30 +258,10 @@ PostgreSQL Cluster
    npm run dev
    ```
 
-## Development Status
-
-The application is currently in active development with a focus on the following areas:
-
-### Completed
-- Core horse management functionality
-- Basic database schema and SQLite integration
-- Pregnancy tracking service with stage-specific guidelines
-- Pre-foaling sign monitoring
-- Event-based pregnancy tracking
-
-### In Progress
-- Breeding management service implementation
-- Frontend UI components for pregnancy tracking
-- API endpoint implementation for all services
-- Integration testing
-
-### Planned
-- Family tree visualization
-- Health record management
-- Comprehensive breeding cost tracking
-- Mobile-responsive UI improvements
-
 ## Contributing
 
-This project is under active development. Feel free to submit issues and pull requests.
+This is a private project. Contributing guidelines are available to authorized team members only.
 
+## License
+
+This project is proprietary and confidential. All rights reserved.
