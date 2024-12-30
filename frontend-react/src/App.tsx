@@ -3,6 +3,7 @@ import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppShell } from '@mantine/core';
+import { theme } from './theme';
 
 import { Navbar } from './components/Navbar/Navbar';
 import { AppRoutes } from './routes';
@@ -24,14 +25,14 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <MantineProvider>
+      <MantineProvider theme={theme}>
         <Notifications />
         <Router>
           <AppShell
             header={{ height: 60 }}
             padding="md"
           >
-            <AppShell.Header>
+            <AppShell.Header style={{ backgroundColor: 'var(--mantine-color-dark-7)', borderBottom: '1px solid var(--mantine-color-dark-4)' }}>
               <Navbar />
             </AppShell.Header>
 

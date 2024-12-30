@@ -1,24 +1,30 @@
-import { Modal, Stack, Button, Text, Select, Textarea } from '@mantine/core';
+import { Modal, Stack, Button, Text, Select, Textarea, DatePickerInput } from '@mantine/core';
 import { useState } from 'react';
 
 interface EndPregnancyDialogProps {
   opened: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onSubmit: (data: { outcome: string; foalingDate: string }) => void;
   isLoading: boolean;
 }
 
 export function EndPregnancyDialog({
   opened,
   onClose,
-  onConfirm,
+  onSubmit,
   isLoading
 }: EndPregnancyDialogProps) {
-  const [reason, setReason] = useState<string | null>(null);
+  const [outcome, setOutcome] = useState<string | null>(null);
+  const [foalingDate, setFoalingDate] = useState<Date | null>(new Date());
   const [notes, setNotes] = useState('');
 
-  const handleConfirm = () => {
-    onConfirm();
+  const handleSubmit = () => {
+    if (outcome && foalingDate) {
+      onSubmit({
+        outcome,
+        foalingDate: foalingDate.toISOString().split('T')[0]
+      });
+    }
   };
 
   return (
@@ -30,50 +36,49 @@ export function EndPregnancyDialog({
     >
       <Stack>
         <Text size="sm" c="dimmed">
-          Are you sure you want to end pregnancy tracking for this mare?
+          Please provide the details about the end of the pregnancy tracking.
           This action cannot be undone.
         </Text>
 
         <Select
-          label="Reason"
-          placeholder="Select reason"
+          label="Outcome"
+          placeholder="Select outcome"
           data={[
-            { value: 'foaling', label: 'Successful Foaling' },
-            { value: 'loss', label: 'Pregnancy Loss' },
-            { value: 'error', label: 'Tracking Error' },
-            { value: 'other', label: 'Other' }
+            { value: 'SUCCESSFUL', label: 'Successful Foaling' },
+            { value: 'LOSS', label: 'Pregnancy Loss' },
+            { value: 'ERROR', label: 'Tracking Error' },
+            { value: 'OTHER', label: 'Other' }
           ]}
-          value={reason}
-          onChange={setReason}
+          value={outcome}
+          onChange={setOutcome}
+          required
+        />
+
+        <DatePickerInput
+          label="End Date"
+          placeholder="Select date"
+          value={foalingDate}
+          onChange={setFoalingDate}
+          maxDate={new Date()}
           required
         />
 
         <Textarea
           label="Additional Notes"
-          placeholder="Enter any additional notes or observations"
+          placeholder="Enter any additional notes..."
           value={notes}
           onChange={(event) => setNotes(event.currentTarget.value)}
           minRows={3}
         />
 
-        <Button.Group>
-          <Button
-            variant="light"
-            onClick={onClose}
-            style={{ flex: 1 }}
-          >
-            Cancel
-          </Button>
-          <Button
-            color="red"
-            onClick={handleConfirm}
-            loading={isLoading}
-            disabled={!reason}
-            style={{ flex: 1 }}
-          >
-            End Tracking
-          </Button>
-        </Button.Group>
+        <Button
+          onClick={handleSubmit}
+          loading={isLoading}
+          fullWidth
+          mt="md"
+        >
+          Confirm
+        </Button>
       </Stack>
     </Modal>
   );

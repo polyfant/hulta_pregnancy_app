@@ -36,20 +36,21 @@ import { notifications } from '@mantine/notifications';
 import { FamilyTree } from './FamilyTree';
 
 interface Horse {
-  id: string;
+  id: number;
   name: string;
-  breed?: string;
-  color?: string;
-  gender: 'male' | 'female';
-  birthDate?: string;
-  height?: number;
+  breed: string;
+  gender: 'MARE' | 'STALLION' | 'GELDING';
+  dateOfBirth: string;
   weight?: number;
-  isPregnant?: boolean;
+  age?: string;
+  conceptionDate?: string;
+  motherId?: number;
+  fatherId?: number;
+  externalMother?: string;
+  externalFather?: string;
+  created_at?: string;
+  updated_at?: string;
   imageUrl?: string;
-  sire?: Horse;
-  dam?: Horse;
-  motherName?: string;
-  fatherName?: string;
 }
 
 export function HorseDetails() {
@@ -129,7 +130,7 @@ export function HorseDetails() {
             >
               Edit
             </Button>
-            {horse.gender === 'female' && (
+            {horse.gender === 'MARE' && (
               <Button
                 component={Link}
                 to={`/horses/${id}/pregnancy`}
@@ -156,10 +157,10 @@ export function HorseDetails() {
         <Grid>
           <Grid.Col span={4}>
             <Image
-              src={horse.imageUrl || '/placeholder-horse.jpg'}
+              src={horse.imageUrl}
               alt={horse.name}
               radius="md"
-              placeholder
+              fallbackSrc="/placeholder-horse.jpg"
             />
           </Grid.Col>
 
@@ -167,14 +168,14 @@ export function HorseDetails() {
             <Stack gap="md">
               <Group>
                 <Badge
-                  color={horse.gender === 'male' ? 'blue' : 'pink'}
+                  color={horse.gender === 'STALLION' || horse.gender === 'GELDING' ? 'blue' : 'pink'}
                   variant="light"
                   size="lg"
-                  leftSection={horse.gender === 'male' ? <IconMars size="0.8rem" /> : <IconVenus size="0.8rem" />}
+                  leftSection={horse.gender === 'STALLION' || horse.gender === 'GELDING' ? <IconMars size="0.8rem" /> : <IconVenus size="0.8rem" />}
                 >
-                  {horse.gender === 'male' ? 'Stallion' : 'Mare'}
+                  {horse.gender === 'STALLION' ? 'Stallion' : horse.gender === 'GELDING' ? 'Gelding' : 'Mare'}
                 </Badge>
-                {horse.isPregnant && (
+                {horse.conceptionDate && (
                   <Badge color="grape" variant="light" size="lg">
                     Pregnant
                   </Badge>
@@ -182,46 +183,36 @@ export function HorseDetails() {
               </Group>
 
               <Grid>
-                {horse.breed && (
-                  <Grid.Col span={6}>
-                    <Text size="sm" c="dimmed">Breed</Text>
-                    <Text>{horse.breed}</Text>
-                  </Grid.Col>
-                )}
-                {horse.color && (
-                  <Grid.Col span={6}>
-                    <Text size="sm" c="dimmed">Color</Text>
-                    <Text>{horse.color}</Text>
-                  </Grid.Col>
-                )}
-                {horse.birthDate && (
-                  <Grid.Col span={6}>
-                    <Text size="sm" c="dimmed">Birth Date</Text>
-                    <Text>{new Date(horse.birthDate).toLocaleDateString()}</Text>
-                  </Grid.Col>
-                )}
-                {horse.height && (
-                  <Grid.Col span={6}>
-                    <Text size="sm" c="dimmed">Height</Text>
-                    <Text>{horse.height} cm</Text>
-                  </Grid.Col>
-                )}
+                <Grid.Col span={6}>
+                  <Text size="sm" c="dimmed">Breed</Text>
+                  <Text>{horse.breed}</Text>
+                </Grid.Col>
+                <Grid.Col span={6}>
+                  <Text size="sm" c="dimmed">Date of Birth</Text>
+                  <Text>{new Date(horse.dateOfBirth).toLocaleDateString()}</Text>
+                </Grid.Col>
                 {horse.weight && (
                   <Grid.Col span={6}>
                     <Text size="sm" c="dimmed">Weight</Text>
                     <Text>{horse.weight} kg</Text>
                   </Grid.Col>
                 )}
-                {horse.motherName && (
+                {horse.age && (
                   <Grid.Col span={6}>
-                    <Text size="sm" c="dimmed">Mother</Text>
-                    <Text>{horse.motherName}</Text>
+                    <Text size="sm" c="dimmed">Age</Text>
+                    <Text>{horse.age}</Text>
                   </Grid.Col>
                 )}
-                {horse.fatherName && (
+                {horse.motherId && (
+                  <Grid.Col span={6}>
+                    <Text size="sm" c="dimmed">Mother</Text>
+                    <Text>{horse.externalMother}</Text>
+                  </Grid.Col>
+                )}
+                {horse.fatherId && (
                   <Grid.Col span={6}>
                     <Text size="sm" c="dimmed">Father</Text>
-                    <Text>{horse.fatherName}</Text>
+                    <Text>{horse.externalFather}</Text>
                   </Grid.Col>
                 )}
               </Grid>

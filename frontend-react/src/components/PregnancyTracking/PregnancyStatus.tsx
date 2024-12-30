@@ -100,7 +100,7 @@ export function PregnancyStatus({ horseId }: PregnancyStatusProps) {
           </Group>
           <Group justify="space-between">
             <Text c="dimmed">Next Milestone:</Text>
-            <Group spacing="xs">
+            <Group gap="xs">
               <Text>{new Date(data.nextMilestone.date).toLocaleDateString()}</Text>
               <Text>-</Text>
               <Text>{data.nextMilestone.event}</Text>

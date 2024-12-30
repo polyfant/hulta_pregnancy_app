@@ -10,18 +10,23 @@ import {
   Stack,
   Group,
   Text,
-  DateInput as DatePickerInput
 } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { IconHorse } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 
 interface HorseInput {
   name: string;
-  gender: 'male' | 'female';
+  gender: 'MARE' | 'STALLION' | 'GELDING';
   breed: string;
   dateOfBirth: Date;
   weight?: number;
+  conceptionDate?: Date;
+  motherId?: number;
+  fatherId?: number;
+  externalMother?: string;
+  externalFather?: string;
 }
 
 export function AddHorse() {
@@ -30,7 +35,7 @@ export function AddHorse() {
 
   const [formData, setFormData] = useState<HorseInput>({
     name: '',
-    gender: 'female',
+    gender: 'MARE',
     breed: '',
     dateOfBirth: new Date(),
     weight: undefined
@@ -85,7 +90,7 @@ export function AddHorse() {
       <Stack gap="lg">
         <Group justify="space-between" mb="md">
           <Title order={2}>
-            <Group spacing="xs">
+            <Group gap="xs">
               <IconHorse size={30} />
               <Text>Add New Horse</Text>
             </Group>
@@ -107,10 +112,11 @@ export function AddHorse() {
               placeholder="Select gender"
               required
               value={formData.gender}
-              onChange={(value) => setFormData({ ...formData, gender: value as 'male' | 'female' })}
+              onChange={(value) => setFormData({ ...formData, gender: value as 'MARE' | 'STALLION' | 'GELDING' })}
               data={[
-                { value: 'female', label: 'Mare' },
-                { value: 'male', label: 'Stallion' }
+                { value: 'MARE', label: 'Mare' },
+                { value: 'STALLION', label: 'Stallion' },
+                { value: 'GELDING', label: 'Gelding' }
               ]}
             />
 
@@ -136,7 +142,10 @@ export function AddHorse() {
               placeholder="Enter weight"
               min={0}
               value={formData.weight}
-              onChange={(value) => setFormData({ ...formData, weight: value || undefined })}
+              onChange={(value) => {
+                const numValue = typeof value === 'string' ? parseFloat(value) : value;
+                setFormData({ ...formData, weight: numValue || undefined });
+              }}
               max={1000}
             />
 

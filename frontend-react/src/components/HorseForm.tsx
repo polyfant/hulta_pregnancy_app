@@ -28,7 +28,10 @@ const validateParentSelection = (availableHorses: Horse[], horseId: number | und
   const parent = availableHorses.find(h => h.id === parentId);
   if (!parent) return { isValid: true };
 
-  const isOffspring = parent.offspring?.some(o => o.id === horseId);
+  // Check if the potential parent is actually an offspring by checking if the horse is its parent
+  const isOffspring = availableHorses.some(h => 
+    h.id === parentId && (h.motherId === horseId || h.fatherId === horseId)
+  );
   if (isOffspring) return { isValid: false, error: 'Cannot select offspring as parent' };
 
   const isCircular = availableHorses.some(h => 
@@ -177,7 +180,10 @@ export function HorseForm({ onSubmit, initialValues }: HorseFormProps) {
         <NumberInput
           label="Weight (kg)"
           value={formData.weight}
-          onChange={(value) => setFormData(prev => ({ ...prev, weight: value }))}
+          onChange={(value) => setFormData(prev => ({ 
+            ...prev, 
+            weight: typeof value === 'string' ? parseFloat(value) || undefined : value 
+          }))}
           min={0}
           max={1000}
         />
