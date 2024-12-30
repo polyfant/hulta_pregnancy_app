@@ -1,9 +1,8 @@
-import { createTheme, rem } from '@mantine/core';
+import { createTheme, rem, MantineTheme } from '@mantine/core';
 
 // Theme inspired by Hulta Equestrian
 export const theme = createTheme({
   primaryColor: 'dark',
-  colorScheme: 'dark',
   colors: {
     // Custom color palette inspired by Hulta's dark theme
     dark: [
@@ -39,6 +38,7 @@ export const theme = createTheme({
       styles: {
         main: {
           background: 'var(--mantine-color-dark-8)',
+          color: 'white',
         },
       },
     },
@@ -46,8 +46,44 @@ export const theme = createTheme({
       styles: {
         root: {
           backgroundColor: 'var(--mantine-color-dark-7)',
+          color: 'white',
         },
       },
+    },
+    Text: {
+      styles: {
+        root: {
+          color: 'white',
+        },
+      },
+    },
+    Title: {
+      styles: {
+        root: {
+          color: 'white',
+        },
+      },
+    },
+    Button: {
+      defaultProps: {
+        color: 'accent',
+      },
+      styles: {
+        root: (theme: MantineTheme) => ({
+          '&[data-variant="filled"]': {
+            backgroundColor: theme.colors.dark[7],
+            color: theme.colors.accent[4],
+          }
+        })
+      }
+    },
+    InputWrapper: {
+      styles: (theme: MantineTheme) => ({
+        required: {
+          color: theme.colors.red[6],
+          marginLeft: '0.2rem',
+        },
+      }),
     },
   },
 

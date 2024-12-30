@@ -1,1 +1,1 @@
-export { FamilyTree } from './FamilyTree';
+export { default as FamilyTree } from './FamilyTree';

@@ -2,7 +2,7 @@
 
 A comprehensive web application for tracking horses, breeding, and health records. This application helps horse owners and breeders manage their horses' information, health records, breeding costs, and provides detailed pregnancy monitoring with stage-specific guidelines.
 
-## Project Status: Private Development
+## Project Status: Active Development
 
 This is a private, closed-source project under active development. All code, designs, and documentation are proprietary and confidential.
 
@@ -10,30 +10,27 @@ This is a private, closed-source project under active development. All code, des
 
 ### Horse Management
 - Add new horses with details (name, breed, gender, birth date)
-- View all horses in a clean, sortable table
-- Edit existing horse information
-- Delete horses from the system
-- Family tree visualization with parent tracking
+- View all horses in a clean, sortable list
+- Track gender-specific information (stallions, mares, geldings)
 - Support for external parent references
+- Dark theme with excellent readability
 
 ### Pregnancy Monitoring
-- Track pregnancy stages (Early, Mid, Late, Pre-Foaling, Foaling)
-- Detailed guidelines for each pregnancy stage
-- Record and monitor pre-foaling signs
-- Track conception dates and calculate due dates
-- Monitor health events throughout pregnancy
-- Nutrition and exercise recommendations by stage
-- Warning signs and health checkpoints
+- Track pregnancy stages (Early, Mid, Late, Due Soon)
+- Calculate and display pregnancy progress
+- Show stage-specific recommendations
+- Record conception date and father information
+- Support for both internal and external fathers
 - Timeline view of pregnancy events
-- Pre-foaling signs tracking
+- Track vet checks and important milestones
+- Warning system for health concerns
 
 ### Breeding Management
-- Record breeding events and outcomes
-- Track breeding costs and expenses
-- Monitor breeding history
-- Manage breeding schedules
-- Parent selection with validation
-- External parent support
+- Record breeding events
+- Track conception dates
+- Manage stallion information
+- Support for external stallion records
+- Validate breeding eligibility
 
 ## Upcoming Features
 
@@ -54,214 +51,56 @@ This is a private, closed-source project under active development. All code, des
 ### Currently Implemented
 - `GET /api/horses` - List all horses
 - `POST /api/horses` - Create a new horse
-- `PUT /api/horses/{id}` - Update a horse
-- `DELETE /api/horses/{id}` - Delete a horse
 - `GET /api/horses/{id}` - Get details of a specific horse
-- `POST /api/horses/{id}/pregnancy/start` - Start pregnancy tracking
+- `GET /api/horses/{id}/pregnancy/status` - Get pregnancy status and stage
 - `POST /api/horses/{id}/pregnancy/events` - Add pregnancy event
-- `GET /api/horses/{id}/pregnancy/status` - Get pregnancy status
-- `GET /api/horses/{id}/pregnancy/guidelines` - Get stage-specific guidelines
-- `POST /api/horses/{id}/pregnancy/pre-foaling-signs` - Record pre-foaling signs
 
 ### Planned Endpoints
-- `GET /api/horses/{id}/family-tree` - Get family tree for a horse
-- `GET /api/horses/{id}/health` - Get health summary
+- `GET /api/horses/{id}/family-tree` - Get family tree data
+- `GET /api/horses/{id}/health` - Get health records
 - `POST /api/horses/{id}/health-records` - Add health record
-- `GET /api/horses/{id}/breeding-costs` - View breeding costs
+- `GET /api/horses/stallions` - List available stallions
 
 ## Tech Stack
 
 ### Backend
 - Go 1.21+
-- Gin web framework for HTTP routing
-- SQLite3 for data storage
-- Zerolog for structured logging
-- Clean architecture with service-based design
+- Gin web framework
+- SQLite3 database
+- Clean architecture
 
 ### Frontend
-- React 18
-- TypeScript for type safety
-- Mantine v7 for UI components
-- TanStack Query for API integration
-- Vite for building and development
+- React 18 with TypeScript
+- Mantine v7 UI framework
+- TanStack Query for data fetching
+- React Router v6
 - Day.js for date handling
-- React Router v6 for routing
+- Dark theme optimized for readability
 
-## Security Features
-
-### Data Protection
-- Secure local storage with SQLite
-- Planned encryption at rest
-- Future user authentication system
-- Role-based access control (planned)
-
-### API Security
-- Input validation and sanitization
-- Error handling with secure error messages
-- Rate limiting (planned)
-- JWT authentication (planned)
-
-## Development Progress
-
-### Completed
-- Core horse management features
-- Pregnancy tracking system
-- Family tree visualization
-- Pre-foaling signs monitoring
-- Migration to Mantine v7
-- TypeScript type safety improvements
-- Component architecture refinement
-
-### In Progress
-- User authentication system
-- Advanced breeding cost tracking
-- Health record management
-- Data encryption implementation
-
-### Planned
-- Multi-user support
-- Cloud synchronization
-- Mobile application
-- Advanced reporting features
-
-## Project Structure
-```
-horse_tracking_go/
-├── cmd/                 # Application entry points
-│   └── server/         # Main server application
-├── internal/           # Internal packages
-│   ├── api/           # API handlers and routing
-│   ├── database/      # Database implementation (SQLite)
-│   ├── models/        # Data models and types
-│   └── service/       # Business logic services
-│       ├── pregnancy/ # Pregnancy tracking service
-│       └── breeding/  # Breeding management service
-├── frontend-react/    # React frontend application
-│   ├── src/          # Source code
-│   │   ├── components/   # React components
-│   │   ├── types/       # TypeScript types
-│   │   ├── api/         # API integration
-│   │   └── utils/       # Utility functions
-└── data/             # Data storage directory
-```
-
-## Future Database Architecture
-
-### Overview
-The application will implement a hybrid database approach, optimizing for both offline capability and data safety:
-
-#### Local Storage (Offline-First)
-- Individual SQLite database for each user
-- Enables full offline functionality
-- Fast local operations
-- Uses LiteStream for continuous SQLite replication
-
-#### Cloud Backend
-- PostgreSQL as the central database
-  - Robust replication capabilities
-  - Complex query support
-  - Built-in backup solutions
-
-#### Sync Strategy
-- Timestamp-based change tracking
-- Automatic conflict resolution
-- Offline change queuing
-- Real-time updates via WebSocket
-- Automatic sync when online
-
-#### Docker Deployment
-```yaml
-services:
-  backend:
-    build: ./backend
-    depends_on:
-      - postgres
-  frontend:
-    build: ./frontend-react
-    depends_on:
-      - backend
-  postgres:
-    image: postgres:latest
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-```
-
-#### Data Safety Measures
-- Data change versioning
-- Regular backups to object storage
-- Multiple regional replicas
-- Automated backup scheduling
-
-#### High-Level Architecture
-```
-User Device
-├── SQLite DB (Local)
-├── LiteStream (Replication)
-└── Sync Service
-     │
-     ▼
-Load Balancer
-     │
-     ▼
-Backend (Go)
-├── API Server
-├── Sync Manager
-└── Database Gateway
-     │
-     ▼
-PostgreSQL Cluster
-├── Primary DB
-└── Read Replicas
-```
-
-### Implementation Phases
-1. Local SQLite + LiteStream setup
-2. PostgreSQL deployment
-3. Basic sync implementation
-4. Replication and backup systems
-5. Scaling optimizations
-
-### Cloud Hosting
-- Initial deployment on DigitalOcean/Linode
-- Managed database services
-- S3-compatible object storage for backups
-- Multi-region capability
-
-## Getting Started
+## Development Setup
 
 ### Prerequisites
-1. Go 1.21 or later
-2. Node.js 18+ and npm
-3. Git for version control
-4. SQLite3
+- Node.js 18+
+- Go 1.21+
+- Git
 
-### Installation & Development
-1. Clone the repository (requires authorization)
-2. Install backend dependencies:
-   ```bash
-   go mod download
-   ```
-
-3. Start the backend:
-   ```bash
-   go run cmd/server/main.go
-   ```
-
-4. Install frontend dependencies:
+### Getting Started
+1. Clone the repository
+2. Install frontend dependencies:
    ```bash
    cd frontend-react
    npm install
    ```
-
-5. Start the frontend development server:
+3. Start the frontend development server:
    ```bash
    npm run dev
+   ```
+4. In a new terminal, start the backend server:
+   ```bash
+   cd ../backend
+   go run main.go
    ```
 
 ## Contributing
 
-This is a private project. Contributing guidelines are available to authorized team members only.
-
-## License
-
-This project is proprietary and confidential. All rights reserved.
+This is a private project. Please contact the project maintainers for contribution guidelines.

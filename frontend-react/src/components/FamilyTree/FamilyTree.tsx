@@ -9,7 +9,8 @@ import {
   Button,
   ActionIcon,
   Badge,
-  Tooltip
+  Tooltip,
+  LoadingOverlay
 } from '@mantine/core';
 import {
   IconChevronRight,
@@ -18,27 +19,42 @@ import {
   IconMars,
   IconVenus
 } from '@tabler/icons-react';
-import { Horse } from '../../types/horse';
+import { useQuery } from '@tanstack/react-query';
 
-interface FamilyTreeHorse extends Horse {
-  father?: FamilyTreeHorse;
-  mother?: FamilyTreeHorse;
-}
-
-interface FamilyTreeProps {
-  horse: FamilyTreeHorse;
+interface Horse {
+  id: number;
+  name: string;
+  breed?: string;
+  gender: 'MARE' | 'STALLION' | 'GELDING';
+  dateOfBirth: string;
+  weight?: number;
+  motherId?: number;
+  fatherId?: number;
+  externalMother?: string;
+  externalFather?: string;
 }
 
 interface TreeNodeProps {
-  horse: FamilyTreeHorse;
+  horse: Horse;
   level: number;
   maxLevel?: number;
 }
 
-function TreeNode({ horse, level, maxLevel = 3 }: TreeNodeProps) {
+const TreeNode = ({ horse, level, maxLevel = 3 }: TreeNodeProps) => {
   const [expanded, setExpanded] = useState(level < 2);
   const hasParents = horse.fatherId || horse.motherId || horse.externalFather || horse.externalMother;
   const canExpand = level < maxLevel && hasParents;
+
+  const { data: parents, isLoading } = useQuery({
+    queryKey: ['horseParents', horse.id],
+    queryFn: async () => {
+      if (!hasParents) return null;
+      const response = await fetch(`/api/horses/${horse.id}/family`);
+      if (!response.ok) throw new Error('Failed to fetch family tree');
+      return response.json();
+    },
+    enabled: expanded && hasParents ? true : false,
+  });
 
   const handleToggle = () => {
     if (canExpand) {
@@ -48,99 +64,98 @@ function TreeNode({ horse, level, maxLevel = 3 }: TreeNodeProps) {
 
   return (
     <div style={{ marginLeft: level > 0 ? 40 : 0 }}>
-      <Card
-        withBorder
-        shadow="sm"
-        padding="sm"
-        radius="md"
-        style={{ marginBottom: 8 }}
-      >
+      <Card withBorder shadow="sm" mt="xs">
         <Group justify="space-between">
           <Group>
             {canExpand && (
               <ActionIcon
-                variant="subtle"
                 onClick={handleToggle}
-                aria-label={expanded ? 'Collapse' : 'Expand'}
+                variant="subtle"
+                loading={isLoading}
               >
-                {expanded ? <IconChevronDown size="1rem" /> : <IconChevronRight size="1rem" />}
+                {expanded ? (
+                  <IconChevronDown size="1rem" />
+                ) : (
+                  <IconChevronRight size="1rem" />
+                )}
               </ActionIcon>
             )}
-            <IconHorse
-              size="1.2rem"
-              style={{ color: horse.gender === 'STALLION' ? 'var(--mantine-color-blue-6)' : 'var(--mantine-color-pink-6)' }}
-            />
-            <Stack gap={0}>
-              <Group>
-                {horse.gender === 'STALLION' && <IconMars size={16} />}
-                {horse.gender === 'MARE' && <IconVenus size={16} />}
-                <Text fw={500}>{horse.name}</Text>
-              </Group>
-              <Group gap="xs">
-                {horse.breed && (
-                  <Badge size="sm" variant="light">
-                    {horse.breed}
-                  </Badge>
-                )}
-                <Badge
-                  size="sm"
-                  variant="light"
-                  color={horse.gender === 'STALLION' || horse.gender === 'GELDING' ? 'blue' : 'pink'}
-                >
-                  {horse.gender === 'STALLION' || horse.gender === 'GELDING' ? <IconMars size="0.8rem" /> : <IconVenus size="0.8rem" />}
-                </Badge>
-              </Group>
-            </Stack>
+            <Group>
+              <IconHorse size="1rem" />
+              <Text fw={500}>{horse.name}</Text>
+            </Group>
+            <Badge
+              variant="light"
+              color={horse.gender === 'STALLION' ? 'blue' : 'pink'}
+              leftSection={
+                horse.gender === 'STALLION' ? (
+                  <IconMars size="0.8rem" />
+                ) : (
+                  <IconVenus size="0.8rem" />
+                )
+              }
+            >
+              {horse.gender}
+            </Badge>
           </Group>
-          {horse.dateOfBirth && (
-            <Tooltip label="Birth Date">
-              <Text size="sm" c="dimmed">
-                {new Date(horse.dateOfBirth).getFullYear()}
-              </Text>
-            </Tooltip>
-          )}
         </Group>
-      </Card>
 
-      {expanded && (
-        <div>
-          {(horse.mother || horse.externalMother) && (
-            <TreeNode
-              horse={horse.mother || { 
-                id: -1,
-                name: horse.externalMother || 'Unknown Mother',
-                gender: 'MARE',
-                breed: 'External',
-                dateOfBirth: '',
-              }}
-              level={level + 1}
-              maxLevel={maxLevel}
-            />
-          )}
-          {(horse.father || horse.externalFather) && (
-            <TreeNode
-              horse={horse.father || { 
-                id: -1,
-                name: horse.externalFather || 'Unknown Father',
-                gender: 'STALLION',
-                breed: 'External',
-                dateOfBirth: '',
-              }}
-              level={level + 1}
-              maxLevel={maxLevel}
-            />
-          )}
-        </div>
-      )}
+        {expanded && hasParents && (
+          <div style={{ position: 'relative', minHeight: isLoading ? '100px' : 'auto' }}>
+            <LoadingOverlay visible={isLoading} />
+            {parents && (
+              <Stack mt="sm">
+                {parents.father && (
+                  <TreeNode
+                    horse={parents.father}
+                    level={level + 1}
+                    maxLevel={maxLevel}
+                  />
+                )}
+                {parents.mother && (
+                  <TreeNode
+                    horse={parents.mother}
+                    level={level + 1}
+                    maxLevel={maxLevel}
+                  />
+                )}
+              </Stack>
+            )}
+          </div>
+        )}
+      </Card>
     </div>
   );
+};
+
+interface FamilyTreeProps {
+  horseId: number;
 }
 
-export function FamilyTree({ horse }: FamilyTreeProps) {
+const FamilyTree = ({ horseId }: FamilyTreeProps) => {
+  const { data: horse, isLoading, error } = useQuery({
+    queryKey: ['horse', horseId],
+    queryFn: async () => {
+      const response = await fetch(`/api/horses/${horseId}`);
+      if (!response.ok) throw new Error('Failed to fetch horse details');
+      return response.json();
+    }
+  });
+
+  if (isLoading) {
+    return <LoadingOverlay visible />;
+  }
+
+  if (error || !horse) {
+    return <Text c="red">Error loading family tree</Text>;
+  }
+
   return (
     <Paper p="md">
-      <Title order={2} mb="md">Family Tree</Title>
+      <Title order={3} mb="md">Family Tree</Title>
       <TreeNode horse={horse} level={0} />
     </Paper>
   );
-}
+};
+
+export default FamilyTree;

@@ -1,4 +1,5 @@
-import { Modal, Stack, Button, Text, Select, Textarea, DatePickerInput } from '@mantine/core';
+import { Modal, Stack, Button, Text, Select, Textarea } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
 import { useState } from 'react';
 
 interface EndPregnancyDialogProps {

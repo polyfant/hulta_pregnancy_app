@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   TextInput,
@@ -10,6 +10,7 @@ import {
   Stack,
   Group,
   Text,
+  Switch,
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -29,7 +30,7 @@ interface HorseInput {
   externalFather?: string;
 }
 
-export function AddHorse() {
+const AddHorse = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -38,36 +39,55 @@ export function AddHorse() {
     gender: 'MARE',
     breed: '',
     dateOfBirth: new Date(),
-    weight: undefined
+    weight: undefined,
+    conceptionDate: undefined,
+    fatherId: undefined,
+    externalFather: ''
   });
 
+  const [useExternalFather, setUseExternalFather] = useState(false);
+  const [availableStallions, setAvailableStallions] = useState<Array<{ value: string, label: string }>>([]);
+
+  useEffect(() => {
+    const fetchStallions = async () => {
+      try {
+        const response = await fetch('/api/horses');
+        if (!response.ok) throw new Error('Failed to fetch horses');
+        const horses = await response.json();
+        const stallions = horses
+          .filter((horse: any) => horse.gender === 'STALLION')
+          .map((horse: any) => ({
+            value: horse.id.toString(),
+            label: horse.name
+          }));
+        setAvailableStallions(stallions);
+      } catch (error) {
+        console.error('Error fetching stallions:', error);
+      }
+    };
+    fetchStallions();
+  }, []);
+
   const mutation = useMutation({
-    mutationFn: async (newHorse: HorseInput) => {
+    mutationFn: async (data: HorseInput) => {
       const response = await fetch('/api/horses', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...newHorse,
-          dateOfBirth: newHorse.dateOfBirth.toISOString(),
-        }),
+        body: JSON.stringify(data),
       });
-      
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create horse');
+        throw new Error('Failed to add horse');
       }
-      
       return response.json();
     },
     onSuccess: () => {
-      // Invalidate the horses query to refetch the list
       queryClient.invalidateQueries({ queryKey: ['horses'] });
       notifications.show({
         title: 'Success',
         message: 'Horse added successfully',
-        color: 'green'
+        color: 'green',
       });
       navigate('/');
     },
@@ -149,6 +169,52 @@ export function AddHorse() {
               max={1000}
             />
 
+            {formData.gender === 'MARE' && (
+              <>
+                <DatePickerInput
+                  label="Conception Date"
+                  placeholder="Select date if pregnant"
+                  value={formData.conceptionDate}
+                  onChange={(date) => setFormData({ ...formData, conceptionDate: date || undefined })}
+                  maxDate={new Date()}
+                />
+
+                <Switch
+                  label="External Father"
+                  checked={useExternalFather}
+                  onChange={(event) => {
+                    setUseExternalFather(event.currentTarget.checked);
+                    setFormData({
+                      ...formData,
+                      fatherId: undefined,
+                      externalFather: ''
+                    });
+                  }}
+                />
+
+                {useExternalFather ? (
+                  <TextInput
+                    label="Father's Name (External)"
+                    placeholder="Enter external father's name"
+                    value={formData.externalFather}
+                    onChange={(e) => setFormData({ ...formData, externalFather: e.target.value })}
+                  />
+                ) : (
+                  <Select
+                    label="Father"
+                    placeholder="Select father"
+                    data={availableStallions}
+                    value={formData.fatherId?.toString()}
+                    onChange={(value) => setFormData({ 
+                      ...formData, 
+                      fatherId: value ? parseInt(value) : undefined 
+                    })}
+                    clearable
+                  />
+                )}
+              </>
+            )}
+
             <Group justify="flex-end" mt="xl">
               <Button type="submit" loading={mutation.isPending}>
                 Add Horse
@@ -160,3 +226,5 @@ export function AddHorse() {
     </Card>
   );
 }
+
+export default AddHorse;

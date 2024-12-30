@@ -6,6 +6,7 @@ export interface Horse {
     dateOfBirth: string;
     weight?: number;
     age?: string;
+    isPregnant?: boolean;
     conceptionDate?: string;
     motherId?: number;
     fatherId?: number;
@@ -21,6 +22,7 @@ export interface CreateHorseInput {
     gender: 'MARE' | 'STALLION' | 'GELDING';
     dateOfBirth: string;
     weight?: number;
+    isPregnant?: boolean;
     conceptionDate?: string;
     motherId?: number;
     fatherId?: number;

@@ -1,149 +1,217 @@
-import { useQuery } from '@tanstack/react-query';
 import {
-  Card,
-  Text,
-  Group,
-  Stack,
-  Timeline,
-  Badge,
+  Paper,
   Title,
+  Text,
+  Timeline,
+  List,
+  ThemeIcon,
+  Progress,
+  Card,
+  Group,
+  Badge,
+  Accordion,
+  Stack,
   LoadingOverlay
 } from '@mantine/core';
 import {
-  IconCalendarEvent,
-  IconStethoscope,
+  IconCalendarTime,
   IconBabyCarriage,
-  IconAlertTriangle
+  IconStethoscope,
+  IconVaccine,
+  IconAlarm,
+  IconInfoCircle,
+  IconHeartbeat
 } from '@tabler/icons-react';
+import { useQuery } from '@tanstack/react-query';
+
+interface Horse {
+  id: number;
+  name: string;
+  conceptionDate?: string;
+}
 
 interface PregnancyStatusProps {
   horseId: number;
 }
 
-interface PregnancyStatus {
-  currentStage: string;
-  nextMilestone: {
-    date: string;
-    event: string;
-  };
-  recentEvents: Array<{
-    date: string;
-    event: string;
-    type: 'milestone' | 'checkup' | 'warning';
-  }>;
-  upcomingEvents: Array<{
-    date: string;
-    event: string;
-    type: 'milestone' | 'checkup' | 'warning';
-  }>;
-}
+const PREGNANCY_DURATION = 340; // Average horse pregnancy duration in days
 
-export function PregnancyStatus({ horseId }: PregnancyStatusProps) {
-  const { data, isLoading } = useQuery<PregnancyStatus>({
-    queryKey: ['pregnancy-status', horseId],
+const PregnancyStatus = ({ horseId }: PregnancyStatusProps) => {
+  const { data: horse, isLoading } = useQuery<Horse>({
+    queryKey: ['horse', horseId],
     queryFn: async () => {
-      const response = await fetch(`/api/horses/${horseId}/pregnancy/status`);
-      if (!response.ok) throw new Error('Failed to fetch pregnancy status');
+      const response = await fetch(`/api/horses/${horseId}`);
+      if (!response.ok) throw new Error('Failed to fetch horse details');
       return response.json();
     }
   });
 
-  const getEventIcon = (type: string) => {
-    switch (type) {
-      case 'milestone':
-        return <IconCalendarEvent size="1.2rem" />;
-      case 'checkup':
-        return <IconStethoscope size="1.2rem" />;
-      case 'warning':
-        return <IconAlertTriangle size="1.2rem" />;
-      default:
-        return <IconBabyCarriage size="1.2rem" />;
-    }
-  };
-
-  const getEventColor = (type: string) => {
-    switch (type) {
-      case 'milestone':
-        return 'blue';
-      case 'checkup':
-        return 'green';
-      case 'warning':
-        return 'yellow';
-      default:
-        return 'gray';
-    }
-  };
-
   if (isLoading) {
     return (
-      <Card withBorder radius="md" pos="relative" h={400}>
+      <Paper p="md" pos="relative" h={200}>
         <LoadingOverlay visible />
-      </Card>
+      </Paper>
     );
   }
 
-  if (!data) {
+  if (!horse?.conceptionDate) {
     return (
-      <Card withBorder radius="md">
-        <Text c="dimmed">No pregnancy status available</Text>
-      </Card>
+      <Paper p="md">
+        <Text>No pregnancy information available for {horse?.name}.</Text>
+      </Paper>
     );
   }
+
+  const startDate = new Date(horse.conceptionDate);
+  const today = new Date();
+  const daysPregnant = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+  const dueDate = new Date(startDate.getTime() + PREGNANCY_DURATION * 24 * 60 * 60 * 1000);
+  const progressPercentage = Math.min(100, Math.round((daysPregnant / PREGNANCY_DURATION) * 100));
+  
+  const trimester = Math.floor(daysPregnant / (PREGNANCY_DURATION / 3)) + 1;
+  
+  const getPregnancyStage = () => {
+    if (daysPregnant < 114) return { stage: 'Early Stage', color: 'blue' };
+    if (daysPregnant < 226) return { stage: 'Mid Stage', color: 'yellow' };
+    if (daysPregnant < 310) return { stage: 'Late Stage', color: 'orange' };
+    return { stage: 'Due Soon', color: 'red' };
+  };
+
+  const { stage, color } = getPregnancyStage();
+
+  const getRecommendedActions = () => {
+    if (daysPregnant < 114) {
+      return [
+        'Schedule initial vet checkup',
+        'Maintain regular exercise routine',
+        'Monitor appetite and weight',
+        'Consider vaccinations if needed'
+      ];
+    }
+    if (daysPregnant < 226) {
+      return [
+        'Schedule mid-term ultrasound',
+        'Adjust feed for increased nutritional needs',
+        'Continue moderate exercise',
+        'Monitor for any unusual behavior'
+      ];
+    }
+    if (daysPregnant < 310) {
+      return [
+        'Prepare foaling area',
+        'Monitor udder development',
+        'Reduce exercise intensity',
+        'Schedule pre-foaling checkup'
+      ];
+    }
+    return [
+      'Monitor for signs of impending labor',
+      'Have vet on standby',
+      'Check mare frequently',
+      'Ensure foaling kit is ready'
+    ];
+  };
 
   return (
     <Stack gap="lg">
-      <Card withBorder radius="md">
-        <Stack gap="xs">
-          <Group justify="space-between">
-            <Text c="dimmed">Current Stage:</Text>
-            <Badge size="lg">{data.currentStage}</Badge>
-          </Group>
-          <Group justify="space-between">
-            <Text c="dimmed">Next Milestone:</Text>
-            <Group gap="xs">
-              <Text>{new Date(data.nextMilestone.date).toLocaleDateString()}</Text>
-              <Text>-</Text>
-              <Text>{data.nextMilestone.event}</Text>
-            </Group>
-          </Group>
-        </Stack>
+      <Card withBorder>
+        <Group justify="space-between" mb="md">
+          <Title order={3}>Pregnancy Progress</Title>
+          <Badge size="lg" variant="filled" color={color}>
+            {stage}
+          </Badge>
+        </Group>
+        
+        <Progress 
+          value={progressPercentage} 
+          size="xl" 
+          color={color}
+          mb="sm"
+        />
+        
+        <Group gap="lg">
+          <div>
+            <Text size="sm" c="dimmed">Days Pregnant</Text>
+            <Text fw={500}>{daysPregnant} days</Text>
+          </div>
+          <div>
+            <Text size="sm" c="dimmed">Due Date</Text>
+            <Text fw={500}>{dueDate.toLocaleDateString()}</Text>
+          </div>
+          <div>
+            <Text size="sm" c="dimmed">Trimester</Text>
+            <Text fw={500}>{trimester}</Text>
+          </div>
+        </Group>
       </Card>
 
-      <Card withBorder radius="md">
-        <Title order={3} mb="md">Timeline</Title>
-        <Timeline active={data.recentEvents.length - 1} bulletSize={24}>
-          {data.recentEvents.map((event, index) => (
-            <Timeline.Item
-              key={index}
-              bullet={getEventIcon(event.type)}
-              title={event.event}
-              color={getEventColor(event.type)}
-            >
-              <Text size="sm" mt={4}>
-                {new Date(event.date).toLocaleDateString()}
-              </Text>
-            </Timeline.Item>
+      <Card withBorder>
+        <Title order={4} mb="md">Recommended Actions</Title>
+        <List spacing="xs">
+          {getRecommendedActions().map((action, index) => (
+            <List.Item key={index}>{action}</List.Item>
           ))}
-        </Timeline>
+        </List>
       </Card>
 
-      <Card withBorder radius="md">
-        <Title order={3} mb="md">Upcoming Events</Title>
-        <Timeline bulletSize={24}>
-          {data.upcomingEvents.map((event, index) => (
-            <Timeline.Item
-              key={index}
-              bullet={getEventIcon(event.type)}
-              title={event.event}
-              color={getEventColor(event.type)}
-            >
-              <Text size="sm" mt={4}>
-                {new Date(event.date).toLocaleDateString()}
-              </Text>
-            </Timeline.Item>
-          ))}
-        </Timeline>
-      </Card>
+      <Accordion variant="contained">
+        <Accordion.Item value="currentStage">
+          <Accordion.Control icon={<IconInfoCircle size="1rem" />}>
+            Current Stage Information
+          </Accordion.Control>
+          <Accordion.Panel>
+            <Timeline active={Math.min(3, trimester)} bulletSize={24}>
+              <Timeline.Item bullet={<IconCalendarTime size={12} />} title="First Trimester (0-114 days)">
+                <Text size="sm">Early development stage. Regular check-ups important.</Text>
+                <List size="sm" mt="xs">
+                  <List.Item>Schedule regular vet check-ups</List.Item>
+                  <List.Item>Maintain normal exercise routine</List.Item>
+                  <List.Item>Monitor appetite and weight</List.Item>
+                </List>
+              </Timeline.Item>
+
+              <Timeline.Item bullet={<IconStethoscope size={12} />} title="Second Trimester (115-225 days)">
+                <Text size="sm">Growth and development phase.</Text>
+                <List size="sm" mt="xs">
+                  <List.Item>Continue moderate exercise</List.Item>
+                  <List.Item>Adjust feed as needed</List.Item>
+                  <List.Item>Monitor for any complications</List.Item>
+                </List>
+              </Timeline.Item>
+
+              <Timeline.Item bullet={<IconBabyCarriage size={12} />} title="Third Trimester (226-340 days)">
+                <Text size="sm">Final preparation stage.</Text>
+                <List size="sm" mt="xs">
+                  <List.Item>Prepare foaling area</List.Item>
+                  <List.Item>Reduce exercise intensity</List.Item>
+                  <List.Item>Monitor closely for signs of labor</List.Item>
+                </List>
+              </Timeline.Item>
+            </Timeline>
+          </Accordion.Panel>
+        </Accordion.Item>
+
+        <Accordion.Item value="care">
+          <Accordion.Control icon={<IconHeartbeat size="1rem" />}>
+            Care Tips
+          </Accordion.Control>
+          <Accordion.Panel>
+            <List spacing="sm">
+              <List.Item icon={<ThemeIcon color="blue" size={24}><IconStethoscope size={16} /></ThemeIcon>}>
+                Schedule regular veterinary check-ups
+              </List.Item>
+              <List.Item icon={<ThemeIcon color="green" size={24}><IconVaccine size={16} /></ThemeIcon>}>
+                Keep vaccinations up to date as recommended by your vet
+              </List.Item>
+              <List.Item icon={<ThemeIcon color="yellow" size={24}><IconAlarm size={16} /></ThemeIcon>}>
+                Watch for warning signs: decreased appetite, fever, discharge
+              </List.Item>
+            </List>
+          </Accordion.Panel>
+        </Accordion.Item>
+      </Accordion>
     </Stack>
   );
-}
+};
+
+export default PregnancyStatus;

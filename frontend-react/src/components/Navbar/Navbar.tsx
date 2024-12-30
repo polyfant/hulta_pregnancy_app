@@ -1,9 +1,9 @@
 import { Group, Title, Button, Image } from '@mantine/core';
 import { Link, useLocation } from 'react-router-dom';
-import { IconPlus, IconHorse } from '@tabler/icons-react';
+import { IconHorse } from '@tabler/icons-react';
 import logo from '../../assets/he_logga_stor.png';
 
-export function Navbar() {
+const Navbar = () => {
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
 
@@ -28,17 +28,9 @@ export function Navbar() {
         >
           Horses
         </Button>
-
-        <Button
-          component={Link}
-          to="/add-horse"
-          variant={isActive('/add-horse') ? 'filled' : 'light'}
-          color="green"
-          leftSection={<IconPlus size="1rem" />}
-        >
-          Add Horse
-        </Button>
       </Group>
     </Group>
   );
-}
+};
+
+export default Navbar;
