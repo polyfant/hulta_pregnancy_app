@@ -5,7 +5,7 @@ import {
   Badge,
   Stack
 } from '@mantine/core';
-import { IconMars, IconVenus } from '@tabler/icons-react';
+import { MdMale, MdFemale } from 'react-icons/md';
 import { Horse } from '../types/horse';
 
 interface HorsePreviewCardProps {
@@ -30,9 +30,9 @@ export function HorsePreviewCard({ horse, externalName, role }: HorsePreviewCard
       <Stack gap="xs">
         <Group>
           {gender === 'MARE' ? (
-            <IconVenus size="1.2rem" color="var(--mantine-color-pink-6)" />
+            <MdFemale size="1.2rem" color="var(--mantine-color-pink-6)" />
           ) : (
-            <IconMars size="1.2rem" color="var(--mantine-color-blue-6)" />
+            <MdMale size="1.2rem" color="var(--mantine-color-blue-6)" />
           )}
           <Text fw={500}>
             {isExternal ? externalName : horse?.name}

@@ -1,3 +1,6 @@
+import { FiPlus } from 'react-icons/md';
+import { FiPlus, FiSearch, FiEdit, FiTrash2 } from 'react-icons/fi';
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
@@ -12,13 +15,7 @@ import {
   Grid,
   LoadingOverlay
 } from '@mantine/core';
-import {
-  IconBabyCarriage,
-  IconPlus,
-  IconX,
-  IconCalendarEvent,
-  IconAlertTriangle
-} from '@tabler/icons-react';
+
 import { notifications } from '@mantine/notifications';
 import { Horse } from '../../types/horse';
 import { PregnancyStatus, PregnancyEvent } from '../../types/pregnancy';
@@ -36,7 +33,7 @@ const STAGES = {
   FOALING: { label: 'Foaling', progress: 100 }
 };
 
-export function PregnancyTracking({}: PregnancyTrackingProps) {
+export default function PregnancyTracking({}: PregnancyTrackingProps) {
   const { id } = useParams();
   const [startDialogOpened, setStartDialogOpen] = useState(false);
   const [endDialogOpened, setEndDialogOpen] = useState(false);
@@ -123,7 +120,7 @@ export function PregnancyTracking({}: PregnancyTrackingProps) {
             ) : (
               <Button
                 color="blue"
-                leftIcon={<IconPlus />}
+                leftIcon={<FiPlus />}
                 onClick={() => setStartDialogOpen(true)}
               >
                 Start Pregnancy
@@ -180,3 +177,4 @@ export function PregnancyTracking({}: PregnancyTrackingProps) {
     </Stack>
   );
 }
+

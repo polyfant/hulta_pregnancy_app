@@ -12,8 +12,9 @@ import {
   TextInput,
   Textarea
 } from '@mantine/core';
-import { IconPlus } from '@tabler/icons-react';
+
 import { notifications } from '@mantine/notifications';
+import { FiPlus, FiSearch, FiEdit, FiTrash2 } from '@/utils/icons';
 
 interface PreFoalingSignsProps {
   horseId: string;
@@ -26,7 +27,7 @@ interface PreFoalingSign {
   notes?: string;
 }
 
-export function PreFoalingSigns({ horseId }: PreFoalingSignsProps) {
+export default function PreFoalingSigns({ horseId }: PreFoalingSignsProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newSign, setNewSign] = useState<Partial<PreFoalingSign>>({});
   const queryClient = useQueryClient();
@@ -80,7 +81,7 @@ export function PreFoalingSigns({ horseId }: PreFoalingSignsProps) {
         <Title order={3}>Pre-Foaling Signs</Title>
         <Button
           onClick={() => setIsModalOpen(true)}
-          leftSection={<IconPlus size="1rem" />}
+          leftSection={<FiPlus size="1rem" />}
           variant="light"
         >
           Add Sign

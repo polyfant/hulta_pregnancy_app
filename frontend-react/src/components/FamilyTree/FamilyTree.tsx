@@ -1,24 +1,29 @@
-import { useState } from 'react';
-import {
+import React, { useState } from 'react';
+import { 
+  Text, 
+  Stack, 
+  Group, 
+  Button, 
+  Tooltip, 
+  ActionIcon,
   Paper,
   Title,
-  Text,
   Card,
-  Group,
-  Stack,
-  Button,
-  ActionIcon,
   Badge,
-  Tooltip,
   LoadingOverlay
 } from '@mantine/core';
-import {
-  IconChevronRight,
-  IconChevronDown,
-  IconHorse,
-  IconMars,
-  IconVenus
-} from '@tabler/icons-react';
+import { 
+  MdChevronDown, 
+  MdChevronRight, 
+  FiPlus, 
+  FiSearch, 
+  FiEdit, 
+  FiTrash2,
+  MdPets,
+  MdMale,
+  MdFemale
+} from '@/utils/icons';
+
 import { useQuery } from '@tanstack/react-query';
 
 interface Horse {
@@ -74,14 +79,14 @@ const TreeNode = ({ horse, level, maxLevel = 3 }: TreeNodeProps) => {
                 loading={isLoading}
               >
                 {expanded ? (
-                  <IconChevronDown size="1rem" />
+                  <MdChevronDown size="1rem" />
                 ) : (
-                  <IconChevronRight size="1rem" />
+                  <MdChevronRight size="1rem" />
                 )}
               </ActionIcon>
             )}
             <Group>
-              <IconHorse size="1rem" />
+              <MdPets size="1rem" />
               <Text fw={500}>{horse.name}</Text>
             </Group>
             <Badge
@@ -89,9 +94,9 @@ const TreeNode = ({ horse, level, maxLevel = 3 }: TreeNodeProps) => {
               color={horse.gender === 'STALLION' ? 'blue' : 'pink'}
               leftSection={
                 horse.gender === 'STALLION' ? (
-                  <IconMars size="0.8rem" />
+                  <MdMale size="0.8rem" />
                 ) : (
-                  <IconVenus size="0.8rem" />
+                  <MdFemale size="0.8rem" />
                 )
               }
             >

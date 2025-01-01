@@ -279,36 +279,29 @@ export function HorseForm({ onSubmit, initialValues }: HorseFormProps) {
           <Box>
             <Text fw={500} size="sm" mb="xs">Pregnancy Information</Text>
             <Stack gap="md">
-              <Group align="center" gap="xl">
-                <Switch
-                  label="Mare is Pregnant"
-                  description="Toggle pregnancy status"
-                  size="md"
-                  labelPosition="left"
-                  styles={(theme) => ({
-                    root: {
-                      width: '100%',
-                    },
-                    body: {
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      width: '100%',
-                    },
-                    labelWrapper: {
-                      marginRight: 'auto',
-                    },
-                  })}
-                  checked={formData.isPregnant}
-                  onChange={(event) => {
-                    handleInputChange('isPregnant', event.currentTarget.checked);
-                    if (!event.currentTarget.checked) {
-                      handleInputChange('conceptionDate', undefined);
-                    }
-                  }}
-                />
-              </Group>
-
+              <Switch
+                label="Mare is Pregnant"
+                description="Toggle pregnancy status"
+                size="md"
+                labelPosition="left"
+                styles={(theme) => ({
+                  root: {
+                    width: '100%'
+                  },
+                  body: {
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    width: '100%'
+                  }
+                })}
+                checked={formData.isPregnant}
+                onChange={(event) => {
+                  handleInputChange('isPregnant', event.currentTarget.checked);
+                  if (!event.currentTarget.checked) {
+                    handleInputChange('conceptionDate', undefined);
+                  }
+                }}
+              />
               {formData.isPregnant && (
                 <DatePickerInput
                   label="Conception Date"
@@ -332,105 +325,95 @@ export function HorseForm({ onSubmit, initialValues }: HorseFormProps) {
         )}
 
         <Box>
-          <Text fw={500} size="sm" mb="md">Parent Information</Text>
-          <Stack gap="xl">
-            <Box>
-              <Group justify="apart" mb="md">
-                <Group gap="xl">
-                  <Text size="sm" fw={500}>Mother</Text>
-                  <Switch
-                    label="External Mother"
-                    labelPosition="left"
-                    size="md"
-                    styles={(theme) => ({
-                      root: {
-                        display: 'flex',
-                        alignItems: 'center',
-                      },
-                      label: {
-                        paddingRight: '1rem',
-                      },
-                    })}
-                    checked={useExternalMother}
-                    onChange={(e) => {
-                      setUseExternalMother(e.currentTarget.checked);
-                      if (e.currentTarget.checked) {
-                        handleInputChange('motherId', undefined);
-                      } else {
-                        handleInputChange('externalMother', '');
-                      }
-                    }}
-                  />
-                </Group>
-              </Group>
-              {useExternalMother ? (
-                <TextInput
-                  placeholder="Enter external mother's name"
-                  value={formData.externalMother || ''}
-                  onChange={(e) => handleInputChange('externalMother', e.target.value)}
-                />
-              ) : (
-                <Select
-                  placeholder="Select mother from registered horses"
-                  data={availableHorses
-                    .filter(h => h.gender === 'MARE')
-                    .map(h => ({ value: h.id.toString(), label: h.name }))}
-                  value={formData.motherId?.toString()}
-                  onChange={handleMotherChange}
-                  error={validationErrors.mother}
-                  clearable
-                />
-              )}
-            </Box>
+          <Text fw={500} size="sm" mb="xs">Parent Information</Text>
+          <Stack gap="md">
+            <Switch
+              label="External Mother"
+              labelPosition="left"
+              size="md"
+              styles={(theme) => ({
+                root: {
+                  width: '100%'
+                },
+                body: {
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  width: '100%'
+                }
+              })}
+              checked={useExternalMother}
+              onChange={(e) => {
+                setUseExternalMother(e.currentTarget.checked);
+                if (e.currentTarget.checked) {
+                  handleInputChange('motherId', undefined);
+                } else {
+                  handleInputChange('externalMother', '');
+                }
+              }}
+            />
 
-            <Box>
-              <Group justify="apart" mb="md">
-                <Group gap="xl">
-                  <Text size="sm" fw={500}>Father</Text>
-                  <Switch
-                    label="External Father"
-                    labelPosition="left"
-                    size="md"
-                    styles={(theme) => ({
-                      root: {
-                        display: 'flex',
-                        alignItems: 'center',
-                      },
-                      label: {
-                        paddingRight: '1rem',
-                      },
-                    })}
-                    checked={useExternalFather}
-                    onChange={(e) => {
-                      setUseExternalFather(e.currentTarget.checked);
-                      if (e.currentTarget.checked) {
-                        handleInputChange('fatherId', undefined);
-                      } else {
-                        handleInputChange('externalFather', '');
-                      }
-                    }}
-                  />
-                </Group>
-              </Group>
-              {useExternalFather ? (
-                <TextInput
-                  placeholder="Enter external father's name"
-                  value={formData.externalFather || ''}
-                  onChange={(e) => handleInputChange('externalFather', e.target.value)}
-                />
-              ) : (
-                <Select
-                  placeholder="Select father from registered horses"
-                  data={availableHorses
-                    .filter(h => h.gender === 'STALLION')
-                    .map(h => ({ value: h.id.toString(), label: h.name }))}
-                  value={formData.fatherId?.toString()}
-                  onChange={handleFatherChange}
-                  error={validationErrors.father}
-                  clearable
-                />
-              )}
-            </Box>
+            {useExternalMother ? (
+              <TextInput
+                placeholder="Enter external mother's name"
+                value={formData.externalMother || ''}
+                onChange={(e) => handleInputChange('externalMother', e.target.value)}
+              />
+            ) : (
+              <Select
+                placeholder="Select mother from registered horses"
+                data={availableHorses
+                  .filter(h => h.gender === 'MARE')
+                  .map(h => ({ value: h.id.toString(), label: h.name }))}
+                value={formData.motherId?.toString()}
+                onChange={handleMotherChange}
+                error={validationErrors.mother}
+                clearable
+              />
+            )}
+
+            <Switch
+              label="External Father"
+              labelPosition="left"
+              size="md"
+              styles={(theme) => ({
+                root: {
+                  width: '100%'
+                },
+                body: {
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  width: '100%'
+                }
+              })}
+              checked={useExternalFather}
+              onChange={(e) => {
+                setUseExternalFather(e.currentTarget.checked);
+                if (e.currentTarget.checked) {
+                  handleInputChange('fatherId', undefined);
+                } else {
+                  handleInputChange('externalFather', '');
+                }
+              }}
+            />
+
+            {useExternalFather ? (
+              <TextInput
+                placeholder="Enter external father's name"
+                value={formData.externalFather || ''}
+                onChange={(e) => handleInputChange('externalFather', e.target.value)}
+              />
+            ) : (
+              <Select
+                placeholder="Select father from registered horses"
+                data={availableHorses
+                  .filter(h => h.gender === 'STALLION')
+                  .map(h => ({ value: h.id.toString(), label: h.name }))}
+                value={formData.fatherId?.toString()}
+                onChange={handleFatherChange}
+                error={validationErrors.father}
+                clearable
+              />
+            )}
           </Stack>
         </Box>
 

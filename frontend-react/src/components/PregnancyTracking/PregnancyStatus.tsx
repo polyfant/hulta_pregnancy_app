@@ -1,28 +1,32 @@
-import {
-  Paper,
-  Title,
-  Text,
-  Timeline,
-  List,
-  ThemeIcon,
+import React from 'react';
+import { 
+  Text, 
+  Stack, 
+  Group, 
+  Button, 
+  Title, 
+  Paper, 
+  Badge,
   Progress,
   Card,
-  Group,
-  Badge,
+  List,
+  ThemeIcon,
   Accordion,
-  Stack,
   LoadingOverlay
 } from '@mantine/core';
+import { 
+  MdInfoOutline as IconInfoCircle, 
+  MdCalendarToday as IconCalendarTime, 
+  MdStethoscope, 
+  MdBabyCarriage as IconBabyCarriage, 
+  MdHeartBeat as IconHeartbeat, 
+  MdVaccines as IconVaccine, 
+  MdAlarm 
+} from '@/utils/icons';
+
 import {
-  IconCalendarTime,
-  IconBabyCarriage,
-  IconStethoscope,
-  IconVaccine,
-  IconAlarm,
-  IconInfoCircle,
-  IconHeartbeat
-} from '@tabler/icons-react';
-import { useQuery } from '@tanstack/react-query';
+  useQuery
+} from '@tanstack/react-query';
 
 interface Horse {
   id: number;

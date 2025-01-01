@@ -1,36 +1,47 @@
-import { Group, Title, Button, Image } from '@mantine/core';
+import { Group, Button, Text, Avatar } from '@mantine/core';
 import { Link, useLocation } from 'react-router-dom';
-import { IconHorse } from '@tabler/icons-react';
-import logo from '../../assets/he_logga_stor.png';
+import { useAuth0 } from '@auth0/auth0-react';
 
-const Navbar = () => {
+export default function Navbar() {
   const location = useLocation();
-  const isActive = (path: string) => location.pathname === path;
+  const { isAuthenticated, user, logout } = useAuth0();
 
   return (
     <Group h="100%" px="md" justify="space-between">
-      <Group>
-        <Link to="/" style={{ textDecoration: 'none' }}>
-          <Group>
-            <Image src={logo} alt="Horse Tracker Logo" h={40} w="auto" />
-            <Title order={2} c="blue.9">Horse Tracker</Title>
-          </Group>
-        </Link>
-      </Group>
+      <Link to="/" style={{ textDecoration: 'none' }}>
+        <Text size="xl" fw={700} c="blue.9">Horse Tracker</Text>
+      </Link>
 
       <Group>
-        <Button
-          component={Link}
-          to="/"
-          variant={isActive('/') ? 'filled' : 'light'}
-          color="blue"
-          leftSection={<IconHorse size="1rem" />}
-        >
-          Horses
-        </Button>
+        {location.pathname !== '/' && (
+          <Button
+            component={Link}
+            to="/"
+            variant="subtle"
+          >
+            Horses
+          </Button>
+        )}
+
+        {isAuthenticated && (
+          <Group>
+            {user?.picture && (
+              <Avatar src={user.picture} radius="xl" />
+            )}
+            <Text>{user?.name}</Text>
+            <Button 
+              variant="subtle" 
+              onClick={() => logout({ 
+                logoutParams: { 
+                  returnTo: window.location.origin 
+                } 
+              })}
+            >
+              Logout
+            </Button>
+          </Group>
+        )}
       </Group>
     </Group>
   );
-};
-
-export default Navbar;
+}

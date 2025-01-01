@@ -1,30 +1,31 @@
+import React from 'react';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import {
-  Card,
-  Text,
-  Badge,
-  Button,
-  Group,
-  Stack,
-  TextInput,
-  Grid,
-  LoadingOverlay,
-  ActionIcon,
-  Title,
-  SimpleGrid,
+import { 
+  Text, 
+  Title, 
+  Stack, 
+  Group, 
+  Button, 
+  TextInput, 
+  Card, 
+  Grid, 
+  Badge, 
+  LoadingOverlay, 
+  ActionIcon, 
+  SimpleGrid, 
   Alert
 } from '@mantine/core';
-import {
-  IconHorse,
-  IconSearch,
-  IconPlus,
-  IconMars,
-  IconVenus,
-  IconAlertCircle
-} from '@tabler/icons-react';
-import { useQuery } from '@tanstack/react-query';
-import { notifications } from '@mantine/notifications';
+import { 
+  MdAlertCircle, 
+  FiPlus, 
+  FiSearch, 
+  FiEdit, 
+  FiTrash2, 
+  MdMale, 
+  MdFemale, 
+  MdPets
+} from '@/utils/icons';
+import { Link } from 'react-router-dom';
 
 interface Horse {
   id: string;
@@ -77,7 +78,7 @@ const HorseList = () => {
 
   if (error) {
     return (
-      <Alert icon={<IconAlertCircle size="1rem" />} title="Error" color="red">
+      <Alert icon={<MdAlertCircle size="1rem" />} title="Error" color="red">
         Failed to load horses. Please try again later.
       </Alert>
     );
@@ -100,17 +101,17 @@ const HorseList = () => {
               }
             }
           })}
-          leftSection={<IconPlus size="1rem" />}
+          leftSection={<FiPlus size="1rem" />}
         >
           Add Horse
         </Button>
       </Group>
 
       <TextInput
+        icon={<FiSearch size="1rem" />}
         placeholder="Search horses..."
         value={searchQuery}
         onChange={(event) => setSearchQuery(event.currentTarget.value)}
-        leftSection={<IconSearch size="1rem" />}
       />
 
       <div style={{ position: 'relative' }}>
@@ -125,7 +126,7 @@ const HorseList = () => {
                   color={horse.gender === 'male' ? 'blue' : 'pink'}
                   title={horse.gender}
                 >
-                  {horse.gender === 'male' ? <IconMars size="1.2rem" /> : <IconVenus size="1.2rem" />}
+                  {horse.gender === 'male' ? <MdMale size="1.2rem" /> : <MdFemale size="1.2rem" />}
                 </ActionIcon>
               </Group>
 
@@ -150,7 +151,7 @@ const HorseList = () => {
                 fullWidth
                 mt="md"
                 radius="md"
-                leftSection={<IconHorse size="1rem" />}
+                leftSection={<MdPets size="1rem" />}
               >
                 View Details
               </Button>

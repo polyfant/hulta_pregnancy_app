@@ -1,37 +1,39 @@
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useCallback } from 'react';
-import {
-  Card,
-  Image,
-  Text,
-  Group,
+import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { 
+  Text, 
+  Title, 
+  Stack, 
+  Group, 
+  Button, 
+  Tabs, 
+  Card, 
+  Divider,
+  Modal,
+  Tooltip,
   Badge,
-  Button,
   ActionIcon,
-  Stack,
-  Title,
+  Image,
   Grid,
   LoadingOverlay,
-  Tabs,
   Paper,
   Box
 } from '@mantine/core';
-import {
-  IconEdit,
-  IconTrash,
-  IconHorse,
-  IconCalendar,
-  IconRuler,
-  IconWeight,
-  IconVaccine,
-  IconNotes,
-  IconBabyCarriage,
-  IconMars,
-  IconVenus,
-  IconStethoscope,
-  IconHeart,
-  IconTree
-} from '@tabler/icons-react';
+import { useDisclosure } from '@mantine/hooks';
+import { 
+  MdBabyCarriage, 
+  MdStethoscope, 
+  MdCalendarToday, 
+  MdEdit,
+  MdPets,
+  MdMale,
+  MdFemale,
+  FiPlus,
+  FiSearch,
+  FiEdit,
+  FiTrash2
+} from '@/utils/icons';
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notifications } from '@mantine/notifications';
 import { lazy, Suspense } from 'react';
@@ -127,7 +129,7 @@ const HorseDetails = () => {
       <Card withBorder>
         <Group justify="space-between" mb="md">
           <Group gap="sm">
-            <IconHorse size={30} />
+            <MdPets size={30} />
             <Title order={2}>{horse.name}</Title>
           </Group>
           <Group gap="sm">
@@ -135,7 +137,7 @@ const HorseDetails = () => {
               component={Link}
               to={`/horses/${id}/edit`}
               variant="filled"
-              leftSection={<IconEdit size="1rem" />}
+              leftSection={<FiEdit size="1rem" />}
               styles={(theme) => ({
                 root: {
                   color: theme.colors.green[4],
@@ -154,7 +156,7 @@ const HorseDetails = () => {
                 to={`/horses/${id}/pregnancy`}
                 variant="light"
                 color="blue"
-                leftSection={<IconBabyCarriage size="1rem" />}
+                leftSection={<MdBabyCarriage size="1rem" />}
               >
                 Pregnancy Tracking
               </Button>
@@ -165,25 +167,25 @@ const HorseDetails = () => {
               onClick={handleDelete}
               loading={deleteMutation.isPending}
             >
-              <IconTrash size="1rem" />
+              <FiTrash2 size="1rem" />
             </ActionIcon>
           </Group>
         </Group>
 
         <Tabs defaultValue="details">
           <Tabs.List>
-            <Tabs.Tab value="details" leftSection={<IconNotes size="1rem" />}>
+            <Tabs.Tab value="details" leftSection={<MdCalendarToday size="1rem" />}>
               Details
             </Tabs.Tab>
-            <Tabs.Tab value="health" leftSection={<IconStethoscope size="1rem" />}>
+            <Tabs.Tab value="health" leftSection={<MdStethoscope size="1rem" />}>
               Health
             </Tabs.Tab>
             {horse.gender === 'MARE' && horse.conceptionDate && (
-              <Tabs.Tab value="pregnancy" leftSection={<IconBabyCarriage size="1rem" />}>
+              <Tabs.Tab value="pregnancy" leftSection={<MdBabyCarriage size="1rem" />}>
                 Pregnancy
               </Tabs.Tab>
             )}
-            <Tabs.Tab value="family" leftSection={<IconTree size="1rem" />}>
+            <Tabs.Tab value="family" leftSection={<MdPets size="1rem" />}>
               Family Tree
             </Tabs.Tab>
           </Tabs.List>
@@ -195,26 +197,26 @@ const HorseDetails = () => {
                   <Grid.Col span={{ base: 12, md: 6 }}>
                     <Stack>
                       <Group>
-                        <IconCalendar size="1rem" />
+                        <MdCalendarToday size="1rem" />
                         <Text>Born: {new Date(horse.dateOfBirth).toLocaleDateString()}</Text>
                       </Group>
                       <Group>
                         {horse.gender === 'STALLION' ? (
-                          <IconMars size="1rem" color="blue" />
+                          <MdMale size="1rem" color="blue" />
                         ) : (
-                          <IconVenus size="1rem" color="pink" />
+                          <MdFemale size="1rem" color="pink" />
                         )}
                         <Text>Gender: {horse.gender}</Text>
                       </Group>
                       {horse.breed && (
                         <Group>
-                          <IconHorse size="1rem" />
+                          <MdPets size="1rem" />
                           <Text>Breed: {horse.breed}</Text>
                         </Group>
                       )}
                       {horse.weight && (
                         <Group>
-                          <IconWeight size="1rem" />
+                          <MdPets size="1rem" />
                           <Text>Weight: {horse.weight} kg</Text>
                         </Group>
                       )}
@@ -238,11 +240,11 @@ const HorseDetails = () => {
               <Paper p="md" withBorder>
                 <Stack>
                   <Group>
-                    <IconHeart size="1rem" />
+                    <MdPets size="1rem" />
                     <Text>Health Status: Healthy</Text>
                   </Group>
                   <Group>
-                    <IconVaccine size="1rem" />
+                    <MdPets size="1rem" />
                     <Text>Last Vaccination: Up to date</Text>
                   </Group>
                 </Stack>

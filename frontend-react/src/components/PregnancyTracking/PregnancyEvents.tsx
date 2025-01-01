@@ -1,3 +1,5 @@
+import { FiPlus, FiSearch, FiEdit, FiTrash2, FiActivity, FiCalendar, FiAlertTriangle } from 'react-icons/fi';
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -17,12 +19,7 @@ import {
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { notifications } from '@mantine/notifications';
-import {
-  IconCalendarEvent,
-  IconStethoscope,
-  IconAlertTriangle,
-  IconPlus
-} from '@tabler/icons-react';
+
 
 interface PregnancyEventsProps {
   horseId: string;
@@ -86,13 +83,13 @@ export function PregnancyEvents({ horseId }: PregnancyEventsProps) {
   const getEventIcon = (type: string) => {
     switch (type) {
       case 'checkup':
-        return <IconStethoscope size="1rem" />;
+        return <FiActivity size="1rem" />;
       case 'milestone':
-        return <IconCalendarEvent size="1rem" />;
+        return <FiCalendar size="1rem" />;
       case 'warning':
-        return <IconAlertTriangle size="1rem" />;
+        return <FiAlertTriangle size="1rem" />;
       default:
-        return <IconCalendarEvent size="1rem" />;
+        return <FiCalendar size="1rem" />;
     }
   };
 
@@ -130,7 +127,7 @@ export function PregnancyEvents({ horseId }: PregnancyEventsProps) {
         <Group justify="space-between" mb="md">
           <Title order={3}>Pregnancy Events</Title>
           <Button
-            leftSection={<IconPlus size="1rem" />}
+            leftSection={<FiPlus size="1rem" />}
             onClick={() => setIsModalOpen(true)}
           >
             Add Event

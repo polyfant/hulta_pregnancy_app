@@ -14,7 +14,7 @@ import {
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { IconHorse } from '@tabler/icons-react';
+import { MdPets } from 'react-icons/md';
 import { notifications } from '@mantine/notifications';
 
 interface HorseInput {
@@ -111,7 +111,7 @@ const AddHorse = () => {
         <Group justify="space-between" mb="md">
           <Title order={2}>
             <Group gap="xs">
-              <IconHorse size={30} />
+              <MdPets size={30} />
               <Text>Add New Horse</Text>
             </Group>
           </Title>
@@ -119,34 +119,48 @@ const AddHorse = () => {
 
         <form onSubmit={handleSubmit}>
           <Stack gap="md">
-            <TextInput
-              label="Name"
-              placeholder="Enter horse's name"
-              required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            />
+            <Group grow>
+              <TextInput
+                label="Name"
+                placeholder="Enter horse's name"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+              <TextInput
+                label="Breed"
+                placeholder="Enter horse's breed"
+                required
+                value={formData.breed}
+                onChange={(e) => setFormData({ ...formData, breed: e.target.value })}
+              />
+            </Group>
 
-            <Select
-              label="Gender"
-              placeholder="Select gender"
-              required
-              value={formData.gender}
-              onChange={(value) => setFormData({ ...formData, gender: value as 'MARE' | 'STALLION' | 'GELDING' })}
-              data={[
-                { value: 'MARE', label: 'Mare' },
-                { value: 'STALLION', label: 'Stallion' },
-                { value: 'GELDING', label: 'Gelding' }
-              ]}
-            />
-
-            <TextInput
-              label="Breed"
-              placeholder="Enter horse's breed"
-              required
-              value={formData.breed}
-              onChange={(e) => setFormData({ ...formData, breed: e.target.value })}
-            />
+            <Group grow>
+              <Select
+                label="Gender"
+                placeholder="Select gender"
+                required
+                value={formData.gender}
+                onChange={(value) => setFormData({ ...formData, gender: value as 'MARE' | 'STALLION' | 'GELDING' })}
+                data={[
+                  { value: 'MARE', label: 'Mare' },
+                  { value: 'STALLION', label: 'Stallion' },
+                  { value: 'GELDING', label: 'Gelding' }
+                ]}
+              />
+              <NumberInput
+                label="Weight (kg)"
+                placeholder="Enter weight"
+                min={0}
+                value={formData.weight}
+                onChange={(value) => {
+                  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+                  setFormData({ ...formData, weight: numValue || undefined });
+                }}
+                max={1000}
+              />
+            </Group>
 
             <DatePickerInput
               label="Date of Birth"
@@ -157,40 +171,31 @@ const AddHorse = () => {
               maxDate={new Date()}
             />
 
-            <NumberInput
-              label="Weight (kg)"
-              placeholder="Enter weight"
-              min={0}
-              value={formData.weight}
-              onChange={(value) => {
-                const numValue = typeof value === 'string' ? parseFloat(value) : value;
-                setFormData({ ...formData, weight: numValue || undefined });
-              }}
-              max={1000}
-            />
-
             {formData.gender === 'MARE' && (
               <>
-                <DatePickerInput
-                  label="Conception Date"
-                  placeholder="Select date if pregnant"
-                  value={formData.conceptionDate}
-                  onChange={(date) => setFormData({ ...formData, conceptionDate: date || undefined })}
-                  maxDate={new Date()}
-                />
-
-                <Switch
-                  label="External Father"
-                  checked={useExternalFather}
-                  onChange={(event) => {
-                    setUseExternalFather(event.currentTarget.checked);
-                    setFormData({
-                      ...formData,
-                      fatherId: undefined,
-                      externalFather: ''
-                    });
-                  }}
-                />
+                <Group grow align="flex-start">
+                  <DatePickerInput
+                    label="Conception Date"
+                    placeholder="Select date if pregnant"
+                    value={formData.conceptionDate}
+                    onChange={(date) => setFormData({ ...formData, conceptionDate: date || undefined })}
+                    maxDate={new Date()}
+                  />
+                  <div>
+                    <Switch
+                      label="External Father"
+                      checked={useExternalFather}
+                      onChange={(event) => {
+                        setUseExternalFather(event.currentTarget.checked);
+                        setFormData({
+                          ...formData,
+                          fatherId: undefined,
+                          externalFather: ''
+                        });
+                      }}
+                    />
+                  </div>
+                </Group>
 
                 {useExternalFather ? (
                   <TextInput

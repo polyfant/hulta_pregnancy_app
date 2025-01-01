@@ -1,7 +1,10 @@
-import { Card, Title, Text, Stack, List, ThemeIcon } from '@mantine/core';
-import { IconCircleCheck } from '@tabler/icons-react';
+import { MdCheckCircle } from 'react-icons/md';
+import { FiPlus, FiSearch, FiEdit, FiTrash2 } from 'react-icons/fi';
 
-export function PregnancyGuidelines() {
+import { Card, Title, Text, Stack, List, ThemeIcon, Paper } from '@mantine/core';
+
+
+export default function PregnancyGuidelines() {
   const guidelines = {
     nutrition: [
       'Provide high-quality forage (hay or pasture)',
@@ -44,7 +47,7 @@ export function PregnancyGuidelines() {
           center
           icon={
             <ThemeIcon color="teal" size={24} radius="xl">
-              <IconCircleCheck size="1rem" />
+              <MdCheckCircle size="1rem" />
             </ThemeIcon>
           }
         >
@@ -62,7 +65,7 @@ export function PregnancyGuidelines() {
           center
           icon={
             <ThemeIcon color="blue" size={24} radius="xl">
-              <IconCircleCheck size="1rem" />
+              <MdCheckCircle size="1rem" />
             </ThemeIcon>
           }
         >
@@ -80,7 +83,7 @@ export function PregnancyGuidelines() {
           center
           icon={
             <ThemeIcon color="green" size={24} radius="xl">
-              <IconCircleCheck size="1rem" />
+              <MdCheckCircle size="1rem" />
             </ThemeIcon>
           }
         >
@@ -98,7 +101,7 @@ export function PregnancyGuidelines() {
           center
           icon={
             <ThemeIcon color="grape" size={24} radius="xl">
-              <IconCircleCheck size="1rem" />
+              <MdCheckCircle size="1rem" />
             </ThemeIcon>
           }
         >
@@ -119,3 +122,4 @@ export function PregnancyGuidelines() {
     </Stack>
   );
 }
+
