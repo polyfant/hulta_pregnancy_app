@@ -1,20 +1,34 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
+import { Auth0Provider } from '@auth0/auth0-react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App';
 
-console.log('Starting to mount React app...');
+import '@mantine/core/styles.css';
+import '@mantine/notifications/styles.css';
 
-const rootElement = document.getElementById('root');
-if (!rootElement) {
-  console.error('Root element not found!');
-} else {
-  console.log('Root element found, mounting app...');
-  const root = createRoot(rootElement);
-  root.render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  );
-  console.log('App mounted!');
-}
+const root = createRoot(document.getElementById('root')!);
+
+root.render(
+	<Auth0Provider
+		domain='dev-r083cwkcv0pgz20x.eu.auth0.com'
+		clientId='OBmEol1z4U49r3YI3priDdGbvF5i4O7d'
+		authorizationParams={{
+			redirect_uri: 'http://localhost:3000',
+			scope: 'openid profile email',
+			response_type: 'code',
+		}}
+		cacheLocation='localstorage'
+		useRefreshTokens={true}
+		onRedirectCallback={(appState) => {
+			window.history.replaceState(
+				{},
+				document.title,
+				appState?.returnTo || window.location.origin
+			);
+		}}
+	>
+		<BrowserRouter>
+			<App />
+		</BrowserRouter>
+	</Auth0Provider>
+);

@@ -1,4 +1,40 @@
-// Centralized Icon Imports
-export { MdPets } from 'react-icons/md';
-export { MdMale, MdFemale, MdCheckCircle, MdInfoOutline, MdCalendarToday, MdStethoscope, MdBabyCarriage, MdHeartBeat, MdVaccines, MdAlarm, MdSearch, MdEdit, MdDelete, MdChevronDown, MdChevronRight, MdAlertCircle } from 'react-icons/md';
-export { FiPlus, FiSearch, FiEdit, FiTrash2 } from 'react-icons/fi';
+import {
+	Activity,
+	Baby,
+	Calendar,
+	CaretDown,
+	CaretRight,
+	Check,
+	Clock,
+	Heart,
+	Horse,
+	Info,
+	MagnifyingGlass,
+	Plus,
+	Syringe,
+	Trash,
+	User,
+	Warning,
+	X,
+} from '@phosphor-icons/react';
+
+// Export with their proper Phosphor names
+export {
+	Activity,
+	Baby,
+	Calendar,
+	CaretDown,
+	CaretRight,
+	Check,
+	Clock,
+	Heart,
+	Horse,
+	Info,
+	MagnifyingGlass,
+	Plus,
+	Syringe,
+	Trash,
+	User,
+	Warning,
+	X,
+};
