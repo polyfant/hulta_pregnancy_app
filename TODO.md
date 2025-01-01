@@ -152,6 +152,17 @@
 - [ ] Data retention policies
 - [ ] GDPR compliance features
 
+## Authentication
+- [ ] Fix Auth0 integration
+  - [x] Configure initial Auth0 config
+  - [ ] Resolve authentication flow issues
+  - [ ] Implement proper token management
+  - [ ] Add error handling for authentication failures
+
+## Frontend Improvements
+- [x] Fix icon imports in PregnancyEvents
+- [x] Update TypeScript type definitions for Auth0 config
+
 ## Notes 📝
 - Prioritize items marked as "Critical Path"
 - Review and update this list weekly

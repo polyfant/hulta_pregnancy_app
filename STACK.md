@@ -12,7 +12,11 @@
 - **Component Library**: Mantine v7
   - No Material UI or other UI libraries
   - Consistent use of Mantine hooks and utilities
-- **Icons**: @tabler/icons-react
+- **Icons**
+  - **Current Library**: react-icons/fi (Feather Icons)
+    - Lightweight and consistent icon set
+    - Minimal bundle size
+    - Consistent styling across components
 - **Date Handling**: Day.js
 - **CSS Strategy**: 
   - Mantine's built-in styling system
