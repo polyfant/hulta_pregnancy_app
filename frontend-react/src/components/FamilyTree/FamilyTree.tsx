@@ -1,15 +1,18 @@
 import {
-	ActionIcon,
-	Badge,
-	Card,
-	Group,
-	LoadingOverlay,
-	Paper,
-	Stack,
-	Text,
-	Title,
+    ActionIcon,
+    Card,
+    Group,
+    LoadingOverlay,
+    Paper,
+    Text
 } from '@mantine/core';
-import { CaretDown, CaretRight, Horse, User } from '@phosphor-icons/react';
+import {
+    CaretDown,
+    CaretRight,
+    GenderFemale,
+    GenderMale,
+    Horse
+} from '@phosphor-icons/react';
 import { useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
@@ -61,7 +64,7 @@ const TreeNode = ({ horse, level, maxLevel = 3 }: TreeNodeProps) => {
 
 	return (
 		<div style={{ marginLeft: level > 0 ? 40 : 0 }}>
-			<Card withBorder shadow='sm' mt='xs'>
+			<Card withBorder shadow='sm' mt='xs' bg="dark.7">
 				<Group justify='space-between'>
 					<Group>
 						{canExpand && (
@@ -69,6 +72,7 @@ const TreeNode = ({ horse, level, maxLevel = 3 }: TreeNodeProps) => {
 								onClick={handleToggle}
 								variant='subtle'
 								loading={isLoading}
+								c="white"
 							>
 								{expanded ? (
 									<CaretDown size='1rem' />
@@ -78,52 +82,31 @@ const TreeNode = ({ horse, level, maxLevel = 3 }: TreeNodeProps) => {
 							</ActionIcon>
 						)}
 						<Group>
-							<Horse size='1rem' />
-							<Text fw={500}>{horse.name}</Text>
+							{horse.gender === 'STALLION' || horse.gender === 'GELDING' ? (
+								<GenderMale size='1rem' color="var(--mantine-color-blue-6)" />
+							) : (
+								<GenderFemale size='1rem' color="var(--mantine-color-pink-6)" />
+							)}
+							<Text c="white" fw={500}>{horse.name}</Text>
 						</Group>
-						<Badge
-							variant='light'
-							color={
-								horse.gender === 'STALLION' ? 'blue' : 'pink'
-							}
-							leftSection={
-								horse.gender === 'STALLION' ? (
-									<User color='blue' size='0.8rem' />
-								) : (
-									<User color='pink' size='0.8rem' />
-								)
-							}
-						>
-							{horse.gender}
-						</Badge>
 					</Group>
 				</Group>
 
 				{expanded && hasParents && (
-					<div
-						style={{
-							position: 'relative',
-							minHeight: isLoading ? '100px' : 'auto',
-						}}
-					>
-						<LoadingOverlay visible={isLoading} />
-						{parents && (
-							<Stack mt='sm'>
-								{parents.father && (
-									<TreeNode
-										horse={parents.father}
-										level={level + 1}
-										maxLevel={maxLevel}
-									/>
-								)}
-								{parents.mother && (
-									<TreeNode
-										horse={parents.mother}
-										level={level + 1}
-										maxLevel={maxLevel}
-									/>
-								)}
-							</Stack>
+					<div>
+						{parents?.mother && (
+							<TreeNode
+								horse={parents.mother}
+								level={level + 1}
+								maxLevel={maxLevel}
+							/>
+						)}
+						{parents?.father && (
+							<TreeNode
+								horse={parents.father}
+								level={level + 1}
+								maxLevel={maxLevel}
+							/>
 						)}
 					</div>
 				)}
@@ -159,10 +142,7 @@ const FamilyTree = ({ horseId }: FamilyTreeProps) => {
 	}
 
 	return (
-		<Paper p='md'>
-			<Title order={3} mb='md'>
-				Family Tree
-			</Title>
+		<Paper p='md' bg="dark.8">
 			<TreeNode horse={horse} level={0} />
 		</Paper>
 	);

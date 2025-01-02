@@ -10,9 +10,17 @@ import {
 	Stack,
 	Text,
 	ThemeIcon,
+	Timeline,
 	Title,
 } from '@mantine/core';
-import { Calendar, Heart, Info } from '@phosphor-icons/react';
+import {
+	Baby,
+	Calendar,
+	Clock,
+	Heart,
+	Info,
+	Syringe
+} from '@phosphor-icons/react';
 
 import { useQuery } from '@tanstack/react-query';
 
@@ -115,9 +123,9 @@ const PregnancyStatus = ({ horseId }: PregnancyStatusProps) => {
 
 	return (
 		<Stack gap='lg'>
-			<Card withBorder>
+			<Card withBorder bg="dark.7">
 				<Group justify='space-between' mb='md'>
-					<Title order={3}>Pregnancy Progress</Title>
+					<Title order={3} c="white">Pregnancy Progress</Title>
 					<Badge size='lg' variant='filled' color={color}>
 						{stage}
 					</Badge>
@@ -135,96 +143,141 @@ const PregnancyStatus = ({ horseId }: PregnancyStatusProps) => {
 						<Text size='sm' c='dimmed'>
 							Days Pregnant
 						</Text>
-						<Text fw={500}>{daysPregnant} days</Text>
+						<Text fw={500} c="white">{daysPregnant} days</Text>
 					</div>
 					<div>
 						<Text size='sm' c='dimmed'>
 							Due Date
 						</Text>
-						<Text fw={500}>{dueDate.toLocaleDateString()}</Text>
+						<Text fw={500} c="white">{dueDate.toLocaleDateString()}</Text>
 					</div>
 					<div>
 						<Text size='sm' c='dimmed'>
 							Trimester
 						</Text>
-						<Text fw={500}>{trimester}</Text>
+						<Text fw={500} c="white">{trimester}</Text>
 					</div>
 				</Group>
 			</Card>
 
-			<Card withBorder>
-				<Title order={4} mb='md'>
+			<Card withBorder bg="dark.7">
+				<Title order={4} mb='md' c="white">
 					Recommended Actions
 				</Title>
-				<List spacing='xs'>
+				<List 
+					spacing='xs'
+					styles={(theme) => ({
+						item: {
+							color: theme.white,
+						},
+					})}
+				>
 					{getRecommendedActions().map((action, index) => (
 						<List.Item key={index}>{action}</List.Item>
-					))}
+						))}
 				</List>
 			</Card>
 
-			<Accordion variant='contained'>
+			<Accordion variant='contained' styles={(theme) => ({
+				label: {
+					color: theme.white,
+				},
+				content: {
+					color: theme.white,
+					backgroundColor: theme.colors.dark[7],
+				},
+				control: {
+					backgroundColor: theme.colors.dark[8],
+					'&:hover': {
+						backgroundColor: theme.colors.dark[6],
+					},
+				},
+				item: {
+					backgroundColor: theme.colors.dark[8],
+					border: `1px solid ${theme.colors.dark[6]}`,
+				}
+			})}>
 				<Accordion.Item value='currentStage'>
-					<Accordion.Control icon={<Info size='1rem' />}>
+					<Accordion.Control icon={<Info size='1rem' color="white" />}>
 						Current Stage Information
 					</Accordion.Control>
 					<Accordion.Panel>
 						<Timeline
 							active={Math.min(3, trimester)}
 							bulletSize={24}
+							styles={(theme) => ({
+								item: {
+									color: theme.white,
+								},
+								itemTitle: {
+									color: theme.white,
+								}
+							})}
 						>
 							<Timeline.Item
 								bullet={<Calendar size={12} />}
 								title='First Trimester (0-114 days)'
+								styles={(theme) => ({
+									title: {
+										color: theme.white,
+									}
+								})}
 							>
-								<Text size='sm'>
-									Early development stage. Regular check-ups
-									important.
+								<Text size='sm' c="white">
+									Early development stage. Regular check-ups important.
 								</Text>
-								<List size='sm' mt='xs'>
-									<List.Item>
-										Schedule regular vet check-ups
-									</List.Item>
-									<List.Item>
-										Maintain normal exercise routine
-									</List.Item>
-									<List.Item>
-										Monitor appetite and weight
-									</List.Item>
+								<List size='sm' mt='xs' styles={(theme) => ({
+									item: {
+										color: theme.white,
+									}
+								})}>
+									<List.Item>Schedule regular vet check-ups</List.Item>
+									<List.Item>Maintain normal exercise routine</List.Item>
+									<List.Item>Monitor appetite and weight</List.Item>
 								</List>
 							</Timeline.Item>
 
 							<Timeline.Item
 								bullet={<Heart size={12} />}
 								title='Second Trimester (115-225 days)'
+								styles={(theme) => ({
+									title: {
+										color: theme.white,
+									}
+								})}
 							>
-								<Text size='sm'>
+								<Text size='sm' c="white">
 									Growth and development phase.
 								</Text>
-								<List size='sm' mt='xs'>
-									<List.Item>
-										Continue moderate exercise
-									</List.Item>
+								<List size='sm' mt='xs' styles={(theme) => ({
+									item: {
+										color: theme.white,
+									}
+								})}>
+									<List.Item>Continue moderate exercise</List.Item>
 									<List.Item>Adjust feed as needed</List.Item>
-									<List.Item>
-										Monitor for any complications
-									</List.Item>
+									<List.Item>Monitor for any complications</List.Item>
 								</List>
 							</Timeline.Item>
 
 							<Timeline.Item
-								bullet={<FiBaby size={12} />}
+								bullet={<Baby size={12} />}
 								title='Third Trimester (226-340 days)'
+								styles={(theme) => ({
+									title: {
+										color: theme.white,
+									}
+								})}
 							>
-								<Text size='sm'>Final preparation stage.</Text>
-								<List size='sm' mt='xs'>
+								<Text size='sm' c="white">Final preparation stage.</Text>
+								<List size='sm' mt='xs' styles={(theme) => ({
+									item: {
+										color: theme.white,
+									}
+								})}>
 									<List.Item>Prepare foaling area</List.Item>
-									<List.Item>
-										Reduce exercise intensity
-									</List.Item>
-									<List.Item>
-										Monitor closely for signs of labor
-									</List.Item>
+									<List.Item>Reduce exercise intensity</List.Item>
+									<List.Item>Monitor closely for signs of labor</List.Item>
 								</List>
 							</Timeline.Item>
 						</Timeline>
@@ -232,7 +285,7 @@ const PregnancyStatus = ({ horseId }: PregnancyStatusProps) => {
 				</Accordion.Item>
 
 				<Accordion.Item value='care'>
-					<Accordion.Control icon={<FiHeart size='1rem' />}>
+					<Accordion.Control icon={<Heart size='1rem' color="white" />}>
 						Care Tips
 					</Accordion.Control>
 					<Accordion.Panel>
@@ -240,31 +293,29 @@ const PregnancyStatus = ({ horseId }: PregnancyStatusProps) => {
 							<List.Item
 								icon={
 									<ThemeIcon color='blue' size={24}>
-										<FiHeart size={16} />
+										<Heart size={16} color="white" />
 									</ThemeIcon>
 								}
 							>
-								Schedule regular veterinary check-ups
+								<Text c="white">Schedule regular veterinary check-ups</Text>
 							</List.Item>
 							<List.Item
 								icon={
 									<ThemeIcon color='green' size={24}>
-										<FiVaccine size={16} />
+										<Syringe size={16} color="white" />
 									</ThemeIcon>
 								}
 							>
-								Keep vaccinations up to date as recommended by
-								your vet
+								<Text c="white">Keep vaccinations up to date</Text>
 							</List.Item>
 							<List.Item
 								icon={
 									<ThemeIcon color='yellow' size={24}>
-										<FiAlarm size={16} />
+										<Clock size={16} color="white" />
 									</ThemeIcon>
 								}
 							>
-								Watch for warning signs: decreased appetite,
-								fever, discharge
+								<Text c="white">Watch for warning signs</Text>
 							</List.Item>
 						</List>
 					</Accordion.Panel>

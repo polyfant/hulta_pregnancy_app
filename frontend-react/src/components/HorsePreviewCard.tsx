@@ -1,11 +1,11 @@
 import {
+  Badge,
   Card,
   Group,
-  Text,
-  Badge,
-  Stack
+  Stack,
+  Text
 } from '@mantine/core';
-import { MdMale, MdFemale } from 'react-icons/md';
+import { GenderFemale, GenderMale } from '@phosphor-icons/react';
 import { Horse } from '../types/horse';
 
 interface HorsePreviewCardProps {
@@ -21,20 +21,22 @@ export function HorsePreviewCard({ horse, externalName, role }: HorsePreviewCard
   const gender = role === 'mother' ? 'MARE' : 'STALLION';
   const color = role === 'mother' ? 'pink' : 'blue';
 
+  const isMale = horse?.gender === 'STALLION' || horse?.gender === 'GELDING';
+
   return (
     <Card
       withBorder
       mt="sm"
-      bg={role === 'mother' ? 'pink.0' : 'blue.0'}
+      bg="dark.7"
     >
       <Stack gap="xs">
         <Group>
-          {gender === 'MARE' ? (
-            <MdFemale size="1.2rem" color="var(--mantine-color-pink-6)" />
+          {isMale ? (
+            <GenderMale size="1.2rem" color="var(--mantine-color-blue-6)" />
           ) : (
-            <MdMale size="1.2rem" color="var(--mantine-color-blue-6)" />
+            <GenderFemale size="1.2rem" color="var(--mantine-color-pink-6)" />
           )}
-          <Text fw={500}>
+          <Text fw={500} c="white">
             {isExternal ? externalName : horse?.name}
           </Text>
           {isExternal && (
