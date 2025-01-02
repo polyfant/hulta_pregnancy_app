@@ -37,9 +37,8 @@ type VaccinationStatus struct {
 	LastDate   time.Time
 	DueDate    time.Time
 }
-
 func (s *HealthService) GetVaccinationStatus(horse models.Horse) VaccinationStatus {
-	records, err := s.db.GetHealthRecords(horse.ID)
+	records, err := s.db.GetHealthRecords(int64(horse.ID))
 	if err != nil {
 		logger.Error(err, "Failed to get health records", map[string]interface{}{
 			"horseID": horse.ID,
@@ -71,7 +70,7 @@ func (s *HealthService) GetVaccinationStatus(horse models.Horse) VaccinationStat
 }
 
 func (s *HealthService) GetHealthSummary(horse models.Horse) HealthSummary {
-	records, err := s.db.GetHealthRecords(horse.ID)
+	records, err := s.db.GetHealthRecords(int64(horse.ID))
 	if err != nil {
 		logger.Error(err, "Failed to get health records", map[string]interface{}{
 			"horseID": horse.ID,
@@ -127,7 +126,7 @@ func (s *HealthService) GetUpcomingHealthChecks(horses []models.Horse) []struct 
 		}
 
 		// Check regular checkups
-		records, err := s.db.GetHealthRecords(horse.ID)
+		records, err := s.db.GetHealthRecords(int64(horse.ID))
 		if err != nil {
 			logger.Error(err, "Failed to get health records", map[string]interface{}{
 				"horseID": horse.ID,

@@ -55,7 +55,7 @@ func (s *Service) CheckPregnancyMilestones(horse *models.Horse) []Notification {
 		if daysPregnant >= days && daysPregnant <= days+7 {
 			notification := Notification{
 				Type:    PregnancyMilestone,
-				HorseID: horse.ID,
+				HorseID: int64(horse.ID),
 				Message: message,
 				DueDate: time.Now().AddDate(0, 0, days-daysPregnant),
 			}
@@ -87,7 +87,7 @@ func (s *Service) CheckHealthRecords(horse *models.Horse, records []models.Healt
 	if lastVaccination.IsZero() || time.Since(lastVaccination) > 11*30*24*time.Hour {
 		notification := Notification{
 			Type:    VaccinationDue,
-			HorseID: horse.ID,
+			HorseID: int64(horse.ID),
 			Message: "Annual vaccination due",
 			DueDate: time.Now().AddDate(0, 0, 7),
 		}

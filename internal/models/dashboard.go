@@ -3,11 +3,10 @@ package models
 import "time"
 
 type DashboardStats struct {
-	TotalHorses      int                `json:"totalHorses"`
-	PregnantMares    int                `json:"pregnantMares"`
-	UpcomingDueDates []PregnancySummary `json:"upcomingDueDates"`
-	RecentHealth     []HealthSummary    `json:"recentHealth"`
-	Costs            CostSummary        `json:"costs"`
+	TotalHorses      int     `json:"totalHorses"`
+	PregnantMares    int     `json:"pregnantMares"`
+	TotalExpenses    float64 `json:"totalExpenses"`
+	UpcomingFoalings int     `json:"upcomingFoalings"`
 }
 
 type PregnancySummary struct {

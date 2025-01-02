@@ -115,16 +115,6 @@ func (pc *PregnancyCalculator) GetMonitoringSchedule() MonitoringSchedule {
 	}
 }
 
-// MonitoringSchedule defines what needs to be monitored and how frequently
-type MonitoringSchedule struct {
-	CheckFrequency    int    // How often to check in hours
-	TemperatureCheck  bool   // Whether to check temperature
-	BehaviorCheck     bool   // Whether to monitor behavior
-	UdderCheck        bool   // Whether to check udder development
-	VulvaCheck        bool   // Whether to check vulva
-	Priority          string // Monitoring priority level
-}
-
 // CalculateGuidelines returns pregnancy guidelines based on the current stage
 func (pc *PregnancyCalculator) CalculateGuidelines() map[string]string {
 	stage := pc.GetStage()
@@ -197,4 +187,20 @@ func CalculateGestationProgress(conceptionDate time.Time, gestationDays int) (fl
 	daysRemaining := gestationDays - daysPregnant
 
 	return progress, daysRemaining
+}
+
+// DeterminePregnancyStage determines the current pregnancy stage based on the start date and current time
+func DeterminePregnancyStage(startDate time.Time, now time.Time) models.PregnancyStage {
+	currentDay := int(now.Sub(startDate).Hours() / 24)
+
+	switch {
+	case currentDay <= EarlyGestationEnd:
+		return models.EarlyGestation
+	case currentDay <= MidGestationEnd:
+		return models.MidGestation
+	case currentDay <= LateGestationEnd:
+		return models.LateGestation
+	default:
+		return models.Foaling
+	}
 }

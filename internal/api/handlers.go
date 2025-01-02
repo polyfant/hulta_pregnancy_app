@@ -15,21 +15,16 @@ import (
 
 // Handler handles HTTP requests
 type Handler struct {
-	db              *database.SQLiteStore
+	db               *database.PostgresDB
 	pregnancyService *pregnancy.Service
 }
 
 // NewHandler creates a new Handler instance
-func NewHandler(db *database.SQLiteStore) *Handler {
+func NewHandler(db *database.PostgresDB) *Handler {
 	return &Handler{
-		db:              db,
+		db:               db,
 		pregnancyService: pregnancy.NewService(db),
 	}
-}
-
-// ErrorResponse represents an error response
-type ErrorResponse struct {
-	Error string `json:"error"`
 }
 
 func (h *Handler) ListHorses(c *gin.Context) {
@@ -104,7 +99,6 @@ func (h *Handler) GetHealthAssessment(c *gin.Context) {
 
 	records, err := h.db.GetHealthRecords(horseID)
 	if err != nil {
-		log.Printf("Error getting health records for horse %d: %v", horseID, err)
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: fmt.Sprintf("Health records not found: %v", err)})
 		return
 	}
@@ -126,7 +120,7 @@ func (h *Handler) AddHealthRecord(c *gin.Context) {
 		return
 	}
 
-	record.HorseID = horseID
+	record.HorseID = uint(horseID)
 	record.Date = time.Now()
 
 	err = h.db.AddHealthRecord(&record)
@@ -139,43 +133,9 @@ func (h *Handler) AddHealthRecord(c *gin.Context) {
 }
 
 func (h *Handler) GetPregnancyGuidelines(c *gin.Context) {
-	horseID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		log.Printf("Invalid horse ID: %v", err)
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
-		return
-	}
-
-	horse, err := h.db.GetHorse(horseID)
-	if err != nil {
-		log.Printf("Error fetching horse: %v", err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to fetch horse details"})
-		return
-	}
-
-	// If stage is provided in query params, use GetPregnancyGuidelinesByStage
 	stageStr := c.Query("stage")
-	if stageStr != "" {
-		stage := models.PregnancyStage(stageStr)
-		guidelines, err := h.pregnancyService.GetPregnancyGuidelinesByStage(stage)
-		if err != nil {
-			log.Printf("Error getting pregnancy guidelines by stage: %v", err)
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, guidelines)
-		return
-	}
-
-	// Otherwise, get guidelines based on horse's pregnancy status
-	stage := h.pregnancyService.GetPregnancyStage(horse)
-	guidelines, err := h.pregnancyService.GetPregnancyGuidelinesByStage(stage)
-	if err != nil {
-		log.Printf("Error getting pregnancy guidelines for horse: %v", err)
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-		return
-	}
-
+	stage := models.PregnancyStage(stageStr)
+	guidelines := h.pregnancyService.GetPregnancyGuidelinesByStage(stage)
 	c.JSON(http.StatusOK, guidelines)
 }
 
@@ -187,7 +147,7 @@ func (h *Handler) GetBreedingCosts(c *gin.Context) {
 		return
 	}
 
-	costs, err := h.db.GetBreedingCosts(horseID)
+	costs, err := h.db.GetBreedingCosts(uint(horseID))
 	if err != nil {
 		log.Printf("Error getting breeding costs for horse %d: %v", horseID, err)
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: fmt.Sprintf("Breeding costs not found: %v", err)})
@@ -206,17 +166,15 @@ func (h *Handler) AddBreedingCost(c *gin.Context) {
 
 	var cost models.BreedingCost
 	if err := c.ShouldBindJSON(&cost); err != nil {
-		log.Printf("Error binding JSON: %v", err)
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("Invalid breeding cost data: %v", err)})
 		return
 	}
 
-	cost.HorseID = horseID
+	cost.HorseID = uint(horseID)
 	cost.Date = time.Now()
 
 	err = h.db.AddBreedingCost(&cost)
 	if err != nil {
-		log.Printf("Error adding breeding cost for horse %d: %v", horseID, err)
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("Failed to add breeding cost: %v", err)})
 		return
 	}
@@ -242,10 +200,10 @@ func (h *Handler) GetHorseOffspring(c *gin.Context) {
 }
 
 func (h *Handler) GetDashboardStats(c *gin.Context) {
-	stats, err := h.db.GetDashboardStats()
+	userID := c.GetString("userID") // Assuming middleware sets this
+	stats, err := h.db.GetDashboardStats(userID)
 	if err != nil {
-		log.Printf("Error getting dashboard stats: %v", err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("Failed to get dashboard stats: %v", err)})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, stats)
@@ -285,6 +243,12 @@ func (h *Handler) GetPregnancyProgress(c *gin.Context) {
 		return
 	}
 
+	stage, err := h.pregnancyService.GetPregnancyStage(c.Request.Context(), horseID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+
 	horse, err := h.db.GetHorse(horseID)
 	if err != nil {
 		log.Printf("Error fetching horse: %v", err)
@@ -308,7 +272,6 @@ func (h *Handler) GetPregnancyProgress(c *gin.Context) {
 
 	dueDate := pregnancy.CalculateDueDate(*horse.ConceptionDate, customDays)
 	progress, daysRemaining := pregnancy.CalculateGestationProgress(*horse.ConceptionDate, customDays)
-	stage := h.pregnancyService.GetPregnancyStage(horse)
 
 	response := PregnancyProgress{
 		DueDate:       dueDate,
@@ -340,10 +303,10 @@ func (h *Handler) GetPreFoalingChecklist(c *gin.Context) {
 		defaultItems := make([]models.PreFoalingChecklistItem, len(models.DefaultPreFoalingChecklist))
 		dueDate := time.Now().AddDate(0, 0, 7) // Default due date is 1 week from now
 		
-		for i, desc := range models.DefaultPreFoalingChecklist {
+		for i, item := range models.DefaultPreFoalingChecklist {
 			defaultItems[i] = models.PreFoalingChecklistItem{
-				HorseID:     horseID,
-				Description: desc,
+				HorseID:     uint(horseID),
+				Description: item.Description,
 				IsCompleted: false,
 				DueDate:     dueDate,
 				Priority:    "MEDIUM",
@@ -370,7 +333,7 @@ func (h *Handler) AddPreFoalingChecklistItem(c *gin.Context) {
 		return
 	}
 
-	item.HorseID = horseID
+	item.HorseID = uint(horseID)
 	if err := h.db.AddPreFoalingChecklistItem(&item); err != nil {
 		log.Printf("Error adding pre-foaling checklist item: %v", err)
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to add checklist item"})
@@ -394,7 +357,7 @@ func (h *Handler) UpdatePreFoalingChecklistItem(c *gin.Context) {
 		return
 	}
 
-	item.ID = itemID
+	item.ID = uint(itemID)
 	if err := h.db.UpdatePreFoalingChecklistItem(&item); err != nil {
 		log.Printf("Error updating pre-foaling checklist item: %v", err)
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to update checklist item"})
@@ -419,4 +382,26 @@ func (h *Handler) DeletePreFoalingChecklistItem(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+func (h *Handler) InitializePreFoalingChecklist(c *gin.Context) {
+	horseID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
+		return
+	}
+
+	for _, item := range models.DefaultPreFoalingChecklist {
+		checklistItem := models.PreFoalingChecklistItem{
+			HorseID:     uint(horseID),
+			Description: item.Description,
+			Priority:    item.Priority,
+			DueDate:     time.Now().AddDate(0, 0, 7), // Due in a week
+		}
+		if err := h.db.AddPreFoalingChecklistItem(&checklistItem); err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+			return
+		}
+	}
+	c.Status(http.StatusCreated)
 }

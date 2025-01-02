@@ -1,116 +1,80 @@
-# Horse Tracking Application
+# Horse Management System
 
-A comprehensive web application for tracking horses, breeding, and health records. This application helps horse owners and breeders manage their horses' information, health records, breeding costs, and provides detailed pregnancy monitoring with stage-specific guidelines.
+A comprehensive system for managing horse breeding, health records, and expenses.
 
-## Project Status: Active Development
+## Features
 
-This is a private, closed-source project under active development. All code, designs, and documentation are proprietary and confidential.
+-   🐎 Horse Management
 
-## Current Features
+    -   Basic information tracking
+    -   Breeding records
+    -   Family tree visualization
+    -   Age and breeding eligibility calculations
 
-### Horse Management
-- Add new horses with details (name, breed, gender, birth date)
-- View all horses in a clean, sortable list
-- Track gender-specific information (stallions, mares, geldings)
-- Support for external parent references
-- Dark theme with excellent readability
+-   🏥 Health Tracking
 
-### Pregnancy Monitoring
-- Track pregnancy stages (Early, Mid, Late, Due Soon)
-- Calculate and display pregnancy progress
-- Show stage-specific recommendations
-- Record conception date and father information
-- Support for both internal and external fathers
-- Timeline view of pregnancy events
-- Track vet checks and important milestones
-- Warning system for health concerns
+    -   Health records
+    -   Vaccination schedules
+    -   Dental care tracking
+    -   Pre-foaling monitoring
 
-### Breeding Management
-- Record breeding events
-- Track conception dates
-- Manage stallion information
-- Support for external stallion records
-- Validate breeding eligibility
+-   👶 Pregnancy Management
 
-## Upcoming Features
+    -   Conception tracking
+    -   Pregnancy event logging
+    -   Due date calculations
+    -   Pre-foaling checklist
 
-### Family Tree Management
-- Visual family tree representation
-- Track lineage and breeding history
-- Link horses to their parents
-- Support for external parent references
-
-### Health Tracking
-- Record and monitor health assessments
-- Track vaccination status
-- Manage health records and checkups
-- View comprehensive health summaries
-
-## Authentication
-- Integrated Auth0 for secure authentication
-- Configurable authentication parameters
-- Ongoing improvements to authentication flow
-
-## Recent Improvements
-- Refined icon management using Feather Icons
-- Enhanced TypeScript type definitions
-- Improved frontend component consistency
-
-## API Endpoints
-
-### Currently Implemented
-- `GET /api/horses` - List all horses
-- `POST /api/horses` - Create a new horse
-- `GET /api/horses/{id}` - Get details of a specific horse
-- `GET /api/horses/{id}/pregnancy/status` - Get pregnancy status and stage
-- `POST /api/horses/{id}/pregnancy/events` - Add pregnancy event
-
-### Planned Endpoints
-- `GET /api/horses/{id}/family-tree` - Get family tree data
-- `GET /api/horses/{id}/health` - Get health records
-- `POST /api/horses/{id}/health-records` - Add health record
-- `GET /api/horses/stallions` - List available stallions
+-   💰 Financial Management
+    -   Expense tracking
+    -   Recurring expenses
+    -   Breeding costs
+    -   Financial summaries
 
 ## Tech Stack
 
-### Backend
-- Go 1.21+
-- Gin web framework
-- SQLite3 database
-- Clean architecture
+-   Backend:
+    -   Go 1.21+
+    -   Gin Web Framework
+    -   GORM
+    -   PostgreSQL
 
-### Frontend
-- React 18 with TypeScript
-- Mantine v7 UI framework
-- TanStack Query for data fetching
-- React Router v6
-- Day.js for date handling
-- Dark theme optimized for readability
+## Getting Started
 
-## Development Setup
+1. Prerequisites:
 
-### Prerequisites
-- Node.js 18+
-- Go 1.21+
-- Git
+    ```bash
+    - Go 1.21+
+    - PostgreSQL 14+
+    ```
 
-### Getting Started
-1. Clone the repository
-2. Install frontend dependencies:
-   ```bash
-   cd frontend-react
-   npm install
-   ```
-3. Start the frontend development server:
-   ```bash
-   npm run dev
-   ```
-4. In a new terminal, start the backend server:
-   ```bash
-   cd ../backend
-   go run main.go
-   ```
+2. Database Setup:
 
-## Contributing
+    ```sql
+    CREATE DATABASE HE_horse_db;
+    ```
 
-This is a private project. Please contact the project maintainers for contribution guidelines.
+3. Run the server:
+    ```bash
+    go run cmd/server/main.go
+    ```
+
+## Project Structure
+
+```
+.
+├── cmd/
+│   ├── server/        # Main application entry
+│   └── migrate/       # Database migration tools
+├── internal/
+│   ├── api/          # HTTP handlers and routes
+│   ├── database/     # Database access layer
+│   ├── models/       # Data models
+│   ├── service/      # Business logic
+│   ├── validation/   # Input validation
+│   └── middleware/   # HTTP middleware
+```
+
+## API Documentation
+
+[API documentation to be added]

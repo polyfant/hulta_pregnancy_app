@@ -1,75 +1,98 @@
 package models
 
-import (
-	"fmt"
-	"time"
-)
+import "time"
 
 type Horse struct {
-	ID             int64      `json:"id" db:"id"`
-	Name           string     `json:"name" db:"name"`
-	Breed          string     `json:"breed" db:"breed"`
-	Gender         string     `json:"gender" db:"gender"`
-	DateOfBirth    time.Time  `json:"dateOfBirth" db:"date_of_birth"`
-	Weight         float64    `json:"weight" db:"weight"`
-	IsPregnant     bool       `json:"isPregnant" db:"is_pregnant"`
-	ConceptionDate *time.Time `json:"conceptionDate,omitempty" db:"conception_date"`
-	MotherID       *int64     `json:"motherId,omitempty" db:"mother_id"`
-	FatherID       *int64     `json:"fatherId,omitempty" db:"father_id"`
-	ExternalMother string     `json:"externalMother,omitempty" db:"external_mother"`
-	ExternalFather string     `json:"externalFather,omitempty" db:"external_father"`
-	Age            string     `json:"age,omitempty" db:"-"` // Calculated field
+	ID             uint      `gorm:"primaryKey"`
+	UserID         string    `gorm:"type:text;not null;index"`
+	Name           string    `gorm:"type:varchar(100);not null"`
+	Breed           string    `gorm:"type:varchar(100)"`
+	Gender         string    `gorm:"type:varchar(50)"`
+	BirthDate      time.Time
+	Weight         float64
+	Height         float64
+	Color          string    `gorm:"size:100"`
+	IsPregnant     bool      `gorm:"default:false"`
+	ConceptionDate *time.Time
+	MotherId       *uint
+	FatherId       *uint
+	ExternalMother string
+	ExternalFather string
+	
+	LastVetCheck   *time.Time
+	LastHeatDate   *time.Time
+	CycleLength    int
+	
+	Mother         *Horse
+	Father         *Horse
+	Pregnancies    []Pregnancy
+	HealthRecords  []HealthRecord
+	BreedingCosts  []BreedingCost
+	
+	Notes          string    `gorm:"type:text"`
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	DeletedAt      *time.Time `gorm:"index"`
 }
 
-// Gender constants
 const (
 	GenderMare     = "MARE"
 	GenderStallion = "STALLION"
 	GenderGelding  = "GELDING"
 )
 
-// CalculateAge returns the horse's age in years and months
-func (h *Horse) CalculateAge(now time.Time) string {
-	years := now.Year() - h.DateOfBirth.Year()
-	months := int(now.Month() - h.DateOfBirth.Month())
-
-	if months < 0 {
-		years--
-		months += 12
+func (h *Horse) Age() int {
+	if h.BirthDate.IsZero() {
+		return 0
 	}
-
-	if years > 0 {
-		if months > 0 {
-			return fmt.Sprintf("%d years, %d months", years, months)
-		}
-		return fmt.Sprintf("%d years", years)
+	now := time.Now()
+	age := now.Year() - h.BirthDate.Year()
+	
+	if now.Month() < h.BirthDate.Month() || 
+	   (now.Month() == h.BirthDate.Month() && now.Day() < h.BirthDate.Day()) {
+		age--
 	}
-	return fmt.Sprintf("%d months", months)
+	return age
 }
 
-type HealthRecord struct {
-	ID      int64     `json:"id" db:"id"`
-	HorseID int64     `json:"horseId" db:"horse_id"`
-	Date    time.Time `json:"date" db:"date"`
-	Type    string    `json:"type" db:"type"`
-	Notes   string    `json:"notes" db:"notes"`
+func (h *Horse) IsBreedingAge() bool {
+	age := h.Age()
+	switch h.Gender {
+	case GenderMare:
+		return age >= 3 && age <= 20
+	case GenderStallion:
+		return age >= 3 && age <= 25
+	default:
+		return false
+	}
 }
 
-type FamilyTree struct {
-	Horse          Horse           `json:"horse"`
-	Mother         *FamilyMember   `json:"mother,omitempty"`
-	Father         *FamilyMember   `json:"father,omitempty"`
-	Offspring      []FamilyMember  `json:"offspring,omitempty"`
-	Siblings       []FamilyMember  `json:"siblings,omitempty"`
+func (h *Horse) CanBreed() bool {
+	return h.IsBreedingAge() && (h.Gender == GenderMare || h.Gender == GenderStallion)
 }
 
-type FamilyMember struct {
-	ID             int64     `json:"id,omitempty"`
-	Name           string    `json:"name"`
-	Breed          string    `json:"breed,omitempty"`
-	Gender         string    `json:"gender,omitempty"`
-	DateOfBirth    time.Time `json:"dateOfBirth,omitempty"`
-	Age            string    `json:"age,omitempty"`
-	IsExternal     bool      `json:"isExternal"`
-	ExternalSource string    `json:"externalSource,omitempty"`
+func (h *Horse) DaysPregnant() int {
+	if !h.IsPregnant || h.ConceptionDate == nil {
+		return 0
+	}
+	return int(time.Since(*h.ConceptionDate).Hours() / 24)
+}
+
+func (h *Horse) ExpectedFoalingDate() *time.Time {
+	if !h.IsPregnant || h.ConceptionDate == nil {
+		return nil
+	}
+	foalingDate := h.ConceptionDate.AddDate(0, 0, 340)
+	return &foalingDate
+}
+
+func (h *Horse) ValidateGender() bool {
+	return h.Gender == GenderMare || h.Gender == GenderStallion || h.Gender == GenderGelding
+}
+
+func (h *Horse) ValidatePregnancy() bool {
+	if h.IsPregnant {
+		return h.Gender == GenderMare && h.ConceptionDate != nil
+	}
+	return true
 }

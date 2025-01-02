@@ -1,12 +1,14 @@
 package breeding
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/polyfant/hulta_pregnancy_app/internal/logger"
+	"github.com/polyfant/hulta_pregnancy_app/internal/middleware"
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 )
 
@@ -38,7 +40,7 @@ func (s *Service) CalculatePregnancySuccessRate(horses []models.Horse) float64 {
 	for _, horse := range horses {
 		if horse.ConceptionDate != nil {
 			pregnantCount++
-			events, err := s.db.GetPregnancyEvents(horse.ID)
+			events, err := s.db.GetPregnancyEvents(int64(horse.ID))
 			if err != nil {
 				logger.Error(err, "Failed to get pregnancy events", map[string]interface{}{
 					"horseID": horse.ID,
@@ -181,4 +183,35 @@ func sortByAmount(costs []struct {
 	sort.Slice(costs, func(i, j int) bool {
 		return costs[i].Amount > costs[j].Amount
 	})
+}
+
+func (s *Service) ValidateBreeding(mare, stallion models.Horse) error {
+	if mare.Gender != models.GenderMare {
+		return fmt.Errorf("first horse must be a mare")
+	}
+	if stallion.Gender != models.GenderStallion {
+		return fmt.Errorf("second horse must be a stallion")
+	}
+	if !mare.IsBreedingAge() {
+		return fmt.Errorf("mare is not of breeding age")
+	}
+	if !stallion.IsBreedingAge() {
+		return fmt.Errorf("stallion is not of breeding age")
+	}
+	return nil
+}
+
+func (s *Service) RecordBreeding(ctx context.Context, mareID, stallionID int64, date time.Time) error {
+	stallionUint := uint(stallionID)
+	record := &models.BreedingRecord{
+		MareID:     uint(mareID),
+		StallionID: &stallionUint,
+		Date:       date,
+		UserID:     ctx.Value(middleware.UserIDKey).(string),
+	}
+	return s.db.AddBreedingRecord(record)
+}
+
+func (s *Service) GetBreedingHistory(ctx context.Context, horseID int64) ([]models.BreedingRecord, error) {
+	return s.db.GetBreedingRecords(horseID)
 }

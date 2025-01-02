@@ -3,12 +3,12 @@ package api
 import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/polyfant/hulta_pregnancy_app/internal/models"
+	"github.com/polyfant/hulta_pregnancy_app/internal/database"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service/pregnancy"
 )
 
 // SetupRouter sets up the routing for our API
-func SetupRouter(h *Handler, store models.DataStore) *gin.Engine {
+func SetupRouter(h *Handler, db *database.PostgresDB) *gin.Engine {
 	router := gin.Default()
 
 	// Add CORS middleware with more permissive settings for development
@@ -19,7 +19,7 @@ func SetupRouter(h *Handler, store models.DataStore) *gin.Engine {
 	router.Use(cors.New(config))
 
 	// Create pregnancy handler
-	pregnancyHandler := NewPregnancyHandler(pregnancy.NewService(store), store)
+	pregnancyHandler := NewPregnancyHandler(pregnancy.NewService(db), db)
 
 	// API routes
 	api := router.Group("/api")
@@ -54,6 +54,14 @@ func SetupRouter(h *Handler, store models.DataStore) *gin.Engine {
 		api.POST("/horses/:id/pregnancy/foaling-signs", pregnancyHandler.RecordPreFoalingSign)
 		api.GET("/horses/:id/pregnancy/foaling-checklist", pregnancyHandler.GetFoalingChecklist)
 		api.GET("/horses/:id/pregnancy/post-foaling-checklist", pregnancyHandler.GetPostFoalingChecklist)
+
+		// Pregnancy routes
+		pregnancies := api.Group("/pregnancies")
+		{
+			pregnancies.GET("", pregnancyHandler.GetPregnancies)
+			pregnancies.GET("/:id/stage", pregnancyHandler.GetPregnancyStage)
+			pregnancies.GET("/guidelines", pregnancyHandler.GetPregnancyGuidelines)
+		}
 	}
 
 	return router
