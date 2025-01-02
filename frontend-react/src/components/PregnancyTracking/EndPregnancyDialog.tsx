@@ -1,4 +1,4 @@
-import { Button, Modal, Select, Stack } from '@mantine/core';
+import { Button, Modal, Select, Stack, Textarea } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useState } from 'react';
 

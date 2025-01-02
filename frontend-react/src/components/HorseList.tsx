@@ -6,20 +6,22 @@ import {
 	Card,
 	Group,
 	LoadingOverlay,
+	Progress,
 	SimpleGrid,
 	Stack,
 	Text,
 	TextInput,
-	Title,
+	Title
 } from '@mantine/core';
 import {
+	GenderFemale,
+	GenderMale,
 	Horse,
 	MagnifyingGlass,
 	Plus,
-	User,
-	Warning,
+	Warning
 } from '@phosphor-icons/react';
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -28,7 +30,7 @@ interface Horse {
 	name: string;
 	breed?: string;
 	color?: string;
-	gender: 'male' | 'female';
+	gender: 'MARE' | 'STALLION' | 'GELDING';
 	birthDate?: string;
 	isPregnant?: boolean;
 }
@@ -36,35 +38,17 @@ interface Horse {
 const HorseList = () => {
 	const [searchQuery, setSearchQuery] = useState('');
 
-	const { data, isLoading, error } = useQuery<Horse[]>({
+	// Main horses query
+	const { data: horses = [], isLoading, error } = useQuery<Horse[]>({
 		queryKey: ['horses'],
 		queryFn: async () => {
-			console.log('Fetching horses...');
-			try {
-				const response = await fetch('/api/horses');
-				console.log('API Response:', response);
-
-				if (!response.ok) {
-					const errorData = await response.text();
-					console.error('API Error:', errorData);
-					throw new Error(`Failed to fetch horses: ${errorData}`);
-				}
-
-				const data = await response.json();
-				console.log('Horses data:', data);
-				return data;
-			} catch (error) {
-				console.error('Error fetching horses:', error);
-				throw error;
+			const response = await fetch('/api/horses');
+			if (!response.ok) {
+				throw new Error('Failed to fetch horses');
 			}
+			return response.json();
 		},
-		retry: 1,
-		staleTime: 30000,
-		refetchOnWindowFocus: false,
 	});
-
-	// Ensure data is never null
-	const horses = data || [];
 
 	// Filter horses based on search query
 	const filteredHorses = horses.filter(
@@ -72,6 +56,33 @@ const HorseList = () => {
 			horse.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
 			(horse.breed &&
 				horse.breed.toLowerCase().includes(searchQuery.toLowerCase()))
+	);
+
+	// Fetch pregnancy status for all pregnant horses at once
+	const pregnancyQueries = useQueries({
+		queries: filteredHorses
+			.filter(horse => horse.isPregnant)
+			.map(horse => ({
+				queryKey: ['pregnancy', horse.id],
+				queryFn: async () => {
+					const response = await fetch(`/api/horses/${horse.id}/pregnancy`);
+					if (!response.ok) {
+						throw new Error('Failed to fetch pregnancy status');
+					}
+					return response.json();
+				},
+				enabled: horse.isPregnant
+			}))
+	});
+
+	// Create a map of pregnancy statuses for easy lookup
+	const pregnancyStatusMap = Object.fromEntries(
+		pregnancyQueries
+			.map((query, index) => [
+				filteredHorses.filter(h => h.isPregnant)[index]?.id,
+				query.data
+			])
+			.filter(([id, data]) => id && data)
 	);
 
 	if (error) {
@@ -85,7 +96,7 @@ const HorseList = () => {
 	return (
 		<Stack>
 			<Group justify='space-between' align='center'>
-				<Title order={2}>Horses</Title>
+				<Title order={2} c="white">Horses</Title>
 				<Button
 					component={Link}
 					to='/add-horse'
@@ -110,6 +121,15 @@ const HorseList = () => {
 				leftSection={<MagnifyingGlass size='1rem' />}
 				value={searchQuery}
 				onChange={(e) => setSearchQuery(e.target.value)}
+				styles={(theme) => ({
+					input: {
+						backgroundColor: theme.colors.dark[7],
+						color: theme.white,
+						'&::placeholder': {
+							color: theme.colors.dark[2],
+						},
+					},
+				})}
 			/>
 
 			<div style={{ position: 'relative' }}>
@@ -122,27 +142,24 @@ const HorseList = () => {
 							padding='lg'
 							radius='md'
 							withBorder
+							bg="dark.7"
 						>
 							<Group justify='space-between' mb='xs'>
-								<Text fw={500}>{horse.name}</Text>
+								<Text fw={500} c="white">{horse.name}</Text>
 								<ActionIcon
 									variant='light'
-									color={
-										horse.gender === 'male'
-											? 'blue'
-											: 'pink'
-									}
+									color={horse.gender === 'STALLION' || horse.gender === 'GELDING' ? 'blue' : 'pink'}
 									title={horse.gender}
 								>
-									{horse.gender === 'male' ? (
-										<User color='blue' size='1.2rem' />
+									{horse.gender === 'STALLION' || horse.gender === 'GELDING' ? (
+										<GenderMale color='blue' size='1.2rem' />
 									) : (
-										<User color='pink' size='1.2rem' />
+										<GenderFemale color='pink' size='1.2rem' />
 									)}
 								</ActionIcon>
 							</Group>
 
-							<Group gap='xs'>
+							<Group gap='xs' mb="xs">
 								{horse.breed && (
 									<Badge color='blue' variant='light'>
 										{horse.breed}
@@ -155,13 +172,21 @@ const HorseList = () => {
 								)}
 							</Group>
 
+							{horse.isPregnant && pregnancyStatusMap[horse.id] && (
+								<Progress 
+									value={pregnancyStatusMap[horse.id].progress} 
+									color="grape" 
+									size="sm" 
+									mb="md"
+								/>
+							)}
+
 							<Button
 								component={Link}
 								to={`/horses/${horse.id}`}
 								variant='light'
 								color='blue'
 								fullWidth
-								mt='md'
 								radius='md'
 								leftSection={<Horse size='1rem' />}
 							>
