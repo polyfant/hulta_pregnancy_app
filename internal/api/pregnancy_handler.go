@@ -5,10 +5,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/polyfant/horse_tracking/internal/models"
-	"github.com/polyfant/horse_tracking/internal/service/pregnancy"
 	"path/filepath"
+
+	"github.com/gin-gonic/gin"
+	"github.com/polyfant/hulta_pregnancy_app/internal/models"
+	"github.com/polyfant/hulta_pregnancy_app/internal/service/pregnancy"
 )
 
 type PregnancyResponse struct {

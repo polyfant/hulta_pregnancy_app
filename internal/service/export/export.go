@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/polyfant/horse_tracking/internal/logger"
-	"github.com/polyfant/horse_tracking/internal/models"
+	"github.com/polyfant/hulta_pregnancy_app/internal/logger"
+	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 )
 
 type ExportService struct {

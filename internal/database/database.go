@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -20,7 +21,7 @@ func InitDB() (*sql.DB, error) {
 	}
 
 	// Open SQLite database
-	dbPath := filepath.Join(dataDir, "horse_tracking.db")
+	dbPath := filepath.Join(dataDir, "hulta_pregnancy_app.db")
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %v", err)

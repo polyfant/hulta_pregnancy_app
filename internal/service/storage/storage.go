@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/polyfant/horse_tracking/internal/logger"
+	"github.com/polyfant/hulta_pregnancy_app/internal/logger"
 )
 
 type FileStorage struct {

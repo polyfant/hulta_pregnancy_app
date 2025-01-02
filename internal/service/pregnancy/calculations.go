@@ -3,7 +3,7 @@ package pregnancy
 import (
 	"time"
 
-	"github.com/polyfant/horse_tracking/internal/models"
+	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 )
 
 const (

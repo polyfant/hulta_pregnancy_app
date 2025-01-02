@@ -1,0 +1,32 @@
+version: '3.8'
+services:
+    db:
+        image: postgres:17
+        environment:
+            POSTGRES_DB: HE_horse_db
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: your_password
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+            - postgres_backups:/backups
+
+    backup:
+        image: postgres:17
+        volumes:
+            - postgres_backups:/backups
+        environment:
+            PGHOST: db
+            PGUSER: postgres
+            PGPASSWORD: your_password
+            PGDATABASE: HE_horse_db
+            BACKUP_DIR: /backups
+        entrypoint: |
+            sh -c 'while true; do
+              pg_dump -h db -U $$PGUSER -F c -b -v -f "/backups/HE_horse_db_$$(date +%Y_%m_%d_%H_%M_%S).backup" $$PGDATABASE
+              find /backups -name "HE_horse_db_*.backup" -mtime +7 -delete
+              sleep 86400
+            done'
+
+volumes:
+    postgres_data:
+    postgres_backups:

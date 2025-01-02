@@ -2,14 +2,15 @@ package api
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/polyfant/horse_tracking/internal/database"
-	"github.com/polyfant/horse_tracking/internal/models"
-	"github.com/polyfant/horse_tracking/internal/service/pregnancy"
 	"log"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/polyfant/hulta_pregnancy_app/internal/database"
+	"github.com/polyfant/hulta_pregnancy_app/internal/models"
+	"github.com/polyfant/hulta_pregnancy_app/internal/service/pregnancy"
 )
 
 // Handler handles HTTP requests

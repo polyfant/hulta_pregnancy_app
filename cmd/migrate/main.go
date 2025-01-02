@@ -7,8 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/polyfant/horse_tracking/internal/logger"
+	"github.com/polyfant/hulta_pregnancy_app/internal/logger"
 )
 
 func main() {

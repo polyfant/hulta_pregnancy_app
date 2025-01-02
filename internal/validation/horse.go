@@ -3,7 +3,7 @@ package validation
 import (
 	"errors"
 	"time"
-	"github.com/polyfant/horse_tracking/internal/models"
+	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 )
 
 func ValidateHorse(horse *models.Horse) error {
@@ -16,12 +16,12 @@ func ValidateHorse(horse *models.Horse) error {
 	if !horse.DateOfBirth.IsZero() && horse.DateOfBirth.After(time.Now()) {
 		return errors.New("date of birth cannot be in the future")
 	}
-	if horse.ConceptionDate != nil {
-		if horse.ConceptionDate.After(time.Now()) {
+	if horse.PregnancyData != nil && horse.PregnancyData.ConceptionDate != nil {
+		if horse.PregnancyData.ConceptionDate.After(time.Now()) {
 			return errors.New("conception date cannot be in the future")
 		}
 		// Validate pregnancy duration
-		if time.Since(*horse.ConceptionDate) > 365*24*time.Hour {
+		if time.Since(*horse.PregnancyData.ConceptionDate) > 365*24*time.Hour {
 			return errors.New("invalid conception date: pregnancy duration exceeds one year")
 		}
 	}
