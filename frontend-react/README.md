@@ -1,17 +1,24 @@
 # Horse Tracking Frontend
 
-A comprehensive horse management system with focus on breeding and pregnancy tracking.
+A comprehensive horse management system focusing on breeding and pregnancy tracking.
 
 ## Features
 
+- Authentication & Authorization
+  - Auth0 integration
+  - Secure routes
+  - User-specific views
 - Horse Management
   - Basic information tracking
-  - Gender-specific features
-  - Family tree visualization
+  - Gender-specific features (Mare/Stallion/Gelding)
+  - Family tree visualization with expandable nodes
+  - Image support
 - Pregnancy Tracking
   - Progress monitoring with visual indicators
   - Due date calculations
-  - Pregnancy stage guidelines
+  - Trimester-based guidelines
+  - Detailed stage information
+  - Care recommendations
 - Health Records
   - Medical history
   - Vaccination tracking
@@ -22,6 +29,10 @@ A comprehensive horse management system with focus on breeding and pregnancy tra
 - React 18 with TypeScript
 - Vite for fast development and building
 - Mantine v7 for UI components
+  - Dark theme implementation
+  - Responsive layouts
+  - Custom component styling
+- Auth0 for authentication
 - Phosphor Icons for consistent iconography
 - TanStack Query for data fetching
 - Day.js for date handling
@@ -56,9 +67,11 @@ npm run dev
 
 ## Development Guidelines
 
+- Authentication: Auth0 handles user authentication
 - Icons: See [ICONS.md](docs/ICONS.md) for icon usage guidelines
 - Components: Follow Mantine component patterns
 - Data Fetching: Use TanStack Query for API calls
+- Theming: Use dark theme consistently
 - Testing: Write tests for critical components
 
 ## Testing

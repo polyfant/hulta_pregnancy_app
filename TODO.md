@@ -3,60 +3,53 @@
 ## Critical Path to Production 🚀
 
 ### Frontend Validation & Error Handling
-- [x] Add form validation to HorseForm
-  - [x] Name validation (required, max length)
-  - [x] Date validation (not future dates)
-  - [x] Weight validation (reasonable ranges)
-  - [x] Parent validation (circular references)
-- [x] Add form validation to PregnancyTracking
-  - [x] Date validation for events
-  - [x] Pre-foaling signs validation
-- [x] Implement global error boundary
+- [ ] Add form validation to HorseForm
+  - [ ] Name validation (required, max length)
+  - [ ] Date validation (not future dates)
+  - [ ] Weight validation (reasonable ranges)
+  - [ ] Parent validation (circular references)
+- [ ] Add form validation to PregnancyTracking
+  - [ ] Date validation for events
+  - [ ] Pre-foaling signs validation
+- [ ] Implement global error boundary
 - [ ] Add loading states for all async operations
 - [ ] Implement retry logic for failed API calls
 
 ### Testing Infrastructure
-- [x] Set up Jest and React Testing Library
-- [x] Unit Tests
-  - [x] Horse management components
-  - [x] Pregnancy tracking components
-  - [x] Form validation logic
-  - [x] Date handling utilities
-- [x] Integration Tests
-  - [x] Horse registration flow
-  - [x] Pregnancy tracking workflow
-  - [x] Family tree updates
+- [ ] Set up Jest and React Testing Library
+- [ ] Unit Tests
+  - [ ] Horse management components
+  - [ ] Pregnancy tracking components
+  - [ ] Form validation logic
+  - [ ] Date handling utilities
+- [ ] Integration Tests
+  - [ ] Horse registration flow
+  - [ ] Pregnancy tracking workflow
+  - [ ] Family tree updates
 - [ ] E2E Tests (Cypress/Playwright)
-  - [ ] Critical user journeys
-  - [ ] Form submissions
-  - [ ] Data persistence
 
 ### Performance Optimization
 - [x] Implement React Query caching strategies
-  - [x] Cache invalidation rules
-  - [x] Optimistic updates
 - [ ] Add pagination to horse list
-- [ ] Lazy load components
-  - [ ] Family tree visualization
-  - [ ] Pregnancy timeline
+- [x] Lazy load components
+  - [x] Family tree visualization
+  - [x] Pregnancy timeline
 - [ ] Image optimization
 - [ ] Bundle size optimization
-  - [ ] Code splitting
-  - [ ] Tree shaking audit
 
 ### User Experience Enhancements
 - [x] Add loading skeletons
 - [x] Implement toast notifications system
-- [x] Mobile responsiveness
+- [ ] Mobile responsiveness
   - [x] Horse list view
-  - [x] Forms
-  - [x] Navigation
-  - [x] Family tree
-- [ ] Add empty states for all lists
-- [ ] Improve form feedback
-  - [ ] Inline validation
-  - [ ] Success states
-  - [ ] Error states
+  - [x] Basic layout
+  - [ ] Family tree optimization
+  - [ ] Form layouts
+- [ ] Dark theme implementation
+  - [x] Basic theme setup
+  - [ ] Consistent styling across all components
+  - [ ] Fix hover states
+  - [ ] Fix contrast issues
 
 ### Backend Stability
 - [x] Implement structured logging
@@ -84,24 +77,17 @@
 - [x] Add data validation at DB level
 
 ### Documentation
-- [x] API documentation
-  - [x] OpenAPI/Swagger specs
-  - [x] Example requests/responses
-- [x] Component documentation
-  - [x] Props documentation
-  - [x] Usage examples
-- [x] Deployment documentation
-- [x] Database schema documentation
+- [ ] API documentation
+- [ ] Component documentation
+- [ ] Deployment documentation
+- [ ] Database schema documentation
 
 ### DevOps
-- [x] Set up CI/CD pipeline
-- [x] Configure staging environment
-- [x] Set up monitoring
-  - [x] Application metrics
-  - [x] Error tracking
-  - [x] Performance monitoring
-- [x] Configure automated backups
-- [x] Set up logging infrastructure
+- [ ] Set up CI/CD pipeline
+- [ ] Configure staging environment
+- [ ] Set up monitoring
+- [ ] Configure automated backups
+- [ ] Set up logging infrastructure
 
 ### Security
 - [x] Security headers configuration
@@ -136,7 +122,14 @@
 ## Future Considerations 🔮
 
 ### Authentication & Authorization
-- [ ] Research OAuth2 providers
+- [x] Basic Auth0 setup
+  - [x] Configure initial Auth0 config
+  - [x] Login/Logout flow
+  - [x] Add token management
+  - [x] Add error handling for authentication failures
+- [ ] Token refresh handling
+- [ ] Role-based access
+- [ ] Protected routes implementation
 - [ ] Plan SSO integration
 - [ ] Design role-based access control
 - [ ] Plan user management features
@@ -152,19 +145,23 @@
 - [ ] Data retention policies
 - [ ] GDPR compliance features
 
-## Authentication
-- [ ] Fix Auth0 integration
-  - [x] Configure initial Auth0 config
-  - [ ] Resolve authentication flow issues
-  - [ ] Implement proper token management
-  - [ ] Add error handling for authentication failures
-
 ## Frontend Improvements
 - [x] Fix icon imports in PregnancyEvents
 - [x] Update TypeScript type definitions for Auth0 config
+  - [ ] Implement dark theme consistently
+  - [x] Standardize icon usage with Phosphor Icons
+  - [ ] Fix family tree styling issues
+  - [ ] Improve pregnancy tracking UI
+  - [ ] Add loading states for async operations
 
 ## Notes 📝
 - Prioritize items marked as "Critical Path"
 - Review and update this list weekly
 - Add new items as they are identified
 - Move completed items to CHANGELOG.md
+
+### Icon System
+- [x] Standardize on Phosphor Icons
+- [x] Remove old icon libraries
+- [x] Update all components to use new icons
+- [x] Document icon usage guidelines
