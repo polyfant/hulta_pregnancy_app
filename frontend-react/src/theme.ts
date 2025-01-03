@@ -29,14 +29,14 @@ export const theme = createTheme({
 			'#442403', // 8
 			'#291401', // 9
 		],
-		// ... rest of your color configurations
+		
 	},
 	components: {
 		AppShell: {
 			styles: {
 				main: {
 					background: 'var(--mantine-color-dark-8)',
-					color: 'white',
+					color: 'var(--mantine-color-dark-0)', // Changed from 'white'
 				},
 			},
 		},
@@ -44,24 +44,25 @@ export const theme = createTheme({
 			styles: {
 				root: {
 					backgroundColor: 'var(--mantine-color-dark-7)',
-					color: 'white',
+					color: 'var(--mantine-color-dark-0)', // Changed from 'white'
 				},
 			},
 		},
 		Text: {
 			styles: {
 				root: {
-					color: 'white',
+					color: 'var(--mantine-color-dark-0)', // Changed from 'white'
 				},
 			},
 		},
 		Title: {
 			styles: {
 				root: {
-					color: 'white',
+					color: 'var(--mantine-color-dark-0)', // Changed from 'white'
 				},
 			},
 		},
+	
 		Button: {
 			defaultProps: {
 				variant: 'filled',
@@ -90,25 +91,26 @@ export const theme = createTheme({
 			},
 		},
 	},
+
 	fontSizes: {
-		xs: rem(12),
-		sm: rem(14),
-		md: rem(16),
-		lg: rem(18),
-		xl: rem(20),
-	},
+	xs: rem(12),
+	sm: rem(14),
+	md: rem(16),
+	lg: rem(18),
+	xl: rem(20),
+},
 	radius: {
-		xs: rem(2),
-		sm: rem(4),
-		md: rem(8),
-		lg: rem(16),
-		xl: rem(32),
-	},
+	xs: rem(2),
+	sm: rem(4),
+	md: rem(8),
+	lg: rem(16),
+	xl: rem(32),
+},
 	spacing: {
-		xs: rem(8),
-		sm: rem(12),
-		md: rem(16),
-		lg: rem(24),
-		xl: rem(32),
-	},
+	xs: rem(8),
+	sm: rem(12),
+	md: rem(16),
+	lg: rem(24),
+	xl: rem(32),
+},
 });
