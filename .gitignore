@@ -1,186 +1,22 @@
-# If you prefer the allow list template instead of the deny list, see community template:
-# https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
-
-# Go specific
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-*.test
-*.out
-/vendor/
-/bin/
-/dist/
-
-# Go workspace file
-go.work
-
-# Node.js
-node_modules/
-npm-debug.log
-yarn-debug.log
-yarn-error.log
+# Environment variables
 .env
-.env.test
-.env.production
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
 
-# IDE specific files
+# Dependencies
+node_modules/
+vendor/
+
+# Build outputs
+dist/
+build/
+
+# Logs
+*.log
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE files
 .idea/
 .vscode/
 *.swp
-*.swo
-*~
-
-# OS specific files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-*.sqlite-journal
-*.sqlite-wal
-*.sqlite-shm
-/data/*.db
-/data/backup/
-
-# Logs and debugging
-*.log
-logs/
-log/
-debug/
-*.debug
-debug.test
-/frontend-react/debug.log
-
-# Build output
-/build/
-/tmp/
-/temp/
-/frontend-react/build/
-/frontend-react/dist/
-
-# Coverage reports
-coverage/
-*.cover
-*.coverprofile
-.nyc_output/
-
-# Dependency directories
-jspm_packages/
-
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
-.eslintcache
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# dotenv environment variable files
-.env*
-.env.local
-.env.*.local
-*.env
-.env.development
-.env.test
-.env.production
-.env.staging
-
-# parcel-bundler cache
-.cache
-.parcel-cache
-
-# Security and sensitive data
-*.pem
-*.key
-*.crt
-*.csr
-*.der
-*.p12
-*.pfx
-*.p7b
-*.p7r
-*.spc
-*.sst
-*.cert
-/certs/
-/keys/
-/secrets/
-*.password
-*.secret
-*_rsa
-*_dsa
-*_ed25519
-*_ecdsa
-jwt_private_key*
-jwt_public_key*
-
-# User data and uploads
-/uploads/
-/user_data/
-/media/
-*.jpg
-*.jpeg
-*.png
-*.gif
-*.pdf
-/frontend-react/public/uploads/
-
-# Backup files
-*.bak
-*.backup
-*.old
-*.orig
-*.temp
-/backup/
-*.swp
-*.swo
-*~
-
-# Local development
-.localdev/
-*.local
-local.properties
-
-# Test data
-/test/data/
-/test/fixtures/
-mock_*.go
-*.mock.ts
-*.mock.tsx
-
-# Generated files
-*.generated.*
-generated/
-*.gen.go
-*.gen.ts
-*.gen.tsx
-
-# Temporary files
-*.tmp
-*.temp
-temp/
-tmp/
-
-# Docker
-.docker/
-docker-compose.override.yml
