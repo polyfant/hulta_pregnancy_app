@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/polyfant/hulta_pregnancy_app/internal/cache"
 	"github.com/polyfant/hulta_pregnancy_app/internal/database"
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service/pregnancy"
@@ -17,13 +18,23 @@ import (
 type Handler struct {
 	db               *database.PostgresDB
 	pregnancyService *pregnancy.Service
+	cache            cache.Cache
 }
 
 // NewHandler creates a new Handler instance
-func NewHandler(db *database.PostgresDB) *Handler {
+func NewHandler(db *database.PostgresDB, caches ...cache.Cache) *Handler {
+	var memoryCache cache.Cache
+	if len(caches) > 0 {
+		memoryCache = caches[0]
+	} else {
+		// Create a default in-memory cache if none is provided
+		memoryCache = cache.NewMemoryCache()
+	}
+
 	return &Handler{
 		db:               db,
 		pregnancyService: pregnancy.NewService(db),
+		cache:            memoryCache,
 	}
 }
 
@@ -45,12 +56,22 @@ func (h *Handler) GetHorse(c *gin.Context) {
 		return
 	}
 
+	// Check cache first
+	if cachedHorse, found := h.cache.Get(fmt.Sprintf("horse_%d", horseID)); found {
+		c.JSON(http.StatusOK, cachedHorse)
+		return
+	}
+
 	horse, err := h.db.GetHorse(horseID)
 	if err != nil {
 		log.Printf("Error getting horse %d: %v", horseID, err)
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: fmt.Sprintf("Horse not found: %v", err)})
 		return
 	}
+
+	// Cache the horse for 1 hour
+	h.cache.Set(fmt.Sprintf("horse_%d", horseID), horse, 1*time.Hour)
+
 	c.JSON(http.StatusOK, horse)
 }
 
@@ -200,12 +221,24 @@ func (h *Handler) GetHorseOffspring(c *gin.Context) {
 }
 
 func (h *Handler) GetDashboardStats(c *gin.Context) {
-	userID := c.GetString("userID") // Assuming middleware sets this
-	stats, err := h.db.GetDashboardStats(userID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+	userID := c.GetString("user_id")
+
+	// Check cache first
+	if cachedStats, found := h.cache.Get(fmt.Sprintf("dashboard_stats_%s", userID)); found {
+		c.JSON(http.StatusOK, cachedStats)
 		return
 	}
+
+	stats, err := h.db.GetDashboardStats(userID)
+	if err != nil {
+		log.Printf("Error getting dashboard stats: %v", err)
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to retrieve dashboard stats"})
+		return
+	}
+
+	// Cache dashboard stats for 30 minutes
+	h.cache.Set(fmt.Sprintf("dashboard_stats_%s", userID), stats, 30*time.Minute)
+
 	c.JSON(http.StatusOK, stats)
 }
 

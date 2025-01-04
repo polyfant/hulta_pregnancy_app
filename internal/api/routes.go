@@ -3,14 +3,11 @@ package api
 import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/polyfant/hulta_pregnancy_app/internal/database"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service/pregnancy"
 )
 
 // SetupRouter sets up the routing for our API
-func SetupRouter(h *Handler, db *database.PostgresDB) *gin.Engine {
-	router := gin.Default()
-
+func SetupRouter(router *gin.Engine, h *Handler) {
 	// Add CORS middleware with more permissive settings for development
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{"*"} // Allow all origins in development
@@ -19,7 +16,7 @@ func SetupRouter(h *Handler, db *database.PostgresDB) *gin.Engine {
 	router.Use(cors.New(config))
 
 	// Create pregnancy handler
-	pregnancyHandler := NewPregnancyHandler(pregnancy.NewService(db), db)
+	pregnancyHandler := NewPregnancyHandler(pregnancy.NewService(h.db), h.db)
 
 	// API routes
 	api := router.Group("/api")
@@ -63,6 +60,4 @@ func SetupRouter(h *Handler, db *database.PostgresDB) *gin.Engine {
 			pregnancies.GET("/guidelines", pregnancyHandler.GetPregnancyGuidelines)
 		}
 	}
-
-	return router
 }

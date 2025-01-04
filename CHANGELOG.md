@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Structured logging implementation
 -   Error handling middleware
 -   Database auto-migration system
+-   Generic in-memory caching mechanism
+-   Enhanced input sanitization
+-   Caching for critical API endpoints (GetHorse, GetDashboardStats)
+-   Improved test coverage for sanitization
 
 ### Changed
 
@@ -29,6 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Improved validation logic with dedicated validators
 -   Enhanced error responses with better structure
 -   Standardized model definitions with GORM tags
+-   Refactored handler methods to utilize caching
+-   Updated project documentation and README
+-   Prepared test database setup script
 
 ### Fixed
 
@@ -38,6 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   File structure organization
 -   Duplicate type definitions
 -   Expense type handling (changed from enum to string)
+-   SQL injection prevention in sanitization
+-   Test utilities cleanup
 
 ### Security
 
@@ -60,6 +69,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Error handling framework
 -   Configuration management
 -   API documentation structure
+
+## [0.1.0] - 2025-01-04
+
+### Initial Project Setup
+- Basic project structure
+- PostgreSQL database integration
+- Initial API handlers
+- Basic validation and middleware
+- Preliminary health and pregnancy tracking models
+
+## Future Roadmap
+- Performance optimizations
+- Advanced caching strategies
+- Enhanced security features
+- Comprehensive testing
 
 [Unreleased]: https://github.com/polyfant/hulta_pregnancy_app/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/polyfant/hulta_pregnancy_app/releases/tag/v0.1.0

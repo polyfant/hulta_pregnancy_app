@@ -402,7 +402,19 @@ func (p *PostgresDB) AddBreedingRecord(record *models.BreedingRecord) error {
 	return nil
 }
 
-// Add this method to PostgresDB
+// Add these methods to PostgresDB
+func (p *PostgresDB) DB() *gorm.DB {
+	return p.db
+}
+
+func (p *PostgresDB) Create(value interface{}) *gorm.DB {
+	return p.db.Create(value)
+}
+
+func (p *PostgresDB) First(dest interface{}, conds ...interface{}) *gorm.DB {
+	return p.db.First(dest, conds...)
+}
+
 func (p *PostgresDB) AutoMigrate(dst ...interface{}) error {
 	return p.db.AutoMigrate(dst...)
-} 
+}

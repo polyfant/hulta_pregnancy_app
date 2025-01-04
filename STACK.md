@@ -114,6 +114,78 @@
 -   **Monitoring**: Prometheus + Grafana
 -   **Logging**: Zerolog
 
+## Technology Stack Overview
+
+### Backend
+- **Language**: Go (Golang) 1.20+
+  - Strong typing
+  - Concurrent programming
+  - Efficient memory management
+
+### Web Framework
+- **Gin Web Framework**
+  - High-performance router
+  - Middleware support
+  - RESTful API design
+
+### Database
+- **PostgreSQL**
+  - Advanced relational database
+  - ACID compliance
+  - JSON support
+- **ORM**: GORM
+  - Object-relational mapping
+  - Database agnostic
+  - Automatic schema migrations
+
+### Caching
+- **In-Memory Cache**
+  - Thread-safe implementation
+  - Generic cache interface
+  - Configurable expiration
+  - Background cleanup
+
+### Validation & Security
+- **Input Sanitization**
+  - Custom validation logic
+  - SQL injection prevention
+  - Strict input cleaning
+- **Bluemonday Policy**
+  - HTML sanitization
+  - XSS protection
+
+### Testing
+- **Standard Go Testing**
+  - Unit tests
+  - Integration tests
+  - Benchmark support
+
+### Logging
+- **Custom Logger**
+  - Structured logging
+  - Configurable log levels
+  - File and console output
+
+### Development Tools
+- **Version Control**: Git
+- **Dependency Management**: Go Modules
+- **Code Quality**: 
+  - golangci-lint
+  - go vet
+  - go fmt
+
+### Potential Future Additions
+- Distributed caching
+- Prometheus monitoring
+- OpenTelemetry tracing
+- gRPC services
+
+### Performance Considerations
+- Minimal external dependencies
+- Efficient memory usage
+- Concurrent request handling
+- Lazy loading strategies
+
 ## Standards & Conventions
 
 ### Code Style

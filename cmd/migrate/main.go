@@ -11,7 +11,11 @@ import (
 )
 
 func main() {
-	logger.Init()
+	// Use new logger initialization
+	if err := logger.InitLogger("./logs", "info"); err != nil {
+		// Handle error
+		panic(err)
+	}
 
 	// Source database (Java app)
 	srcDB, err := sql.Open("sqlite3", filepath.Join("..", "..", "..", "horse_tracking_app", "horse_tracker.db"))

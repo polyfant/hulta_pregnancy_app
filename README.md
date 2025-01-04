@@ -1,80 +1,62 @@
-# Horse Management System
+# 🐎 Horse Tracking Management System
 
-A comprehensive system for managing horse breeding, health records, and expenses.
+## Overview
+A comprehensive Go-based application for horse breeding, health tracking, and management.
 
 ## Features
-
--   🐎 Horse Management
-
-    -   Basic information tracking
-    -   Breeding records
-    -   Family tree visualization
-    -   Age and breeding eligibility calculations
-
--   🏥 Health Tracking
-
-    -   Health records
-    -   Vaccination schedules
-    -   Dental care tracking
-    -   Pre-foaling monitoring
-
--   👶 Pregnancy Management
-
-    -   Conception tracking
-    -   Pregnancy event logging
-    -   Due date calculations
-    -   Pre-foaling checklist
-
--   💰 Financial Management
-    -   Expense tracking
-    -   Recurring expenses
-    -   Breeding costs
-    -   Financial summaries
+- 🚀 High-performance caching mechanism
+- 🔒 Robust input sanitization
+- 📊 Detailed horse health and pregnancy tracking
+- 🛡️ Secure database interactions
 
 ## Tech Stack
+- Language: Go (Golang)
+- Database: PostgreSQL
+- Caching: In-memory cache
+- Web Framework: Gin
+- ORM: GORM
+- Validation: Custom sanitization
 
--   Backend:
-    -   Go 1.21+
-    -   Gin Web Framework
-    -   GORM
-    -   PostgreSQL
+## Setup
 
-## Getting Started
+### Prerequisites
+- Go 1.20+
+- PostgreSQL
+- Git
 
-1. Prerequisites:
+### Installation
+1. Clone the repository
+2. Set up database
+3. Configure environment variables
+4. Run `go mod tidy`
+5. Start the application
 
-    ```bash
-    - Go 1.21+
-    - PostgreSQL 14+
-    ```
+## Testing
+- Run tests: `go test ./...`
+- Test database setup: Use `scripts/setup_test_db.sql`
 
-2. Database Setup:
+## Performance
+- Implemented generic caching interface
+- Thread-safe in-memory cache
+- Configurable cache duration
 
-    ```sql
-    CREATE DATABASE HE_horse_db;
-    ```
+## Security
+- Input sanitization
+- SQL injection prevention
+- Strict input validation
 
-3. Run the server:
-    ```bash
-    go run cmd/server/main.go
-    ```
+## Roadmap
+See [TODO.md](TODO.md) for upcoming features
 
-## Project Structure
+## Contributing
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
-```
-.
-├── cmd/
-│   ├── server/        # Main application entry
-│   └── migrate/       # Database migration tools
-├── internal/
-│   ├── api/          # HTTP handlers and routes
-│   ├── database/     # Database access layer
-│   ├── models/       # Data models
-│   ├── service/      # Business logic
-│   ├── validation/   # Input validation
-│   └── middleware/   # HTTP middleware
-```
+## License
+[Your License Here]
 
-## API Documentation
-
-[API documentation to be added]
+## Contact
+[Your Contact Information]
