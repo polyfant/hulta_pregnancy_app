@@ -6,35 +6,78 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-
+	"gorm.io/gorm"
 	"github.com/gin-gonic/gin"
 	"github.com/polyfant/hulta_pregnancy_app/internal/cache"
-	"github.com/polyfant/hulta_pregnancy_app/internal/database"
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
+	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
+	"github.com/polyfant/hulta_pregnancy_app/internal/service"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service/pregnancy"
+	"github.com/polyfant/hulta_pregnancy_app/internal/database"
+	"github.com/polyfant/hulta_pregnancy_app/internal/pregnancy"
 )
+
+// Database interface defines the methods our handler needs
+type Database interface {
+	GetHorse(id int64) (models.Horse, error)
+	GetAllHorses() ([]models.Horse, error)
+	AddHorse(horse *models.Horse) error
+	DB() *gorm.DB
+	Create(value interface{}) *gorm.DB
+	First(dest interface{}, conds ...interface{}) *gorm.DB
+	AutoMigrate(dst ...interface{}) error
+	GetHealthRecords(horseID int64) ([]models.HealthRecord, error)
+	GetBreedingCosts(horseID uint) ([]models.BreedingCost, error)
+	AddHealthRecord(record *models.HealthRecord) error
+	AddBreedingCost(cost *models.BreedingCost) error
+	GetOffspring(horseID int64) ([]models.Horse, error)
+	GetDashboardStats(userID string) (*models.DashboardStats, error)
+	GetFamilyTree(horseID int64) (*database.FamilyTree, error)
+	GetPreFoalingChecklist(horseID int64) ([]models.PreFoalingChecklistItem, error)
+	AddPreFoalingChecklistItem(item *models.PreFoalingChecklistItem) error
+	UpdatePreFoalingChecklistItem(item *models.PreFoalingChecklistItem) error
+	DeletePreFoalingChecklistItem(itemID int64) error
+	DeleteHorse(horseID int64) error
+	GetPregnancyGuidelines(stage models.PregnancyStage) ([]models.PregnancyGuideline, error)
+}
 
 // Handler handles HTTP requests
 type Handler struct {
-	db               *database.PostgresDB
+	horseService     *service.HorseService
+	expenseService   *service.ExpenseService
+	userService      *service.UserService
 	pregnancyService *pregnancy.Service
-	cache            cache.Cache
+	cache            *cache.MemoryCache
+	db               Database
+	pregnancyRepo    repository.PregnancyRepository
 }
 
 // NewHandler creates a new Handler instance
-func NewHandler(db *database.PostgresDB, caches ...cache.Cache) *Handler {
-	var memoryCache cache.Cache
+func NewHandler(
+	db Database, 
+	horseRepo repository.HorseRepository,
+	expenseRepo repository.ExpenseRepository,
+	recurringExpenseRepo repository.RecurringExpenseRepository,
+	userRepo repository.UserRepository,
+	caches ...*cache.MemoryCache,
+) *Handler {
+	var memoryCache *cache.MemoryCache
 	if len(caches) > 0 {
 		memoryCache = caches[0]
 	} else {
-		// Create a default in-memory cache if none is provided
 		memoryCache = cache.NewMemoryCache()
 	}
 
+	pregnancyRepo := repository.NewPregnancyRepository(db.DB())
+
 	return &Handler{
-		db:               db,
-		pregnancyService: pregnancy.NewService(db),
-		cache:            memoryCache,
+		horseService: service.NewHorseService(horseRepo, expenseRepo),
+		expenseService: service.NewExpenseService(expenseRepo, recurringExpenseRepo),
+		userService: service.NewUserService(userRepo, horseRepo, expenseRepo),
+		pregnancyService: pregnancy.NewService(pregnancyRepo),
+		cache: memoryCache,
+		db: db,
+		pregnancyRepo: pregnancyRepo,
 	}
 }
 
@@ -46,50 +89,6 @@ func (h *Handler) ListHorses(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, horses)
-}
-
-func (h *Handler) GetHorse(c *gin.Context) {
-	id := c.Param("id")
-	horseID, err := strconv.ParseInt(id, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
-		return
-	}
-
-	// Check cache first
-	if cachedHorse, found := h.cache.Get(fmt.Sprintf("horse_%d", horseID)); found {
-		c.JSON(http.StatusOK, cachedHorse)
-		return
-	}
-
-	horse, err := h.db.GetHorse(horseID)
-	if err != nil {
-		log.Printf("Error getting horse %d: %v", horseID, err)
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: fmt.Sprintf("Horse not found: %v", err)})
-		return
-	}
-
-	// Cache the horse for 1 hour
-	h.cache.Set(fmt.Sprintf("horse_%d", horseID), horse, 1*time.Hour)
-
-	c.JSON(http.StatusOK, horse)
-}
-
-func (h *Handler) AddHorse(c *gin.Context) {
-	var horse models.Horse
-	if err := c.ShouldBindJSON(&horse); err != nil {
-		log.Printf("Error binding JSON: %v", err)
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("Invalid horse data: %v", err)})
-		return
-	}
-
-	err := h.db.AddHorse(&horse)
-	if err != nil {
-		log.Printf("Error adding horse: %v", err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("Failed to add horse: %v", err)})
-		return
-	}
-	c.JSON(http.StatusCreated, horse)
 }
 
 func (h *Handler) DeleteHorse(c *gin.Context) {
@@ -157,6 +156,12 @@ func (h *Handler) GetPregnancyGuidelines(c *gin.Context) {
 	stageStr := c.Query("stage")
 	stage := models.PregnancyStage(stageStr)
 	guidelines := h.pregnancyService.GetPregnancyGuidelinesByStage(stage)
+	
+	if len(guidelines) == 0 {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: fmt.Sprintf("No guidelines found for stage: %s", stage)})
+		return
+	}
+	
 	c.JSON(http.StatusOK, guidelines)
 }
 
@@ -437,4 +442,112 @@ func (h *Handler) InitializePreFoalingChecklist(c *gin.Context) {
 		}
 	}
 	c.Status(http.StatusCreated)
+}
+
+func (h *Handler) GetHorse(c *gin.Context) {
+	// Extract user ID from context
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	// Parse horse ID from URL
+	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid horse ID"})
+		return
+	}
+
+	// Retrieve horse details
+	horseDetails, err := h.horseService.GetHorseWithDetails(c.Request.Context(), uint(horseID), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, horseDetails)
+}
+
+func (h *Handler) AddHorse(c *gin.Context) {
+	// Extract user ID from context
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	// Bind horse data from request
+	var horse models.Horse
+	if err := c.ShouldBindJSON(&horse); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Set user ID
+	horse.UserID = userID
+
+	// Create horse
+	if err := h.horseService.CreateHorse(c.Request.Context(), &horse); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, horse)
+}
+
+func (h *Handler) UpdateHorsePregnancyStatus(c *gin.Context) {
+	// Extract user ID from context
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	// Parse horse ID from URL
+	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid horse ID"})
+		return
+	}
+
+	// Bind pregnancy status
+	var pregnancyStatus struct {
+		IsPregnant bool `json:"is_pregnant"`
+	}
+	if err := c.ShouldBindJSON(&pregnancyStatus); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Update pregnancy status
+	if err := h.horseService.UpdateHorsePregnancyStatus(
+		c.Request.Context(), 
+		uint(horseID), 
+		userID, 
+		pregnancyStatus.IsPregnant,
+	); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Horse pregnancy status updated"})
+}
+
+func (h *Handler) GetPregnantHorses(c *gin.Context) {
+	// Extract user ID from context
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	// Retrieve pregnant horses
+	horses, err := h.horseService.GetPregnantHorses(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, horses)
 }

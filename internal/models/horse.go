@@ -35,6 +35,11 @@ type Horse struct {
 	DeletedAt      *time.Time `gorm:"index"`
 }
 
+type HorseDetails struct {
+	Horse     Horse       `json:"horse"`
+	Expenses  []Expense   `json:"expenses"`
+}
+
 const (
 	GenderMare     = "MARE"
 	GenderStallion = "STALLION"

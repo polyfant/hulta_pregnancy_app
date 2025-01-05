@@ -4,6 +4,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,6 +15,7 @@ type Config struct {
 	Server      ServerConfig
 	Logger      LoggerConfig
 	Features    FeatureFlags
+	Backup      BackupConfig
 }
 
 type DatabaseConfig struct {
@@ -42,6 +44,13 @@ type FeatureFlags struct {
 	StrictMode         bool
 }
 
+type BackupConfig struct {
+	Enabled     bool
+	Directory   string
+	Interval    time.Duration
+	MaxBackups  int
+}
+
 func LoadConfig() *Config {
 	env := getEnv("APP_ENV", "development")
 	
@@ -63,6 +72,12 @@ func LoadConfig() *Config {
 		Logger: LoggerConfig{
 			Level: getEnv("LOG_LEVEL", "info"),
 			Path:  getEnv("LOG_PATH", "./logs"),
+		},
+		Backup: BackupConfig{
+			Enabled:     getEnvAsBool("BACKUP_ENABLED", false),
+			Directory:   getEnv("BACKUP_DIRECTORY", "./backups"),
+			Interval:    getEnvAsDuration("BACKUP_INTERVAL", 24*time.Hour),
+			MaxBackups:  getEnvAsInt("BACKUP_MAX_BACKUPS", 30),
 		},
 	}
 
@@ -115,6 +130,14 @@ func getEnvAsBool(key string, defaultValue bool) bool {
 	return value
 }
 
+func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
+	valueStr := getEnv(key, "")
+	if value, err := time.ParseDuration(valueStr); err == nil {
+		return value
+	}
+	return defaultValue
+}
+
 // LoadTestConfig loads configuration for testing environment
 func LoadTestConfig() *Config {
 	return &Config{
@@ -139,6 +162,12 @@ func LoadTestConfig() *Config {
 			EnableAuditLogging: false,
 			EnableCaching:      false,
 			StrictMode:         false,
+		},
+		Backup: BackupConfig{
+			Enabled:     false,
+			Directory:   "./test_backups",
+			Interval:    1 * time.Hour,
+			MaxBackups:  10,
 		},
 	}
 }

@@ -51,6 +51,12 @@ type PreFoalingChecklistItem struct {
 	UpdatedAt   time.Time
 }
 
+type PregnancyGuideline struct {
+	Stage       PregnancyStage `json:"stage"`
+	Category    string         `json:"category"`
+	Description string         `json:"description"`
+}
+
 // Constants for pregnancy status
 const (
 	PregnancyStatusActive    = "ACTIVE"

@@ -16,7 +16,7 @@ func SetupRouter(router *gin.Engine, h *Handler) {
 	router.Use(cors.New(config))
 
 	// Create pregnancy handler
-	pregnancyHandler := NewPregnancyHandler(pregnancy.NewService(h.db), h.db)
+	pregnancyHandler := NewPregnancyHandler(pregnancy.NewService(h.db.DB()), h.db)
 
 	// API routes
 	api := router.Group("/api")
