@@ -48,15 +48,24 @@ A comprehensive Go-based application for horse breeding, health tracking, and ma
 ## Roadmap
 See [TODO.md](TODO.md) for upcoming features
 
+## License
+© 2025 hulta equestrian. All Rights Reserved.
+
+PROPRIETARY AND CONFIDENTIAL
+
+THIS SOFTWARE IS THE EXCLUSIVE PROPERTY OF hulta equestrian. 
+
+UNAUTHORIZED COPYING, REPRODUCTION, DISTRIBUTION, OR USE OF THIS SOFTWARE, IN WHOLE OR IN PART, BY ANY MEANS, IS STRICTLY PROHIBITED. 
+
+THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. 
+
+VIOLATION OF THESE TERMS WILL RESULT IN LEGAL ACTION.
+
+NO LICENSE IS GRANTED TO USE, COPY, MODIFY, OR DISTRIBUTE THIS SOFTWARE UNDER ANY CIRCUMSTANCES.
+
 ## Contributing
 1. Fork the repository
 2. Create your feature branch
 3. Commit your changes
 4. Push to the branch
 5. Create a Pull Request
-
-## License
-[Your License Here]
-
-## Contact
-[Your Contact Information]
