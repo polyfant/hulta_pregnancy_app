@@ -8,15 +8,18 @@ import (
 	"syscall"
 	"time"
 
+	"path/filepath"
+
 	"github.com/gin-gonic/gin"
 	"github.com/polyfant/hulta_pregnancy_app/internal/api"
 	"github.com/polyfant/hulta_pregnancy_app/internal/cache"
 	"github.com/polyfant/hulta_pregnancy_app/internal/config"
 	"github.com/polyfant/hulta_pregnancy_app/internal/database"
 	"github.com/polyfant/hulta_pregnancy_app/internal/logger"
-	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 	"github.com/polyfant/hulta_pregnancy_app/internal/middleware"
-	"path/filepath"
+	"github.com/polyfant/hulta_pregnancy_app/internal/models"
+	"github.com/polyfant/hulta_pregnancy_app/internal/repository/postgres"
+	"github.com/polyfant/hulta_pregnancy_app/internal/service"
 )
 
 func main() {
@@ -86,8 +89,29 @@ func main() {
 			"interval", cfg.Backup.Interval)
 	}
 
-	// Initialize API handlers
-	handlers := api.NewHandler(db, memoryCache)
+	// Initialize repositories
+	horseRepo := postgres.NewHorseRepository(db.GetDB())
+	userRepo := postgres.NewUserRepository(db.GetDB())
+	pregnancyRepo := postgres.NewPregnancyRepository(db.GetDB())
+	healthRepo := postgres.NewHealthRepository(db.GetDB())
+
+	// Initialize services
+	userService := service.NewUserService(userRepo)
+	horseService := service.NewHorseService(horseRepo)
+	pregnancyService := service.NewPregnancyService(horseRepo, pregnancyRepo)
+	healthService := service.NewHealthService(healthRepo)
+
+	// Initialize handlers
+	handlerConfig := api.HandlerConfig{
+		Database:         db,
+		UserService:      userService,
+		HorseService:     horseService,
+		PregnancyService: pregnancyService,
+		HealthService:    healthService,
+		Cache:           memoryCache,
+	}
+
+	handler := api.NewHandler(handlerConfig)
 
 	// Setup Gin router
 	router := gin.Default()
@@ -99,7 +123,7 @@ func main() {
 	router.Use(middleware.StaticFileMiddleware(frontendBuildPath))
 
 	// Setup routes
-	api.SetupRouter(router, handlers)
+	api.SetupRouter(router, handler)
 
 	// Start server
 	serverAddr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)

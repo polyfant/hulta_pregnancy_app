@@ -5,20 +5,17 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/polyfant/hulta_pregnancy_app/internal/database"
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
-	"github.com/polyfant/hulta_pregnancy_app/internal/service/pregnancy"
+	"github.com/polyfant/hulta_pregnancy_app/internal/service"
 )
 
 type PregnancyHandler struct {
-	service *pregnancy.Service
-	db      *database.PostgresDB
+	service *service.PregnancyService
 }
 
-func NewPregnancyHandler(service *pregnancy.Service, db *database.PostgresDB) *PregnancyHandler {
+func NewPregnancyHandler(service *service.PregnancyService) *PregnancyHandler {
 	return &PregnancyHandler{
 		service: service,
-		db:      db,
 	}
 }
 
@@ -40,7 +37,14 @@ func (h *PregnancyHandler) GetPregnancyStage(c *gin.Context) {
 		return
 	}
 
-	stage, err := h.service.GetPregnancyStage(c.Request.Context(), pregnancyID)
+	// Safely convert int64 to uint
+	if pregnancyID < 0 {
+		c.JSON(400, ErrorResponse{Error: "Pregnancy ID cannot be negative"})
+		return
+	}
+	pregnancyUint := uint(pregnancyID)
+
+	stage, err := h.service.GetPregnancyStage(c.Request.Context(), pregnancyUint)
 	if err != nil {
 		c.JSON(500, ErrorResponse{Error: err.Error()})
 		return
@@ -56,13 +60,20 @@ func (h *PregnancyHandler) GetPregnancyStatus(c *gin.Context) {
 		return
 	}
 
-	horse, err := h.db.GetHorse(horseID)
+	// Safely convert int64 to uint
+	if horseID < 0 {
+		c.JSON(400, ErrorResponse{Error: "Horse ID cannot be negative"})
+		return
+	}
+	horseUint := uint(horseID)
+
+	horse, err := h.service.GetHorse(horseUint)
 	if err != nil {
 		c.JSON(500, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	stage, err := h.service.GetPregnancyStage(c.Request.Context(), horseID)
+	stage, err := h.service.GetPregnancyStage(c.Request.Context(), horseUint)
 	if err != nil {
 		c.JSON(500, ErrorResponse{Error: err.Error()})
 		return
@@ -82,6 +93,13 @@ func (h *PregnancyHandler) StartPregnancyTracking(c *gin.Context) {
 		return
 	}
 
+	// Safely convert int64 to uint
+	if horseID < 0 {
+		c.JSON(400, ErrorResponse{Error: "Horse ID cannot be negative"})
+		return
+	}
+	horseUint := uint(horseID)
+
 	var data struct {
 		ConceptionDate time.Time `json:"conceptionDate" binding:"required"`
 	}
@@ -96,35 +114,20 @@ func (h *PregnancyHandler) StartPregnancyTracking(c *gin.Context) {
 		return
 	}
 
-	// Update horse pregnancy status
-	horse, err := h.db.GetHorse(horseID)
-	if err != nil {
+	// Get user ID from context
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(401, ErrorResponse{Error: "Unauthorized"})
+		return
+	}
+
+	// Start pregnancy tracking
+	if err := h.service.StartPregnancy(c.Request.Context(), horseUint, userID.(string), data.ConceptionDate); err != nil {
 		c.JSON(500, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	horse.IsPregnant = true
-	horse.ConceptionDate = &data.ConceptionDate
-
-	if err := h.db.UpdateHorse(&horse); err != nil {
-		c.JSON(500, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	// Create pregnancy record
-	pregnancy := &models.Pregnancy{
-		HorseID:   uint(horseID),
-		UserID:    c.GetString("userID"),
-		StartDate: data.ConceptionDate,
-		Status:    models.PregnancyStatusActive,
-	}
-
-	if err := h.db.AddPregnancy(pregnancy); err != nil {
-		c.JSON(500, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	c.JSON(201, pregnancy)
+	c.JSON(201, gin.H{"message": "Pregnancy tracking started successfully"})
 }
 
 func (h *PregnancyHandler) EndPregnancyTracking(c *gin.Context) {
@@ -133,6 +136,13 @@ func (h *PregnancyHandler) EndPregnancyTracking(c *gin.Context) {
 		c.JSON(400, ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
+
+	// Safely convert int64 to uint
+	if horseID < 0 {
+		c.JSON(400, ErrorResponse{Error: "Horse ID cannot be negative"})
+		return
+	}
+	horseUint := uint(horseID)
 
 	var data struct {
 		Status string    `json:"status"`
@@ -144,7 +154,7 @@ func (h *PregnancyHandler) EndPregnancyTracking(c *gin.Context) {
 	}
 
 	// Update horse pregnancy status
-	horse, err := h.db.GetHorse(horseID)
+	horse, err := h.service.GetHorse(horseUint)
 	if err != nil {
 		c.JSON(500, ErrorResponse{Error: err.Error()})
 		return
@@ -153,13 +163,13 @@ func (h *PregnancyHandler) EndPregnancyTracking(c *gin.Context) {
 	horse.IsPregnant = false
 	horse.ConceptionDate = nil
 
-	if err := h.db.UpdateHorse(&horse); err != nil {
+	if err := h.service.UpdateHorse(horse); err != nil {
 		c.JSON(500, ErrorResponse{Error: err.Error()})
 		return
 	}
 
 	// Update pregnancy record
-	pregnancy, err := h.db.GetPregnancy(horseID)
+	pregnancy, err := h.service.GetPregnancy(int64(horseUint))
 	if err != nil {
 		c.JSON(500, ErrorResponse{Error: err.Error()})
 		return
@@ -168,7 +178,7 @@ func (h *PregnancyHandler) EndPregnancyTracking(c *gin.Context) {
 	pregnancy.Status = data.Status
 	pregnancy.EndDate = &data.Date
 
-	if err := h.db.UpdatePregnancy(&pregnancy); err != nil {
+	if err := h.service.UpdatePregnancy(&pregnancy); err != nil {
 		c.JSON(500, ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -183,7 +193,14 @@ func (h *PregnancyHandler) GetPregnancyEvents(c *gin.Context) {
 		return
 	}
 
-	events, err := h.db.GetPregnancyEvents(horseID)
+	// Safely convert int64 to uint
+	if horseID < 0 {
+		c.JSON(400, ErrorResponse{Error: "Horse ID cannot be negative"})
+		return
+	}
+	horseUint := uint(horseID)
+
+	events, err := h.service.GetPregnancyEvents(int64(horseUint))
 	if err != nil {
 		c.JSON(500, ErrorResponse{Error: err.Error()})
 		return
@@ -199,13 +216,20 @@ func (h *PregnancyHandler) AddPregnancyEvent(c *gin.Context) {
 		return
 	}
 
+	// Safely convert int64 to uint
+	if horseID < 0 {
+		c.JSON(400, ErrorResponse{Error: "Horse ID cannot be negative"})
+		return
+	}
+	horseUint := uint(horseID)
+
 	var event models.PregnancyEvent
 	if err := c.ShouldBindJSON(&event); err != nil {
 		c.JSON(400, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	pregnancy, err := h.db.GetPregnancy(horseID)
+	pregnancy, err := h.service.GetPregnancy(int64(horseUint))
 	if err != nil {
 		c.JSON(500, ErrorResponse{Error: err.Error()})
 		return
@@ -214,7 +238,7 @@ func (h *PregnancyHandler) AddPregnancyEvent(c *gin.Context) {
 	event.PregnancyID = pregnancy.ID
 	event.Date = time.Now()
 
-	if err := h.db.AddPregnancyEvent(&event); err != nil {
+	if err := h.service.AddPregnancyEvent(&event); err != nil {
 		c.JSON(500, ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -229,8 +253,15 @@ func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 		return
 	}
 
+	// Safely convert int64 to uint
+	if horseID < 0 {
+		c.JSON(400, ErrorResponse{Error: "Horse ID cannot be negative"})
+		return
+	}
+	horseUint := uint(horseID)
+
 	// Get existing checklist
-	items, err := h.db.GetPreFoalingChecklist(horseID)
+	items, err := h.service.GetPreFoalingChecklist(int64(horseUint))
 	if err != nil {
 		c.JSON(500, ErrorResponse{Error: err.Error()})
 		return
@@ -239,7 +270,7 @@ func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 	// If no checklist exists, initialize with default items
 	if len(items) == 0 {
 		// Get horse to check pregnancy status and due date
-		horse, err := h.db.GetHorse(horseID)
+		horse, err := h.service.GetHorse(horseUint)
 		if err != nil {
 			c.JSON(500, ErrorResponse{Error: err.Error()})
 			return
@@ -251,13 +282,13 @@ func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 		}
 
 		// Calculate due date and set checklist deadlines accordingly
-		dueDate := pregnancy.CalculateDueDate(*horse.ConceptionDate, pregnancy.DefaultGestationDays)
+		dueDate := service.CalculateDueDate(*horse.ConceptionDate, service.DefaultGestationDays)
 		
 		// Create timeline-based checklist items
 		items = []models.PreFoalingChecklistItem{
 			// 60 days before
 			{
-				HorseID:     uint(horseID),
+				HorseID:     horseUint,
 				Description: "Schedule pre-foaling veterinary exam",
 				Priority:    models.PriorityHigh,
 				DueDate:     dueDate.AddDate(0, 0, -60),
@@ -265,7 +296,7 @@ func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 			},
 			// 45 days before
 			{
-				HorseID:     uint(horseID),
+				HorseID:     horseUint,
 				Description: "Begin mammary gland monitoring",
 				Priority:    models.PriorityMedium,
 				DueDate:     dueDate.AddDate(0, 0, -45),
@@ -273,14 +304,14 @@ func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 			},
 			// 30 days before
 			{
-				HorseID:     uint(horseID),
+				HorseID:     horseUint,
 				Description: "Prepare foaling kit",
 				Priority:    models.PriorityHigh,
 				DueDate:     dueDate.AddDate(0, 0, -30),
 				Notes:       "Include: sterile gloves, iodine, clean towels, flashlight, watch, emergency contacts, tail wrap, umbilical clamp",
 			},
 			{
-				HorseID:     uint(horseID),
+				HorseID:     horseUint,
 				Description: "Set up foaling notification system",
 				Priority:    models.PriorityHigh,
 				DueDate:     dueDate.AddDate(0, 0, -30),
@@ -288,14 +319,14 @@ func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 			},
 			// 21 days before
 			{
-				HorseID:     uint(horseID),
+				HorseID:     horseUint,
 				Description: "Start intensive udder monitoring",
 				Priority:    models.PriorityHigh,
 				DueDate:     dueDate.AddDate(0, 0, -21),
 				Notes:       "Check twice daily: size, firmness, waxing. Document with photos",
 			},
 			{
-				HorseID:     uint(horseID),
+				HorseID:     horseUint,
 				Description: "Prepare foaling stall",
 				Priority:    models.PriorityHigh,
 				DueDate:     dueDate.AddDate(0, 0, -21),
@@ -303,14 +334,14 @@ func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 			},
 			// 14 days before
 			{
-				HorseID:     uint(horseID),
+				HorseID:     horseUint,
 				Description: "Begin vulva monitoring",
 				Priority:    models.PriorityHigh,
 				DueDate:     dueDate.AddDate(0, 0, -14),
 				Notes:       "Check for relaxation and color changes",
 			},
 			{
-				HorseID:     uint(horseID),
+				HorseID:     horseUint,
 				Description: "Review emergency procedures",
 				Priority:    models.PriorityHigh,
 				DueDate:     dueDate.AddDate(0, 0, -14),
@@ -318,14 +349,14 @@ func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 			},
 			// 7 days before
 			{
-				HorseID:     uint(horseID),
+				HorseID:     horseUint,
 				Description: "Begin temperature monitoring",
 				Priority:    models.PriorityHigh,
 				DueDate:     dueDate.AddDate(0, 0, -7),
 				Notes:       "Monitor twice daily: normal 37.5-38.5°C. Drop of 1°C may indicate imminent foaling",
 			},
 			{
-				HorseID:     uint(horseID),
+				HorseID:     horseUint,
 				Description: "Monitor behavioral changes",
 				Priority:    models.PriorityHigh,
 				DueDate:     dueDate.AddDate(0, 0, -7),
@@ -335,7 +366,7 @@ func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 
 		// Add each item to database
 		for _, item := range items {
-			if err := h.db.AddPreFoalingChecklistItem(&item); err != nil {
+			if err := h.service.AddPreFoalingChecklistItem(&item); err != nil {
 				c.JSON(500, ErrorResponse{Error: "Failed to initialize checklist"})
 				return
 			}
@@ -353,8 +384,15 @@ func (h *PregnancyHandler) GetPostFoalingChecklist(c *gin.Context) {
 		return
 	}
 
+	// Safely convert int64 to uint
+	if horseID < 0 {
+		c.JSON(400, ErrorResponse{Error: "Horse ID cannot be negative"})
+		return
+	}
+	horseUint := uint(horseID)
+
 	// Get pregnancy to find foaling date
-	pregnancy, err := h.db.GetPregnancy(horseID)
+	pregnancy, err := h.service.GetPregnancy(int64(horseUint))
 	if err != nil {
 		c.JSON(500, ErrorResponse{Error: err.Error()})
 		return
@@ -371,14 +409,14 @@ func (h *PregnancyHandler) GetPostFoalingChecklist(c *gin.Context) {
 	items := []models.PreFoalingChecklistItem{
 		// Immediate (within first hour)
 		{
-			HorseID:     uint(horseID),
+			HorseID:     horseUint,
 			Description: "Check mare's vital signs",
 			Priority:    models.PriorityHigh,
-				DueDate:     foalingDate.Add(1 * time.Hour),
+				DueDate:     foalingDate.Add(1*time.Hour),
 				Notes:       "Temperature: 37.5-38.5°C, Heart rate: 28-44 bpm, Respiration: 8-16 breaths/min",
 		},
 		{
-			HorseID:     uint(horseID),
+			HorseID:     horseUint,
 			Description: "Assess foal's initial vitals",
 			Priority:    models.PriorityHigh,
 			DueDate:     foalingDate.Add(30 * time.Minute),
@@ -386,14 +424,14 @@ func (h *PregnancyHandler) GetPostFoalingChecklist(c *gin.Context) {
 		},
 		// 2-3 hours post-foaling
 		{
-			HorseID:     uint(horseID),
+			HorseID:     horseUint,
 			Description: "Monitor placenta expulsion",
 			Priority:    models.PriorityHigh,
 			DueDate:     foalingDate.Add(3 * time.Hour),
 			Notes:       "Should be complete within 3 hours. Save placenta for vet inspection",
 		},
 		{
-			HorseID:     uint(horseID),
+			HorseID:     horseUint,
 			Description: "Check foal nursing",
 			Priority:    models.PriorityHigh,
 			DueDate:     foalingDate.Add(2 * time.Hour),
@@ -401,14 +439,14 @@ func (h *PregnancyHandler) GetPostFoalingChecklist(c *gin.Context) {
 		},
 		// 6-12 hours post-foaling
 		{
-			HorseID:     uint(horseID),
+			HorseID:     horseUint,
 			Description: "Monitor foal's first defecation",
 			Priority:    models.PriorityHigh,
 			DueDate:     foalingDate.Add(12 * time.Hour),
 			Notes:       "Meconium passage should begin within 12 hours. Watch for straining",
 		},
 		{
-			HorseID:     uint(horseID),
+			HorseID:     horseUint,
 			Description: "Check foal's leg strength",
 			Priority:    models.PriorityHigh,
 			DueDate:     foalingDate.Add(6 * time.Hour),
@@ -416,14 +454,14 @@ func (h *PregnancyHandler) GetPostFoalingChecklist(c *gin.Context) {
 		},
 		// 24 hours post-foaling
 		{
-			HorseID:     uint(horseID),
+			HorseID:     horseUint,
 			Description: "Veterinary examination",
 			Priority:    models.PriorityHigh,
 			DueDate:     foalingDate.AddDate(0, 0, 1),
 			Notes:       "Complete health check for mare and foal, IgG test for foal",
 		},
 		{
-			HorseID:     uint(horseID),
+			HorseID:     horseUint,
 			Description: "Monitor mare's milk production",
 			Priority:    models.PriorityHigh,
 			DueDate:     foalingDate.AddDate(0, 0, 1),
@@ -431,14 +469,14 @@ func (h *PregnancyHandler) GetPostFoalingChecklist(c *gin.Context) {
 		},
 		// 48-72 hours post-foaling
 		{
-			HorseID:     uint(horseID),
+			HorseID:     horseUint,
 			Description: "Check mare's uterine discharge",
 			Priority:    models.PriorityHigh,
 			DueDate:     foalingDate.AddDate(0, 0, 2),
 			Notes:       "Monitor color and odor. Should be dark red to brown, no foul smell",
 		},
 		{
-			HorseID:     uint(horseID),
+			HorseID:     horseUint,
 			Description: "Assess foal bonding",
 			Priority:    models.PriorityMedium,
 			DueDate:     foalingDate.AddDate(0, 0, 3),
@@ -452,7 +490,13 @@ func (h *PregnancyHandler) GetPostFoalingChecklist(c *gin.Context) {
 func (h *PregnancyHandler) GetPregnancyGuidelines(c *gin.Context) {
 	stageStr := c.Query("stage")
 	stage := models.PregnancyStage(stageStr)
-	guidelines := h.service.GetPregnancyGuidelinesByStage(stage)
+	
+	guidelines, err := h.service.GetPregnancyGuidelinesByStage(stage)
+	if err != nil {
+		c.JSON(400, ErrorResponse{Error: err.Error(	)})
+		return
+	}
+	
 	c.JSON(200, guidelines)
 }
 
@@ -463,7 +507,14 @@ func (h *PregnancyHandler) CheckPreFoalingSigns(c *gin.Context) {
 		return
 	}
 
-	signs, err := h.db.GetPreFoalingSigns(horseID)
+	// Safely convert int64 to uint
+	if horseID < 0 {
+		c.JSON(400, ErrorResponse{Error: "Horse ID cannot be negative"})
+		return
+	}
+	horseUint := uint(horseID)
+
+	signs, err := h.service.GetPreFoalingSigns(int64(horseUint))
 	if err != nil {
 		c.JSON(500, ErrorResponse{Error: err.Error()})
 		return
@@ -478,16 +529,23 @@ func (h *PregnancyHandler) RecordPreFoalingSign(c *gin.Context) {
 		return
 	}
 
+	// Safely convert int64 to uint
+	if horseID < 0 {
+		c.JSON(400, ErrorResponse{Error: "Horse ID cannot be negative"})
+		return
+	}
+	horseUint := uint(horseID)
+
 	var sign models.PreFoalingSign
 	if err := c.ShouldBindJSON(&sign); err != nil {
 		c.JSON(400, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	sign.HorseID = uint(horseID)
+	sign.HorseID = horseUint
 	sign.Date = time.Now()
 
-	if err := h.db.AddPreFoalingSign(&sign); err != nil {
+	if err := h.service.AddPreFoalingSign(&sign); err != nil {
 		c.JSON(500, ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -497,4 +555,36 @@ func (h *PregnancyHandler) RecordPreFoalingSign(c *gin.Context) {
 // Add this error type
 type ErrorResponse struct {
 	Error string `json:"error"`
+}
+
+func (h *PregnancyHandler) UpdatePregnancy(c *gin.Context) {
+	var pregnancy models.Pregnancy
+	if err := c.ShouldBindJSON(&pregnancy); err != nil {
+		c.JSON(400, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	err := h.service.UpdatePregnancy(c.Request.Context(), pregnancy)
+	if err != nil {
+		c.JSON(500, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(200, pregnancy)
+}
+
+func (h *PregnancyHandler) GetPregnancy(c *gin.Context) {
+	horseID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(400, ErrorResponse{Error: "Invalid horse ID"})
+		return
+	}
+
+	pregnancy, err := h.service.GetPregnancy(c.Request.Context(), horseID)
+	if err != nil {
+		c.JSON(500, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(200, pregnancy)
 }

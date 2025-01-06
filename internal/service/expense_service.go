@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/shopspring/decimal"
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
 )
@@ -42,8 +41,17 @@ func (s *ExpenseService) GetHorseExpenses(ctx context.Context, horseID uint) ([]
 	return s.expenseRepo.GetByHorseID(ctx, horseID)
 }
 
-func (s *ExpenseService) GetUserTotalExpenses(ctx context.Context, userID string) (decimal.Decimal, error) {
-	return s.expenseRepo.GetTotalExpensesByUser(ctx, userID)
+func (s *ExpenseService) GetUserTotalExpenses(ctx context.Context, userID string) (float64, error) {
+	totalExpenses, err := s.expenseRepo.GetTotalExpensesByUser(ctx, userID)
+	if err != nil {
+		return 0, err
+	}
+	f, exact := totalExpenses.Float64()
+	if !exact {
+		// If the conversion is not exact, log a warning or handle it as needed
+		fmt.Printf("Warning: Inexact conversion of total expenses for user %s\n", userID)
+	}
+	return f, nil
 }
 
 func (s *ExpenseService) GetExpensesByType(ctx context.Context, userID, expenseType string) ([]models.Expense, error) {
@@ -71,9 +79,13 @@ func (s *ExpenseService) ProcessDueRecurringExpenses(ctx context.Context) error 
 
 	for _, recurringExpense := range dueExpenses {
 		// Create actual expense
+		var horseID uint
+		if recurringExpense.HorseID != nil {
+			horseID = *recurringExpense.HorseID
+		}
 		expense := &models.Expense{
 			UserID:      recurringExpense.UserID,
-			HorseID:     recurringExpense.HorseID,
+			HorseID:     horseID,
 			Amount:      recurringExpense.Amount,
 			Description: recurringExpense.Description,
 			Date:        time.Now(),
@@ -94,7 +106,7 @@ func (s *ExpenseService) ProcessDueRecurringExpenses(ctx context.Context) error 
 }
 
 func (s *ExpenseService) validateExpense(expense *models.Expense) error {
-	if expense.Amount.LessThanOrEqual(decimal.Zero) {
+	if expense.Amount <= 0 {
 		return fmt.Errorf("expense amount must be positive")
 	}
 
@@ -106,7 +118,7 @@ func (s *ExpenseService) validateExpense(expense *models.Expense) error {
 }
 
 func (s *ExpenseService) validateRecurringExpense(recurringExpense *models.RecurringExpense) error {
-	if recurringExpense.Amount.LessThanOrEqual(decimal.Zero) {
+	if recurringExpense.Amount <= 0 {
 		return fmt.Errorf("recurring expense amount must be positive")
 	}
 
@@ -120,13 +132,13 @@ func (s *ExpenseService) validateRecurringExpense(recurringExpense *models.Recur
 // Helper function to calculate next due date
 func calculateNextDueDate(recurringExpense models.RecurringExpense) time.Time {
 	switch recurringExpense.Frequency {
-	case "daily":
+	case models.FrequencyDaily:
 		return recurringExpense.NextDueDate.AddDate(0, 0, 1)
-	case "weekly":
+	case models.FrequencyWeekly:
 		return recurringExpense.NextDueDate.AddDate(0, 0, 7)
-	case "monthly":
+	case models.FrequencyMonthly:
 		return recurringExpense.NextDueDate.AddDate(0, 1, 0)
-	case "yearly":
+	case models.FrequencyYearly:
 		return recurringExpense.NextDueDate.AddDate(1, 0, 0)
 	default:
 		return recurringExpense.NextDueDate

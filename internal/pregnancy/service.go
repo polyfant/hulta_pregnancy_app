@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"time"
+
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
 )
@@ -63,11 +64,11 @@ func (s *Service) CalculatePregnancyProgress(pregnancy *models.Pregnancy) (float
 	var stage string
 	switch {
 	case daysPregnant < 120:
-		stage = string(models.EarlyGestation)
+		stage = string(models.PregnancyStageEarlyGestation)
 	case daysPregnant < 240:
-		stage = string(models.MidGestation)
+		stage = string(models.PregnancyStageMidGestation)
 	default:
-		stage = string(models.LateGestation)
+		stage = string(models.PregnancyStageLateGestation)
 	}
 
 	return progress, daysRemaining, stage
@@ -77,17 +78,17 @@ func (s *Service) CalculatePregnancyProgress(pregnancy *models.Pregnancy) (float
 func (s *Service) GetPregnancyGuidelines() []models.PregnancyGuideline {
 	return []models.PregnancyGuideline{
 		{
-			Stage:       models.EarlyGestation,
+			Stage:       models.PregnancyStageEarlyGestation,
 			Category:    "Nutrition",
 			Description: "Maintain regular diet, slight increase in nutrients",
 		},
 		{
-			Stage:       models.MidGestation,
+			Stage:       models.PregnancyStageMidGestation,
 			Category:    "Nutrition",
 			Description: "Increase nutrient intake, monitor weight",
 		},
 		{
-			Stage:       models.LateGestation,
+			Stage:       models.PregnancyStageLateGestation,
 			Category:    "Nutrition",
 			Description: "High-quality diet, prepare for foaling",
 		},
@@ -109,19 +110,42 @@ func (s *Service) GetPregnancyGuidelinesByStage(stage models.PregnancyStage) []m
 }
 
 // GetPregnancyStage retrieves the current pregnancy stage for a specific horse
-func (s *Service) GetPregnancyStage(ctx context.Context, horseID int64) (models.PregnancyStage, error) {
-	// Fetch the current pregnancy for the horse
+func (s *Service) GetPregnancyStage(ctx context.Context, horseID uint) (models.PregnancyStage, error) {
 	pregnancy, err := s.pregnancyRepo.GetCurrentPregnancy(ctx, horseID)
 	if err != nil {
-		return "", err
+		return models.PregnancyStage("UNKNOWN"), fmt.Errorf("failed to get pregnancy: %w", err)
 	}
 
-	// If no active pregnancy, return an appropriate response
 	if pregnancy == nil {
-		return "", fmt.Errorf("no active pregnancy found for horse")
+		return models.PregnancyStage("UNKNOWN"), nil
 	}
 
-	// Calculate the stage based on days pregnant
-	_, _, stage := s.CalculatePregnancyProgress(pregnancy)
-	return models.PregnancyStage(stage), nil
+	return s.calculateStage(pregnancy), nil
+}
+
+func (s *Service) calculateStage(pregnancy *models.Pregnancy) models.PregnancyStage {
+	if pregnancy.ConceptionDate == nil {
+		return models.PregnancyStageEarlyGestation
+	}
+
+	daysPregnant := int(time.Since(*pregnancy.ConceptionDate).Hours() / 24)
+	progressPercentage := float64(daysPregnant) / float64(models.DefaultGestationDays)
+	
+	switch {
+	case progressPercentage <= 0.33:
+		return models.PregnancyStageEarlyGestation
+	case progressPercentage <= 0.66:
+		return models.PregnancyStageMidGestation
+	default:
+		return models.PregnancyStageLateGestation
+	}
+}
+
+// GetPregnancy retrieves the pregnancy for a specific horse
+func (s *Service) GetPregnancy(ctx context.Context, horseID uint) (*models.Pregnancy, error) {
+	pregnancy, err := s.pregnancyRepo.GetByHorseID(ctx, horseID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pregnancy: %w", err)
+	}
+	return pregnancy, nil
 }

@@ -2,8 +2,9 @@ package repository
 
 import (
 	"context"
-	"github.com/shopspring/decimal"
+
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
+	"github.com/shopspring/decimal"
 )
 
 type HorseRepository interface {
@@ -36,14 +37,26 @@ type RecurringExpenseRepository interface {
 	GetDueRecurringExpenses(ctx context.Context) ([]models.RecurringExpense, error)
 }
 
+type BreedingRepository interface {
+	GetCosts(ctx context.Context, horseID uint) ([]models.BreedingCost, error)
+	CreateCost(ctx context.Context, cost *models.BreedingCost) error
+	UpdateCost(ctx context.Context, cost *models.BreedingCost) error
+	DeleteCost(ctx context.Context, id uint) error
+	GetPregnancyEvents(ctx context.Context, horseID uint) ([]models.PregnancyEvent, error)
+	CreateRecord(ctx context.Context, record *models.BreedingRecord) error
+	GetRecords(ctx context.Context, horseID uint) ([]models.BreedingRecord, error)
+}
+
 type PregnancyRepository interface {
-	Create(pregnancy *models.Pregnancy) error
-	GetActivePregnancyByHorseID(horseID uint) (*models.Pregnancy, error)
-	Update(pregnancy *models.Pregnancy) error
-	GetPregnantHorses() ([]models.Pregnancy, error)
-	GetPregnancy(pregnancyID int64) (*models.Pregnancy, error)
-	GetPregnancies(userID string) ([]models.Pregnancy, error)
-	AddPregnancy(pregnancy *models.Pregnancy) error
-	UpdatePregnancy(pregnancy *models.Pregnancy) error
-	AddPregnancyEvent(event *models.PregnancyEvent) error
+	GetPregnancy(ctx context.Context, id uint) (*models.Pregnancy, error)
+	GetByHorseID(ctx context.Context, horseID uint) (*models.Pregnancy, error)
+	Create(ctx context.Context, pregnancy *models.Pregnancy) error
+	Update(ctx context.Context, pregnancy *models.Pregnancy) error
+	GetPregnancyEvents(ctx context.Context, horseID uint) ([]models.PregnancyEvent, error)
+	AddPregnancyEvent(ctx context.Context, event *models.PregnancyEvent) error
+	GetPreFoalingChecklist(ctx context.Context, horseID uint) ([]models.PreFoalingChecklistItem, error)
+	AddPreFoalingChecklistItem(ctx context.Context, item *models.PreFoalingChecklistItem) error
+	GetPreFoalingSigns(ctx context.Context, horseID uint) ([]models.PreFoalingSign, error)
+	AddPreFoalingSign(ctx context.Context, sign *models.PreFoalingSign) error
+	GetCurrentPregnancy(ctx context.Context, horseID uint) (*models.Pregnancy, error)
 }

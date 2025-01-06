@@ -33,6 +33,18 @@ func (r *GormHorseRepository) GetByID(ctx context.Context, id uint) (*models.Hor
 	return &horse, nil
 }
 
+func (r *GormHorseRepository) GetByIDInt64(ctx context.Context, id int64) (*models.Horse, error) {
+	var horse models.Horse
+	result := r.db.WithContext(ctx).First(&horse, id)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, ErrHorseNotFound
+		}
+		return nil, result.Error
+	}
+	return &horse, nil
+}
+
 func (r *GormHorseRepository) Update(ctx context.Context, horse *models.Horse) error {
 	horse.UpdatedAt = time.Now()
 	return r.db.WithContext(ctx).Save(horse).Error
