@@ -3,7 +3,6 @@ package api
 import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/polyfant/hulta_pregnancy_app/internal/service/pregnancy"
 )
 
 // SetupRouter sets up the routing for our API
@@ -16,7 +15,7 @@ func SetupRouter(router *gin.Engine, h *Handler) {
 	router.Use(cors.New(config))
 
 	// Create pregnancy handler
-	pregnancyHandler := NewPregnancyHandler(pregnancy.NewService(h.db), h.db)
+	pregnancyHandler := NewPregnancyHandler(h.pregnancyService)
 
 	// API routes
 	api := router.Group("/api")

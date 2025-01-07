@@ -3,15 +3,12 @@ package models
 import "time"
 
 type BreedingRecord struct {
-    ID          uint      `gorm:"primaryKey"`
-    UserID      string    `gorm:"index;not null"`
-    MareID      uint      `gorm:"not null"`
-    StallionID  *uint     
-    Date        time.Time `gorm:"not null"`
-    Notes       string
-    Successful  *bool
-    CreatedAt   time.Time
-    UpdatedAt   time.Time
+    ID        uint           `gorm:"primaryKey"`
+    HorseID   uint          `gorm:"not null"`
+    Date      time.Time
+    Status    BreedingStatus `gorm:"size:50"`
+    CreatedAt time.Time
+    UpdatedAt time.Time
 }
 
 type BreedingCost struct {
@@ -24,11 +21,4 @@ type BreedingCost struct {
     Description string
     CreatedAt   time.Time
     UpdatedAt   time.Time
-}
-
-// Constants for breeding status
-const (
-    BreedingStatusPending    = "PENDING"
-    BreedingStatusSuccessful = "SUCCESSFUL"
-    BreedingStatusFailed     = "FAILED"
-) 
+} 

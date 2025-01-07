@@ -1,11 +1,13 @@
 package health
 
 import (
+	"context"
 	"sort"
 	"time"
 
 	"github.com/polyfant/hulta_pregnancy_app/internal/logger"
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
+	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
 )
 
 // HealthSummary represents a comprehensive health summary for a horse
@@ -16,20 +18,16 @@ type HealthSummary struct {
 	RecentIssues      []models.HealthRecord `json:"recentIssues"`
 }
 
-type Service struct {
-	db models.DataStore
-}
-
-func NewService(db models.DataStore) *Service {
-	return &Service{db: db}
-}
-
 type HealthService struct {
-	db models.DataStore
+	healthRepo repository.HealthRepository
+	horseRepo  repository.HorseRepository
 }
 
-func NewHealthService(db models.DataStore) *HealthService {
-	return &HealthService{db: db}
+func NewHealthService(healthRepo repository.HealthRepository, horseRepo repository.HorseRepository) *HealthService {
+	return &HealthService{
+		healthRepo: healthRepo,
+		horseRepo:  horseRepo,
+	}
 }
 
 type VaccinationStatus struct {
@@ -38,7 +36,7 @@ type VaccinationStatus struct {
 	DueDate    time.Time
 }
 func (s *HealthService) GetVaccinationStatus(horse models.Horse) VaccinationStatus {
-	records, err := s.db.GetHealthRecords(int64(horse.ID))
+	records, err := s.healthRepo.GetByHorseID(context.Background(), horse.ID)
 	if err != nil {
 		logger.Error(err, "Failed to get health records", map[string]interface{}{
 			"horseID": horse.ID,
@@ -70,7 +68,7 @@ func (s *HealthService) GetVaccinationStatus(horse models.Horse) VaccinationStat
 }
 
 func (s *HealthService) GetHealthSummary(horse models.Horse) HealthSummary {
-	records, err := s.db.GetHealthRecords(int64(horse.ID))
+	records, err := s.healthRepo.GetByHorseID(context.Background(), horse.ID)
 	if err != nil {
 		logger.Error(err, "Failed to get health records", map[string]interface{}{
 			"horseID": horse.ID,
@@ -126,7 +124,7 @@ func (s *HealthService) GetUpcomingHealthChecks(horses []models.Horse) []struct 
 		}
 
 		// Check regular checkups
-		records, err := s.db.GetHealthRecords(int64(horse.ID))
+		records, err := s.healthRepo.GetByHorseID(context.Background(), horse.ID)
 		if err != nil {
 			logger.Error(err, "Failed to get health records", map[string]interface{}{
 				"horseID": horse.ID,

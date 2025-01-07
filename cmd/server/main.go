@@ -2,53 +2,50 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"path/filepath"
 
 	"github.com/gin-gonic/gin"
+	"github.com/polyfant/hulta_pregnancy_app/internal/api"
 	"github.com/polyfant/hulta_pregnancy_app/internal/cache"
 	"github.com/polyfant/hulta_pregnancy_app/internal/config"
 	"github.com/polyfant/hulta_pregnancy_app/internal/database"
 	"github.com/polyfant/hulta_pregnancy_app/internal/logger"
 	"github.com/polyfant/hulta_pregnancy_app/internal/middleware"
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
-	"github.com/polyfant/hulta_pregnancy_app/internal/api"
+	"github.com/polyfant/hulta_pregnancy_app/internal/repository/postgres"
+	"github.com/polyfant/hulta_pregnancy_app/internal/service"
 )
 
 func main() {
 	// Load configuration
 	cfg := config.LoadConfig()
 
-	// Set Gin mode based on environment
-	gin.SetMode(cfg.Server.Mode)
-
 	// Initialize logger
 	if err := logger.InitLogger(cfg.Logger.Path, cfg.Logger.Level); err != nil {
-		fmt.Println("Failed to initialize logger:", err)
-		os.Exit(1)
+		log.Fatalf("Failed to initialize logger: %v", err)
 	}
 
-	// Initialize database
-	dsn := fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
-		cfg.Database.Host, cfg.Database.Port, 
-		cfg.Database.User, cfg.Database.Password, 
-		cfg.Database.DBName, cfg.Database.SSLMode,
+	// Construct database DSN
+	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		cfg.Database.Host, 
+		cfg.Database.Port, 
+		cfg.Database.User, 
+		cfg.Database.Password, 
+		cfg.Database.DBName,
 	)
 
+	// Initialize database connection
 	db, err := database.NewPostgresDB(dsn)
 	if err != nil {
-		logger.Error(err, "Failed to connect to database")
-		os.Exit(1)
-	}
-
-	// Optional: Create database users
-	if cfg.Features.StrictMode {
-		_, err = database.CreateDatabaseUsers(db.DB())
-		if err != nil {
-			logger.Error(err, "Failed to create database users")
-			os.Exit(1)
-		}
+		logger.Fatal("Failed to connect to database", 
+			"error", err, 
+			"dsn", dsn)
 	}
 
 	// Auto-migrate models
@@ -67,43 +64,84 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Optional: Initialize memory cache if enabled
-	var memoryCache *cache.MemoryCache
-	if cfg.Features.EnableCaching {
-		memoryCache = cache.NewMemoryCache()
-		logger.Info("Memory cache initialized")
-	} else {
-		memoryCache = nil
+	// Initialize cache
+	memoryCache := cache.NewMemoryCache()
+
+	// Configure database backup if enabled
+	if cfg.Backup.Enabled {
+		backupUtil := database.NewDatabaseBackup(dsn, cfg.Backup.Directory)
+		
+		// Schedule backups
+		backupUtil.ScheduleBackups(cfg.Backup.Interval)
+		
+		// Manage backup retention
+		go func() {
+			for {
+				if err := backupUtil.ManageBackupRetention(cfg.Backup.MaxBackups); err != nil {
+					logger.Error(err, "Backup retention management failed")
+				}
+				time.Sleep(24 * time.Hour)
+			}
+		}()
+
+		logger.Info("Database backup service initialized", 
+			"backup_dir", cfg.Backup.Directory, 
+			"interval", cfg.Backup.Interval)
 	}
 
-	// Setup Gin router with security middleware
-	router := gin.New()
+	// Initialize repositories
+	horseRepo := postgres.NewHorseRepository(db.GetDB())
+	userRepo := postgres.NewUserRepository(db.GetDB())
+	pregnancyRepo := postgres.NewPregnancyRepository(db.GetDB())
+	healthRepo := postgres.NewHealthRepository(db.GetDB())
+
+	// Initialize services
+	userService := service.NewUserService(userRepo)
+	horseService := service.NewHorseService(horseRepo)
+	pregnancyService := service.NewPregnancyService(horseRepo, pregnancyRepo)
+	healthService := service.NewHealthService(healthRepo)
+
+	// Initialize handlers
+	handlerConfig := api.HandlerConfig{
+		Database:         db,
+		UserService:      userService,
+		HorseService:     horseService,
+		PregnancyService: pregnancyService,
+		HealthService:    healthService,
+		Cache:           memoryCache,
+	}
+
+	handler := api.NewHandler(handlerConfig)
+
+	// Setup Gin router
+	router := gin.Default()
 	router.Use(gin.Recovery())
 	router.Use(middleware.ConnectionIsolationMiddleware())
 
-	// Determine frontend build path
+	// Serve static files
 	frontendBuildPath := filepath.Join(".", "frontend-react", "build")
 	router.Use(middleware.StaticFileMiddleware(frontendBuildPath))
-
-	// Initialize API handlers
-	handler := api.NewHandler(db, memoryCache)
 
 	// Setup routes
 	api.SetupRouter(router, handler)
 
 	// Start server
 	serverAddr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
-	logger.Info(fmt.Sprintf("Starting server on %s", serverAddr))
-	
-	if err := router.Run(serverAddr); err != nil {
-		logger.Error(err, "Server failed to start")
-		os.Exit(1)
-	}
-}
+	go func() {
+		if err := router.Run(serverAddr); err != nil {
+			logger.Fatal("Server failed to start", "error", err)
+		}
+	}()
 
-func getEnvOrDefault(key, defaultValue string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
-	}
-	return defaultValue
+	logger.Info("Server started", 
+		"address", serverAddr, 
+		"environment", os.Getenv("APP_ENV"))
+
+	// Graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	logger.Info("Shutting down server...")
+	// Perform any cleanup here
 }

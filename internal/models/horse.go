@@ -3,12 +3,12 @@ package models
 import "time"
 
 type Horse struct {
-	ID             uint      `gorm:"primaryKey"`
-	UserID         string    `gorm:"type:text;not null;index"`
-	Name           string    `gorm:"type:varchar(100);not null"`
+	ID             uint       `json:"id" gorm:"primaryKey"`
+	UserID         string     `json:"user_id"`
+	Name           string     `json:"name"`
 	Breed           string    `gorm:"type:varchar(100)"`
-	Gender         string    `gorm:"type:varchar(50)"`
-	BirthDate      time.Time
+	Gender         Gender     `json:"gender"`
+	BirthDate      time.Time  `json:"birth_date"`
 	Weight         float64
 	Height         float64
 	Color          string    `gorm:"size:100"`
@@ -35,9 +35,12 @@ type Horse struct {
 	DeletedAt      *time.Time `gorm:"index"`
 }
 
+type HorseDetails struct {
+	Horse     Horse       `json:"horse"`
+	Expenses  []Expense   `json:"expenses"`
+}
+
 const (
-	GenderMare     = "MARE"
-	GenderStallion = "STALLION"
 	GenderGelding  = "GELDING"
 )
 
@@ -56,15 +59,11 @@ func (h *Horse) Age() int {
 }
 
 func (h *Horse) IsBreedingAge() bool {
-	age := h.Age()
-	switch h.Gender {
-	case GenderMare:
-		return age >= 3 && age <= 20
-	case GenderStallion:
-		return age >= 3 && age <= 25
-	default:
+	if h.BirthDate.IsZero() {
 		return false
 	}
+	minBreedingAge := h.BirthDate.AddDate(3, 0, 0) // 3 years for both mares and stallions
+	return time.Now().After(minBreedingAge)
 }
 
 func (h *Horse) CanBreed() bool {

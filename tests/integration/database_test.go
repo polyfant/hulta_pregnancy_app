@@ -17,7 +17,7 @@ func TestDatabaseOperations(t *testing.T) {
 		Breed: "Thoroughbred",
 	}
 
-	result := db.Create(horse)
+	result := db.Create(&horse)
 	if result.Error != nil {
 		t.Fatalf("Failed to create horse: %v", result.Error)
 	}

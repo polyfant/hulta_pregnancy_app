@@ -67,3 +67,15 @@ func TestEmailValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestSanitizeInput(t *testing.T) {
+	sanitizer := validation.NewSanitizer()
+	input := "test<script>alert('xss')</script>"
+	
+	result := sanitizer.Sanitize(input)
+	expected := "testalert('xss')"
+	
+	if result != expected {
+		t.Errorf("Expected sanitized input to be %q, got %q", expected, result)
+	}
+}

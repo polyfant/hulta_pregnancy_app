@@ -38,6 +38,7 @@ func SetupTestEnvironment(t *testing.T) *database.PostgresDB {
 }
 
 func TeardownTestEnvironment(db *database.PostgresDB) {
-	sqlDB, _ := db.DB().DB()
-	sqlDB.Close()
+	if err := db.Close(); err != nil {
+		// Log or handle the error as needed
+	}
 }

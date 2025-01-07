@@ -8,15 +8,12 @@ import (
 )
 
 type Pregnancy struct {
-	ID         uint       `gorm:"primaryKey"`
-	HorseID    uint       `gorm:"not null"`
-	UserID     string     `gorm:"index;not null"`
-	StartDate  time.Time
-	EndDate    *time.Time
-	Status     string     `gorm:"size:50"`
-	Events     []PregnancyEvent
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	ID             uint       `json:"id" gorm:"primaryKey"`
+	HorseID        uint       `json:"horse_id"`
+	StartDate      time.Time  `json:"start_date"`
+	ConceptionDate *time.Time `json:"conception_date"`
+	EndDate        *time.Time `json:"end_date"`
+	Status         string     `json:"status"`
 }
 
 type PregnancyEvent struct {
@@ -45,38 +42,27 @@ type PreFoalingChecklistItem struct {
 	Description string
 	IsCompleted bool      `gorm:"default:false"`
 	DueDate     time.Time
-	Priority    string    `gorm:"size:50"`
+	Priority    Priority  `gorm:"size:50"`
 	Notes       string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
 
-// Constants for pregnancy status
-const (
-	PregnancyStatusActive    = "ACTIVE"
-	PregnancyStatusCompleted = "COMPLETED"
-	PregnancyStatusLost     = "LOST"
-)
+type PregnancyGuideline struct {
+	Stage       PregnancyStage `json:"stage"`
+	Category    string         `json:"category"`
+	Description string         `json:"description"`
+}
 
-// Constants for priority levels
-const (
-	PriorityHigh   = "HIGH"
-	PriorityMedium = "MEDIUM"
-	PriorityLow    = "LOW"
-)
+type PregnancyStatus struct {
+	IsPregnant          bool           `json:"is_pregnant"`
+	ConceptionDate      time.Time      `json:"conception_date,omitempty"`
+	DaysPregnant        int            `json:"days_pregnant,omitempty"`
+	PregnancyPercentage float64        `json:"pregnancy_percentage,omitempty"`
+	Stage              PregnancyStage  `json:"stage,omitempty"`
+}
 
-// Add these types and constants
-type PregnancyStage string
-
-const (
-	EarlyGestation PregnancyStage = "EARLY_GESTATION"
-	MidGestation   PregnancyStage = "MID_GESTATION"
-	LateGestation  PregnancyStage = "LATE_GESTATION"
-	PreFoaling    PregnancyStage = "PRE_FOALING"
-	Foaling       PregnancyStage = "FOALING"
-)
-
-// Add these constants
+// Define the default checklist using the constants from constants.go
 var DefaultPreFoalingChecklist = []PreFoalingChecklistItem{
 	{
 		Description: "Prepare foaling kit",
@@ -100,17 +86,7 @@ var DefaultPreFoalingChecklist = []PreFoalingChecklistItem{
 	},
 }
 
-// Add these constants
-const (
-	EventFoaling = "FOALING"
-	EventVetCheck = "VET_CHECK"
-	EventUltrasound = "ULTRASOUND"
-	EventVaccination = "VACCINATION"
-	EventDeworming = "DEWORMING"
-	EventComplication = "COMPLICATION"
-)
-
-// Add these methods to the Pregnancy struct
+// Keep the methods
 func (p *Pregnancy) IsActive() bool {
 	return p.Status == PregnancyStatusActive
 }
@@ -123,10 +99,8 @@ func (p *Pregnancy) DaysPregnant() int {
 }
 
 func (p *Pregnancy) ExpectedDueDate() time.Time {
-	return p.StartDate.AddDate(0, 0, 340) // Average gestation period
+	return p.StartDate.AddDate(0, 0, 340)
 }
-
-// Add these methods to PregnancyEvent
 
 func (e *PregnancyEvent) Validate() error {
 	if e.PregnancyID == 0 {
