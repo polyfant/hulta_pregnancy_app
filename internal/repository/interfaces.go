@@ -67,3 +67,10 @@ type PregnancyRepository interface {
 	UpdatePregnancyStatus(ctx context.Context, horseID uint, isPregnant bool, conceptionDate *time.Time) error
 	UpdatePreFoalingChecklistItem(ctx context.Context, item *models.PreFoalingChecklistItem) error
 }
+
+type HealthRepository interface {
+	Create(ctx context.Context, record *models.HealthRecord) error
+	GetByHorseID(ctx context.Context, horseID uint) ([]models.HealthRecord, error)
+	Update(ctx context.Context, record *models.HealthRecord) error
+	Delete(ctx context.Context, id uint) error
+}

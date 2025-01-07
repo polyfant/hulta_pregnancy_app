@@ -18,6 +18,7 @@ import (
 	"github.com/polyfant/hulta_pregnancy_app/internal/logger"
 	"github.com/polyfant/hulta_pregnancy_app/internal/middleware"
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
+
 	"github.com/polyfant/hulta_pregnancy_app/internal/repository/postgres"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service"
 )
@@ -94,6 +95,7 @@ func main() {
 	userRepo := postgres.NewUserRepository(db.GetDB())
 	pregnancyRepo := postgres.NewPregnancyRepository(db.GetDB())
 	healthRepo := postgres.NewHealthRepository(db.GetDB())
+	breedingRepo := postgres.NewBreedingRepository(db.GetDB())
 
 	// Initialize services
 	userService := service.NewUserService(userRepo)
@@ -109,6 +111,8 @@ func main() {
 		PregnancyService: pregnancyService,
 		HealthService:    healthService,
 		Cache:           memoryCache,
+		HorseRepo:       horseRepo,
+		BreedingRepo:    breedingRepo,
 	}
 
 	handler := api.NewHandler(handlerConfig)

@@ -352,7 +352,7 @@ func (p *PostgresDB) GetDashboardStats(userID string) (*models.DashboardStats, e
 	// Get total horses
 	var totalHorses int64
 	if err := p.DB.Model(&models.Horse{}).Where("user_id = ?", userID).Count(&totalHorses).Error; err != nil {
-		return nil, fmt.Errorf("failed to count horses: %w", err)
+		return nil, fmt.Errorf("failed to count horses: %v", err)
 	}
 	stats.TotalHorses = int(totalHorses)
 

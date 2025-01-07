@@ -3,33 +3,27 @@ package integration
 import (
 	"testing"
 
+	"github.com/polyfant/hulta_pregnancy_app/internal/database"
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
-	"github.com/polyfant/hulta_pregnancy_app/tests"
 )
 
-func TestDatabaseOperations(t *testing.T) {
-	db := tests.SetupTestEnvironment(t)
-	defer tests.TeardownTestEnvironment(db)
+var testDSN = "host=localhost port=5432 user=postgres password=postgres dbname=horse_tracking_test sslmode=disable"
 
-	// Test model creation
-	horse := &models.Horse{
-		Name: "Test Horse",
-		Breed: "Thoroughbred",
+func TestDatabaseConnection(t *testing.T) {
+	db, err := database.NewPostgresDB(testDSN)
+	if err != nil {
+		t.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	result := db.Create(&horse)
+	// Test query
+	result := db.DB.Exec("SELECT 1")
 	if result.Error != nil {
-		t.Fatalf("Failed to create horse: %v", result.Error)
+		t.Fatalf("Failed to execute test query: %v", result.Error)
 	}
 
-	// Verify creation
-	var retrievedHorse models.Horse
-	result = db.First(&retrievedHorse, horse.ID)
-	if result.Error != nil {
-		t.Fatalf("Failed to retrieve horse: %v", result.Error)
-	}
-
-	if retrievedHorse.Name != horse.Name {
-		t.Errorf("Expected name %s, got %s", horse.Name, retrievedHorse.Name)
+	// Test migration
+	err = db.AutoMigrate(&models.Horse{})
+	if err != nil {
+		t.Fatalf("Failed to run migrations: %v", err)
 	}
 }

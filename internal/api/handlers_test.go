@@ -8,7 +8,6 @@ import (
 
 	"github.com/polyfant/hulta_pregnancy_app/internal/cache"
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
-	"github.com/polyfant/hulta_pregnancy_app/internal/repository/postgres"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service"
 )
 
@@ -164,11 +163,11 @@ func (m *MockHorseService) GetPregnantHorses(ctx context.Context, userID string)
 	return args.Get(0).([]models.Horse), args.Error(1)
 }
 
-func setupTestHandler() (*Handler, *mockdb.DB) {
-	db := mockdb.NewDB()
-	horseService := service.NewHorseService(postgres.NewHorseRepository(db))
-	userService := service.NewUserService(postgres.NewUserRepository(db))
-	healthService := service.NewHealthService(postgres.NewHealthRepository(db))
+func setupTestHandler() (*Handler, *mockdb.MockDB) {
+	db := &mockdb.MockDB{}
+	horseService := &MockHorseService{}
+	userService := &MockUserService{} 
+	healthService := &MockHealthService{}
 	pregnancyService := service.NewPregnancyService(
 		postgres.NewHorseRepository(db),
 		postgres.NewPregnancyRepository(db),
