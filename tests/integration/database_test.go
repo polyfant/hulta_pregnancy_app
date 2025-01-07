@@ -7,7 +7,7 @@ import (
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 )
 
-var testDSN = "host=localhost port=5432 user=postgres password=postgres dbname=horse_tracking_test sslmode=disable"
+var testDSN = "host=172.31.112.63 port=5432 user=jonas dbname=jonas password=infernal sslmode=disable"
 
 func TestDatabaseConnection(t *testing.T) {
 	db, err := database.NewPostgresDB(testDSN)

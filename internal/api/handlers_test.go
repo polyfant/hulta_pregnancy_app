@@ -9,6 +9,9 @@ import (
 	"github.com/polyfant/hulta_pregnancy_app/internal/cache"
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service"
+	"github.com/polyfant/hulta_pregnancy_app/internal/mocks"
+	"github.com/polyfant/hulta_pregnancy_app/internal/repository/postgres"
+	"github.com/polyfant/hulta_pregnancy_app/internal/database"
 )
 
 // MockDatabase implements the Database interface for testing
@@ -163,18 +166,90 @@ func (m *MockHorseService) GetPregnantHorses(ctx context.Context, userID string)
 	return args.Get(0).([]models.Horse), args.Error(1)
 }
 
-func setupTestHandler() (*Handler, *mockdb.MockDB) {
-	db := &mockdb.MockDB{}
-	horseService := &MockHorseService{}
-	userService := &MockUserService{} 
-	healthService := &MockHealthService{}
-	pregnancyService := service.NewPregnancyService(
-		postgres.NewHorseRepository(db),
-		postgres.NewPregnancyRepository(db),
-	)
+// MockUserService for testing
+type MockUserService struct {
+	mock.Mock
+}
+
+func (m *MockUserService) CreateUser(user *models.User) error {
+	args := m.Called(user)
+	return args.Error(0)
+}
+
+func (m *MockUserService) GetUserByID(id string) (*models.User, error) {
+	args := m.Called(id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.User), args.Error(1)
+}
+
+func (m *MockUserService) GetUserByEmail(email string) (*models.User, error) {
+	args := m.Called(email)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.User), args.Error(1)
+}
+
+func (m *MockUserService) UpdateUser(user *models.User) error {
+	args := m.Called(user)
+	return args.Error(0)
+}
+
+func (m *MockUserService) UpdateLastLogin(userID string) error {
+	args := m.Called(userID)
+	return args.Error(0)
+}
+
+// MockHealthService for testing
+type MockHealthService struct {
+	mock.Mock
+}
+
+func (m *MockHealthService) CreateHealthRecord(ctx context.Context, record *models.HealthRecord) error {
+	args := m.Called(ctx, record)
+	return args.Error(0)
+}
+
+func (m *MockHealthService) UpdateHealthRecord(ctx context.Context, record *models.HealthRecord) error {
+	args := m.Called(ctx, record)
+	return args.Error(0)
+}
+
+func (m *MockHealthService) GetHealthRecords(ctx context.Context, horseID uint) ([]models.HealthRecord, error) {
+	args := m.Called(ctx, horseID)
+	return args.Get(0).([]models.HealthRecord), args.Error(1)
+}
+
+func (m *MockHealthService) DeleteHealthRecord(ctx context.Context, id uint) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
+func (m *MockHealthService) AddHealthRecord(ctx context.Context, record *models.HealthRecord) error {
+	args := m.Called(ctx, record)
+	return args.Error(0)
+}
+
+func setupTestHandler() (*Handler, *mocks.MockDB) {
+	db := mocks.NewMockDB()
+	mockDB := &database.PostgresDB{DB: db.GetDB()}
+	
+	// Create repositories with mock DB
+	horseRepo := postgres.NewHorseRepository(db.GetDB())
+	userRepo := postgres.NewUserRepository(db.GetDB())
+	healthRepo := postgres.NewHealthRepository(db.GetDB())
+	pregnancyRepo := postgres.NewPregnancyRepository(db.GetDB())
+
+	// Create services with repositories
+	horseService := service.NewHorseService(horseRepo)
+	userService := service.NewUserService(userRepo)
+	healthService := service.NewHealthService(healthRepo)
+	pregnancyService := service.NewPregnancyService(horseRepo, pregnancyRepo)
 
 	config := HandlerConfig{
-		Database:         db,
+		Database:         mockDB,
 		UserService:      userService,
 		HorseService:     horseService,
 		HealthService:    healthService,

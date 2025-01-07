@@ -106,26 +106,37 @@ func (s *ExpenseService) ProcessDueRecurringExpenses(ctx context.Context) error 
 }
 
 func (s *ExpenseService) validateExpense(expense *models.Expense) error {
-	if expense.Amount <= 0 {
-		return fmt.Errorf("expense amount must be positive")
+	if expense.Amount < 0 {
+		return fmt.Errorf("expense amount must be non-negative")
 	}
-
+	if expense.Type == "" {
+		return fmt.Errorf("expense type is required")
+	}
+	if expense.Category == "" {
+		return fmt.Errorf("expense category is required")
+	}
 	if expense.Date.IsZero() {
 		return fmt.Errorf("expense date is required")
 	}
-
 	return nil
 }
 
 func (s *ExpenseService) validateRecurringExpense(recurringExpense *models.RecurringExpense) error {
-	if recurringExpense.Amount <= 0 {
-		return fmt.Errorf("recurring expense amount must be positive")
+	if recurringExpense.Amount < 0 {
+		return fmt.Errorf("recurring expense amount must be non-negative")
 	}
-
+	if recurringExpense.Type == "" {
+		return fmt.Errorf("recurring expense type is required")
+	}
+	if recurringExpense.Category == "" {
+		return fmt.Errorf("recurring expense category is required")
+	}
 	if recurringExpense.Frequency == "" {
 		return fmt.Errorf("recurring expense frequency is required")
 	}
-
+	if recurringExpense.StartDate.IsZero() {
+		return fmt.Errorf("recurring expense start date is required")
+	}
 	return nil
 }
 
