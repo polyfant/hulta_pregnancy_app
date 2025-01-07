@@ -100,7 +100,8 @@ func (h *Horse) ValidatePregnancy() bool {
 }
 
 type FamilyTree struct {
-	Horse     *Horse      `json:"horse"`
-	Parents   []*Horse    `json:"parents,omitempty"`
-	Offspring []*Horse    `json:"offspring,omitempty"`
+	Horse     *Horse   `json:"horse"`
+	Mother    *Horse   `json:"mother,omitempty"`
+	Father    *Horse   `json:"father,omitempty"`
+	Offspring []*Horse `json:"offspring,omitempty"`
 }
