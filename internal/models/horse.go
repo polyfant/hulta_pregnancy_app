@@ -33,6 +33,9 @@ type Horse struct {
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	DeletedAt      *time.Time `gorm:"index"`
+	
+	DamID          *uint      `json:"dam_id"`
+	SireID         *uint      `json:"sire_id"`
 }
 
 type HorseDetails struct {
@@ -94,4 +97,10 @@ func (h *Horse) ValidatePregnancy() bool {
 		return h.Gender == GenderMare && h.ConceptionDate != nil
 	}
 	return true
+}
+
+type FamilyTree struct {
+	Horse     *Horse      `json:"horse"`
+	Parents   []*Horse    `json:"parents,omitempty"`
+	Offspring []*Horse    `json:"offspring,omitempty"`
 }

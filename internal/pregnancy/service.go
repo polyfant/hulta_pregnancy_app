@@ -79,17 +79,14 @@ func (s *Service) GetPregnancyGuidelines() []models.PregnancyGuideline {
 	return []models.PregnancyGuideline{
 		{
 			Stage:       models.PregnancyStageEarlyGestation,
-			Category:    "Nutrition",
 			Description: "Maintain regular diet, slight increase in nutrients",
 		},
 		{
 			Stage:       models.PregnancyStageMidGestation,
-			Category:    "Nutrition",
-			Description: "Increase nutrient intake, monitor weight",
+			 Description: "Increase nutrient intake, monitor weight",
 		},
 		{
 			Stage:       models.PregnancyStageLateGestation,
-			Category:    "Nutrition",
 			Description: "High-quality diet, prepare for foaling",
 		},
 	}

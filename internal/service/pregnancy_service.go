@@ -13,6 +13,7 @@ import (
 type PregnancyService struct {
 	horseRepo      repository.HorseRepository
 	pregnancyRepo  repository.PregnancyRepository
+	repo           repository.PregnancyRepository
 }
 
 // NewPregnancyService creates a new pregnancy service instance
@@ -20,6 +21,7 @@ func NewPregnancyService(horseRepo repository.HorseRepository, pregnancyRepo rep
 	return &PregnancyService{
 		horseRepo:      horseRepo,
 		pregnancyRepo:  pregnancyRepo,
+		repo:           pregnancyRepo,
 	}
 }
 
@@ -144,36 +146,28 @@ func (s *PregnancyService) GetPreFoalingSigns(ctx context.Context, horseID uint)
 }
 
 func (s *PregnancyService) GetPregnancyGuidelinesByStage(stage models.PregnancyStage) ([]models.PregnancyGuideline, error) {
-	// Basic guidelines implementation - can be enhanced later
-	guidelines := map[models.PregnancyStage][]models.PregnancyGuideline{
-		models.PregnancyStageEarlyGestation: {
-			{
-				Stage:       models.PregnancyStageEarlyGestation,
-				Category:    "Nutrition",
-				Description: "Ensure balanced diet with proper nutrients",
-			},
-		},
-		models.PregnancyStageMidGestation: {
-			{
-				Stage:       models.PregnancyStageMidGestation,
-				Category:    "Health Monitoring",
-				Description: "Regular veterinary check-ups",
-			},
-		},
-		models.PregnancyStageLateGestation: {
-			{
-				Stage:       models.PregnancyStageLateGestation,
-				Category:    "Preparation",
-				Description: "Prepare foaling area and emergency kit",
-			},
-		},
+	switch stage {
+	case models.PregnancyStageEarlyGestation:
+		return []models.PregnancyGuideline{
+			{Stage: stage, Description: "Monitor mare's appetite and weight"},
+			{Stage: stage, Description: "Continue regular exercise routine"},
+			{Stage: stage, Description: "Schedule initial pregnancy check"},
+		}, nil
+	case models.PregnancyStageMidGestation:
+		return []models.PregnancyGuideline{
+			{Stage: stage, Description: "Adjust feed for increasing nutritional needs"},
+			{Stage: stage, Description: "Monitor for any signs of discomfort"},
+			{Stage: stage, Description: "Schedule mid-term pregnancy check"},
+		}, nil
+	case models.PregnancyStageLateGestation:
+		return []models.PregnancyGuideline{
+			{Stage: stage, Description: "Prepare foaling area"},
+			{Stage: stage, Description: "Monitor for signs of approaching labor"},
+			{Stage: stage, Description: "Have vet contact information ready"},
+		}, nil
+	default:
+		return nil, fmt.Errorf("invalid pregnancy stage: %s", stage)
 	}
-	
-	if _, exists := guidelines[stage]; !exists {
-		return nil, fmt.Errorf("invalid pregnancy stage: %v", stage)
-	}
-	
-	return guidelines[stage], nil
 }
 
 // Helper types and methods that might be useful later
@@ -218,4 +212,48 @@ func (s *PregnancyService) GetPregnancyStage(ctx context.Context, horseID uint) 
 	}
 
 	return s.calculateStage(pregnancy), nil
+}
+
+func (s *PregnancyService) AddPreFoalingChecklistItem(ctx context.Context, item *models.PreFoalingChecklistItem) error {
+	return s.repo.AddPreFoalingChecklistItem(ctx, item)
+}
+
+func (s *PregnancyService) UpdatePreFoalingChecklistItem(ctx context.Context, item *models.PreFoalingChecklistItem) error {
+	return s.repo.UpdatePreFoalingChecklistItem(ctx, item)
+}
+
+func (s *PregnancyService) GetPreFoalingChecklistItem(ctx context.Context, itemID uint) (*models.PreFoalingChecklistItem, error) {
+	return s.repo.GetPreFoalingChecklistItem(ctx, itemID)
+}
+
+func (s *PregnancyService) DeletePreFoalingChecklistItem(ctx context.Context, itemID uint) error {
+	return s.repo.DeletePreFoalingChecklistItem(ctx, itemID)
+}
+
+func (s *PregnancyService) InitializePreFoalingChecklist(ctx context.Context, horseID uint) error {
+	return s.repo.InitializePreFoalingChecklist(ctx, horseID)
+}
+
+func (s *PregnancyService) UpdatePregnancyStatus(ctx context.Context, horseID uint, isPregnant bool, conceptionDate *time.Time) error {
+	return s.repo.UpdatePregnancyStatus(ctx, horseID, isPregnant, conceptionDate)
+}
+
+func (s *PregnancyService) GetPregnancies(ctx context.Context, userID string) ([]models.Pregnancy, error) {
+	return s.pregnancyRepo.GetByUserID(ctx, userID)
+}
+
+func (s *PregnancyService) GetHorse(ctx context.Context, horseID uint) (*models.Horse, error) {
+	return s.horseRepo.GetByID(ctx, horseID)
+}
+
+func (s *PregnancyService) UpdateHorse(ctx context.Context, horse *models.Horse) error {
+	return s.horseRepo.Update(ctx, horse)
+}
+
+func (s *PregnancyService) UpdatePregnancy(ctx context.Context, pregnancy *models.Pregnancy) error {
+	return s.pregnancyRepo.Update(ctx, pregnancy)
+}
+
+func (s *PregnancyService) AddPreFoalingSign(ctx context.Context, sign *models.PreFoalingSign) error {
+	return s.pregnancyRepo.AddPreFoalingSign(ctx, sign)
 }

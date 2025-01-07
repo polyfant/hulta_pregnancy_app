@@ -10,14 +10,14 @@ import (
 )
 
 type BreedingService struct {
-	horseRepo repository.HorseRepository
 	breedingRepo repository.BreedingRepository
+	horseRepo    repository.HorseRepository
 }
 
-func NewBreedingService(horseRepo repository.HorseRepository, breedingRepo repository.BreedingRepository) *BreedingService {
+func NewBreedingService(breedingRepo repository.BreedingRepository, horseRepo repository.HorseRepository) *BreedingService {
 	return &BreedingService{
-		horseRepo: horseRepo,
 		breedingRepo: breedingRepo,
+		horseRepo:    horseRepo,
 	}
 }
 
@@ -40,19 +40,19 @@ func (s *BreedingService) CalculatePregnancyStage(pregnancy *models.Pregnancy) m
 }
 
 func (s *BreedingService) GetBreedingRecords(ctx context.Context, horseID uint) ([]models.BreedingRecord, error) {
-	records, err := s.breedingRepo.GetRecords(ctx, horseID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get breeding records: %w", err)
-	}
-	return records, nil
+	return s.breedingRepo.GetRecords(ctx, horseID)
+}
+
+func (s *BreedingService) CreateBreedingRecord(ctx context.Context, record *models.BreedingRecord) error {
+	return s.breedingRepo.CreateRecord(ctx, record)
 }
 
 func (s *BreedingService) GetBreedingCosts(ctx context.Context, horseID uint) ([]models.BreedingCost, error) {
-	costs, err := s.breedingRepo.GetCosts(ctx, horseID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get breeding costs: %w", err)
-	}
-	return costs, nil
+	return s.breedingRepo.GetCosts(ctx, horseID)
+}
+
+func (s *BreedingService) AddBreedingCost(ctx context.Context, cost *models.BreedingCost) error {
+	return s.breedingRepo.Create(ctx, cost)
 }
 
 func (s *BreedingService) GetBreedingStatus(ctx context.Context, horseID uint) (*models.BreedingStatus, error) {
@@ -60,18 +60,17 @@ func (s *BreedingService) GetBreedingStatus(ctx context.Context, horseID uint) (
 	if err != nil {
 		return nil, fmt.Errorf("failed to get breeding records: %w", err)
 	}
-
 	// Calculate breeding status
 	status := &models.BreedingStatus{
-		HorseID:        horseID,
+		HorseID:          horseID,
 		LastBreedingDate: nil,
-		IsBreeding:     false,
+		IsBreeding:       false,
 	}
 
 	if len(records) > 0 {
 		lastRecord := records[len(records)-1]
 		status.LastBreedingDate = &lastRecord.Date
-		status.IsBreeding = lastRecord.Status == models.BreedingStatusActive
+		status.IsBreeding = lastRecord.Status == "ACTIVE"
 	}
 
 	return status, nil

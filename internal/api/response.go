@@ -6,26 +6,27 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// APIResponse represents a standardized API response
 type APIResponse struct {
 	Success bool        `json:"success"`
 	Data    interface{} `json:"data,omitempty"`
 	Error   string      `json:"error,omitempty"`
 }
 
-func SendSuccessResponse(c *gin.Context, data interface{}) {
+// SendSuccess sends a successful response
+func SendSuccess(c *gin.Context, data interface{}) {
 	c.JSON(http.StatusOK, APIResponse{
 		Success: true,
 		Data:    data,
 	})
 }
 
-func SendErrorResponse(c *gin.Context, err error, statusCode ...int) {
-	status := http.StatusInternalServerError
-	if len(statusCode) > 0 {
-		status = statusCode[0]
+// SendError sends an error response
+func SendError(c *gin.Context, err error, statusCode int) {
+	if statusCode == 0 {
+		statusCode = http.StatusInternalServerError
 	}
-
-	c.JSON(status, APIResponse{
+	c.JSON(statusCode, APIResponse{
 		Success: false,
 		Error:   err.Error(),
 	})

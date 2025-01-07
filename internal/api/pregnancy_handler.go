@@ -1,6 +1,7 @@
 package api
 
 import (
+	"net/http"
 	"strconv"
 	"time"
 
@@ -21,65 +22,71 @@ func NewPregnancyHandler(service *service.PregnancyService) *PregnancyHandler {
 
 // Add the missing methods
 func (h *PregnancyHandler) GetPregnancies(c *gin.Context) {
-	pregnancies, err := h.service.GetPregnancies(c.Request.Context())
-	if err != nil {
-		c.JSON(500, ErrorResponse{Error: err.Error()})
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User not authenticated"})
 		return
 	}
-	c.JSON(200, pregnancies)
+
+	pregnancies, err := h.service.GetPregnancies(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, pregnancies)
 }
 
 func (h *PregnancyHandler) GetPregnancyStage(c *gin.Context) {
 	id := c.Param("id")
 	pregnancyID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		c.JSON(400, ErrorResponse{Error: "Invalid pregnancy ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid pregnancy ID"})
 		return
 	}
 
 	// Safely convert int64 to uint
 	if pregnancyID < 0 {
-		c.JSON(400, ErrorResponse{Error: "Pregnancy ID cannot be negative"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Pregnancy ID cannot be negative"})
 		return
 	}
 	pregnancyUint := uint(pregnancyID)
 
 	stage, err := h.service.GetPregnancyStage(c.Request.Context(), pregnancyUint)
 	if err != nil {
-		c.JSON(500, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
-	c.JSON(200, gin.H{"stage": stage})
+	c.JSON(http.StatusOK, gin.H{"stage": stage})
 }
 
 // Add other pregnancy-specific handlers
 func (h *PregnancyHandler) GetPregnancyStatus(c *gin.Context) {
 	horseID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(400, ErrorResponse{Error: "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
 	// Safely convert int64 to uint
 	if horseID < 0 {
-		c.JSON(400, ErrorResponse{Error: "Horse ID cannot be negative"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Horse ID cannot be negative"})
 		return
 	}
 	horseUint := uint(horseID)
 
-	horse, err := h.service.GetHorse(horseUint)
+	horse, err := h.service.GetHorse(c.Request.Context(), horseUint)
 	if err != nil {
-		c.JSON(500, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
 	stage, err := h.service.GetPregnancyStage(c.Request.Context(), horseUint)
 	if err != nil {
-		c.JSON(500, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	c.JSON(200, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"horse": horse,
 		"stage": stage,
 		"isPregnant": horse.IsPregnant,
@@ -89,13 +96,13 @@ func (h *PregnancyHandler) GetPregnancyStatus(c *gin.Context) {
 func (h *PregnancyHandler) StartPregnancyTracking(c *gin.Context) {
 	horseID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(400, ErrorResponse{Error: "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
 	// Safely convert int64 to uint
 	if horseID < 0 {
-		c.JSON(400, ErrorResponse{Error: "Horse ID cannot be negative"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Horse ID cannot be negative"})
 		return
 	}
 	horseUint := uint(horseID)
@@ -104,42 +111,42 @@ func (h *PregnancyHandler) StartPregnancyTracking(c *gin.Context) {
 		ConceptionDate time.Time `json:"conceptionDate" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&data); err != nil {
-		c.JSON(400, ErrorResponse{Error: "Invalid request data"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid request data"})
 		return
 	}
 
 	// Validate conception date
 	if data.ConceptionDate.After(time.Now()) {
-		c.JSON(400, ErrorResponse{Error: "Conception date cannot be in the future"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Conception date cannot be in the future"})
 		return
 	}
 
 	// Get user ID from context
 	userID, exists := c.Get("userID")
 	if !exists {
-		c.JSON(401, ErrorResponse{Error: "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "Unauthorized"})
 		return
 	}
 
 	// Start pregnancy tracking
 	if err := h.service.StartPregnancy(c.Request.Context(), horseUint, userID.(string), data.ConceptionDate); err != nil {
-		c.JSON(500, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	c.JSON(201, gin.H{"message": "Pregnancy tracking started successfully"})
+	c.JSON(http.StatusCreated, gin.H{"message": "Pregnancy tracking started successfully"})
 }
 
 func (h *PregnancyHandler) EndPregnancyTracking(c *gin.Context) {
 	horseID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(400, ErrorResponse{Error: "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
 	// Safely convert int64 to uint
 	if horseID < 0 {
-		c.JSON(400, ErrorResponse{Error: "Horse ID cannot be negative"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Horse ID cannot be negative"})
 		return
 	}
 	horseUint := uint(horseID)
@@ -149,140 +156,111 @@ func (h *PregnancyHandler) EndPregnancyTracking(c *gin.Context) {
 		Date   time.Time `json:"date"`
 	}
 	if err := c.ShouldBindJSON(&data); err != nil {
-		c.JSON(400, ErrorResponse{Error: "Invalid request data"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid request data"})
 		return
 	}
 
 	// Update horse pregnancy status
-	horse, err := h.service.GetHorse(horseUint)
+	horse, err := h.service.GetHorse(c.Request.Context(), horseUint)
 	if err != nil {
-		c.JSON(500, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
 	horse.IsPregnant = false
 	horse.ConceptionDate = nil
 
-	if err := h.service.UpdateHorse(horse); err != nil {
-		c.JSON(500, ErrorResponse{Error: err.Error()})
+	if err := h.service.UpdateHorse(c.Request.Context(), horse); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
 	// Update pregnancy record
-	pregnancy, err := h.service.GetPregnancy(int64(horseUint))
+	pregnancy, err := h.service.GetPregnancy(c.Request.Context(), horseUint)
 	if err != nil {
-		c.JSON(500, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
 	pregnancy.Status = data.Status
 	pregnancy.EndDate = &data.Date
 
-	if err := h.service.UpdatePregnancy(&pregnancy); err != nil {
-		c.JSON(500, ErrorResponse{Error: err.Error()})
+	if err := h.service.UpdatePregnancy(c.Request.Context(), pregnancy); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	c.JSON(200, pregnancy)
+	c.JSON(http.StatusOK, pregnancy)
 }
 
 func (h *PregnancyHandler) GetPregnancyEvents(c *gin.Context) {
 	horseID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(400, ErrorResponse{Error: "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
-	// Safely convert int64 to uint
-	if horseID < 0 {
-		c.JSON(400, ErrorResponse{Error: "Horse ID cannot be negative"})
-		return
-	}
-	horseUint := uint(horseID)
-
-	events, err := h.service.GetPregnancyEvents(int64(horseUint))
+	events, err := h.service.GetPregnancyEvents(c.Request.Context(), uint(horseID))
 	if err != nil {
-		c.JSON(500, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	c.JSON(200, events)
+	c.JSON(http.StatusOK, events)
 }
 
 func (h *PregnancyHandler) AddPregnancyEvent(c *gin.Context) {
-	horseID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		c.JSON(400, ErrorResponse{Error: "Invalid horse ID"})
-		return
-	}
-
-	// Safely convert int64 to uint
-	if horseID < 0 {
-		c.JSON(400, ErrorResponse{Error: "Horse ID cannot be negative"})
-		return
-	}
-	horseUint := uint(horseID)
-
 	var event models.PregnancyEvent
 	if err := c.ShouldBindJSON(&event); err != nil {
-		c.JSON(400, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	pregnancy, err := h.service.GetPregnancy(int64(horseUint))
-	if err != nil {
-		c.JSON(500, ErrorResponse{Error: err.Error()})
+	if err := h.service.AddPregnancyEvent(c.Request.Context(), &event); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	event.PregnancyID = pregnancy.ID
-	event.Date = time.Now()
-
-	if err := h.service.AddPregnancyEvent(&event); err != nil {
-		c.JSON(500, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	c.JSON(201, event)
+	c.JSON(http.StatusCreated, event)
 }
 
 func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 	horseID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(400, ErrorResponse{Error: "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
 	// Safely convert int64 to uint
 	if horseID < 0 {
-		c.JSON(400, ErrorResponse{Error: "Horse ID cannot be negative"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Horse ID cannot be negative"})
 		return
 	}
 	horseUint := uint(horseID)
 
 	// Get existing checklist
-	items, err := h.service.GetPreFoalingChecklist(int64(horseUint))
+	items, err := h.service.GetPreFoalingChecklist(c.Request.Context(), horseUint)
 	if err != nil {
-		c.JSON(500, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
 	// If no checklist exists, initialize with default items
 	if len(items) == 0 {
 		// Get horse to check pregnancy status and due date
-		horse, err := h.service.GetHorse(horseUint)
+		horse, err := h.service.GetHorse(c.Request.Context(), horseUint)
 		if err != nil {
-			c.JSON(500, ErrorResponse{Error: err.Error()})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 			return
 		}
 
 		if !horse.IsPregnant || horse.ConceptionDate == nil {
-			c.JSON(400, ErrorResponse{Error: "Horse is not pregnant"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Horse is not pregnant"})
 			return
 		}
 
 		// Calculate due date and set checklist deadlines accordingly
-		dueDate := service.CalculateDueDate(*horse.ConceptionDate, service.DefaultGestationDays)
+		dueDate := service.CalculateDueDate(*horse.ConceptionDate)
 		
 		// Create timeline-based checklist items
 		items = []models.PreFoalingChecklistItem{
@@ -366,40 +344,40 @@ func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 
 		// Add each item to database
 		for _, item := range items {
-			if err := h.service.AddPreFoalingChecklistItem(&item); err != nil {
-				c.JSON(500, ErrorResponse{Error: "Failed to initialize checklist"})
+			if err := h.service.AddPreFoalingChecklistItem(c.Request.Context(), &item); err != nil {
+				c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to initialize checklist"})
 				return
 			}
 		}
 	}
 
 	// Return checklist sorted by due date and priority
-	c.JSON(200, items)
+	c.JSON(http.StatusOK, items)
 }
 
 func (h *PregnancyHandler) GetPostFoalingChecklist(c *gin.Context) {
 	horseID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(400, ErrorResponse{Error: "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
 	// Safely convert int64 to uint
 	if horseID < 0 {
-		c.JSON(400, ErrorResponse{Error: "Horse ID cannot be negative"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Horse ID cannot be negative"})
 		return
 	}
 	horseUint := uint(horseID)
 
 	// Get pregnancy to find foaling date
-	pregnancy, err := h.service.GetPregnancy(int64(horseUint))
+	pregnancy, err := h.service.GetPregnancy(c.Request.Context(), horseUint)
 	if err != nil {
-		c.JSON(500, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
 	if pregnancy.EndDate == nil {
-		c.JSON(400, ErrorResponse{Error: "Foaling date not recorded"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Foaling date not recorded"})
 		return
 	}
 
@@ -484,7 +462,7 @@ func (h *PregnancyHandler) GetPostFoalingChecklist(c *gin.Context) {
 		},
 	}
 
-	c.JSON(200, items)
+	c.JSON(http.StatusOK, items)
 }
 
 func (h *PregnancyHandler) GetPregnancyGuidelines(c *gin.Context) {
@@ -493,98 +471,85 @@ func (h *PregnancyHandler) GetPregnancyGuidelines(c *gin.Context) {
 	
 	guidelines, err := h.service.GetPregnancyGuidelinesByStage(stage)
 	if err != nil {
-		c.JSON(400, ErrorResponse{Error: err.Error(	)})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
 	
-	c.JSON(200, guidelines)
+	c.JSON(http.StatusOK, guidelines)
 }
 
 func (h *PregnancyHandler) CheckPreFoalingSigns(c *gin.Context) {
 	horseID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(400, ErrorResponse{Error: "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
 	// Safely convert int64 to uint
 	if horseID < 0 {
-		c.JSON(400, ErrorResponse{Error: "Horse ID cannot be negative"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Horse ID cannot be negative"})
 		return
 	}
-	horseUint := uint(horseID)
+	
 
-	signs, err := h.service.GetPreFoalingSigns(int64(horseUint))
+	signs, err := h.service.GetPreFoalingSigns(c.Request.Context(), uint(horseID))
 	if err != nil {
-		c.JSON(500, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
-	c.JSON(200, signs)
+	c.JSON(http.StatusOK, signs)
 }
 
 func (h *PregnancyHandler) RecordPreFoalingSign(c *gin.Context) {
 	horseID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(400, ErrorResponse{Error: "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
-
-	// Safely convert int64 to uint
-	if horseID < 0 {
-		c.JSON(400, ErrorResponse{Error: "Horse ID cannot be negative"})
-		return
-	}
-	horseUint := uint(horseID)
 
 	var sign models.PreFoalingSign
 	if err := c.ShouldBindJSON(&sign); err != nil {
-		c.JSON(400, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	sign.HorseID = horseUint
+	sign.HorseID = uint(horseID)
 	sign.Date = time.Now()
 
-	if err := h.service.AddPreFoalingSign(&sign); err != nil {
-		c.JSON(500, ErrorResponse{Error: err.Error()})
+	if err := h.service.AddPreFoalingSign(c.Request.Context(), &sign); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
-	c.JSON(201, sign)
-}
-
-// Add this error type
-type ErrorResponse struct {
-	Error string `json:"error"`
+	c.JSON(http.StatusCreated, sign)
 }
 
 func (h *PregnancyHandler) UpdatePregnancy(c *gin.Context) {
 	var pregnancy models.Pregnancy
 	if err := c.ShouldBindJSON(&pregnancy); err != nil {
-		c.JSON(400, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	err := h.service.UpdatePregnancy(c.Request.Context(), pregnancy)
-	if err != nil {
-		c.JSON(500, ErrorResponse{Error: err.Error()})
+	if err := h.service.UpdatePregnancy(c.Request.Context(), &pregnancy); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	c.JSON(200, pregnancy)
+	c.JSON(http.StatusOK, pregnancy)
 }
 
 func (h *PregnancyHandler) GetPregnancy(c *gin.Context) {
 	horseID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(400, ErrorResponse{Error: "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
-	pregnancy, err := h.service.GetPregnancy(c.Request.Context(), horseID)
+	pregnancy, err := h.service.GetPregnancy(c.Request.Context(), uint(horseID))
 	if err != nil {
-		c.JSON(500, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	c.JSON(200, pregnancy)
+	c.JSON(http.StatusOK, pregnancy)
 }

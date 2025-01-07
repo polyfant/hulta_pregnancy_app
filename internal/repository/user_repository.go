@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"gorm.io/gorm"
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
+	"gorm.io/gorm"
 )
 
 type GormUserRepository struct {
@@ -55,6 +55,25 @@ func (r *GormUserRepository) UpdateLastLogin(ctx context.Context, userID string)
 		Model(&models.User{}).
 		Where("id = ?", userID).
 		Update("last_login", time.Now()).Error
+}
+
+func (r *GormUserRepository) GetDashboardStats(ctx context.Context, userID string) (*models.DashboardStats, error) {
+	var stats models.DashboardStats
+	
+	// Get total horses
+	var totalHorses int64
+	if err := r.db.WithContext(ctx).Model(&models.Horse{}).Where("user_id = ?", userID).Count(&totalHorses).Error; err != nil {
+		return nil, err
+	}
+	stats.TotalHorses = int(totalHorses)
+	// Get pregnant horses
+	var pregnantHorses int64
+	if err := r.db.WithContext(ctx).Model(&models.Horse{}).Where("user_id = ? AND is_pregnant = ?", userID, true).Count(&pregnantHorses).Error; err != nil {
+		return nil, err
+	}
+	
+
+	return &stats, nil
 }
 
 // Custom errors

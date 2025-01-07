@@ -3,10 +3,10 @@ package models
 import "time"
 
 type BreedingRecord struct {
-    ID        uint           `gorm:"primaryKey"`
-    HorseID   uint          `gorm:"not null"`
+    ID        uint      `gorm:"primaryKey"`
+    HorseID   uint      `gorm:"not null"`
     Date      time.Time
-    Status    BreedingStatus `gorm:"size:50"`
+    Status    string    `gorm:"size:50"`
     CreatedAt time.Time
     UpdatedAt time.Time
 }
@@ -21,4 +21,12 @@ type BreedingCost struct {
     Description string
     CreatedAt   time.Time
     UpdatedAt   time.Time
-} 
+}
+
+type BreedingStatus struct {
+    HorseID          uint
+    LastBreedingDate *time.Time
+    IsBreeding       bool
+}
+
+

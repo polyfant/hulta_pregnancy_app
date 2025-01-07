@@ -33,3 +33,7 @@ func (s *UserService) CreateUser(ctx context.Context, user *models.User) error {
 func (s *UserService) UpdateUser(ctx context.Context, user *models.User) error {
 	return s.repo.Update(ctx, user)
 }
+
+func (s *UserService) GetDashboardStats(ctx context.Context, userID string) (*models.DashboardStats, error) {
+	return s.repo.GetDashboardStats(ctx, userID)
+}

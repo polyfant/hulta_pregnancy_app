@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 	"github.com/shopspring/decimal"
@@ -14,6 +15,8 @@ type HorseRepository interface {
 	Delete(ctx context.Context, id uint) error
 	ListByUser(ctx context.Context, userID string) ([]models.Horse, error)
 	GetPregnantHorses(ctx context.Context, userID string) ([]models.Horse, error)
+	GetOffspring(ctx context.Context, horseID uint) ([]models.Horse, error)
+	GetFamilyTree(ctx context.Context, horseID uint) (*models.FamilyTree, error)
 }
 
 type ExpenseRepository interface {
@@ -29,6 +32,7 @@ type UserRepository interface {
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
 	Update(ctx context.Context, user *models.User) error
 	UpdateLastLogin(ctx context.Context, userID string) error
+	GetDashboardStats(ctx context.Context, userID string) (*models.DashboardStats, error)
 }
 
 type RecurringExpenseRepository interface {
@@ -39,24 +43,27 @@ type RecurringExpenseRepository interface {
 
 type BreedingRepository interface {
 	GetCosts(ctx context.Context, horseID uint) ([]models.BreedingCost, error)
-	CreateCost(ctx context.Context, cost *models.BreedingCost) error
-	UpdateCost(ctx context.Context, cost *models.BreedingCost) error
-	DeleteCost(ctx context.Context, id uint) error
-	GetPregnancyEvents(ctx context.Context, horseID uint) ([]models.PregnancyEvent, error)
-	CreateRecord(ctx context.Context, record *models.BreedingRecord) error
+	Create(ctx context.Context, cost *models.BreedingCost) error
 	GetRecords(ctx context.Context, horseID uint) ([]models.BreedingRecord, error)
+	CreateRecord(ctx context.Context, record *models.BreedingRecord) error
 }
 
 type PregnancyRepository interface {
 	GetPregnancy(ctx context.Context, id uint) (*models.Pregnancy, error)
 	GetByHorseID(ctx context.Context, horseID uint) (*models.Pregnancy, error)
+	GetByUserID(ctx context.Context, userID string) ([]models.Pregnancy, error)
 	Create(ctx context.Context, pregnancy *models.Pregnancy) error
 	Update(ctx context.Context, pregnancy *models.Pregnancy) error
 	GetPregnancyEvents(ctx context.Context, horseID uint) ([]models.PregnancyEvent, error)
 	AddPregnancyEvent(ctx context.Context, event *models.PregnancyEvent) error
 	GetPreFoalingChecklist(ctx context.Context, horseID uint) ([]models.PreFoalingChecklistItem, error)
+	GetPreFoalingChecklistItem(ctx context.Context, itemID uint) (*models.PreFoalingChecklistItem, error)
 	AddPreFoalingChecklistItem(ctx context.Context, item *models.PreFoalingChecklistItem) error
+	DeletePreFoalingChecklistItem(ctx context.Context, itemID uint) error
+	InitializePreFoalingChecklist(ctx context.Context, horseID uint) error
 	GetPreFoalingSigns(ctx context.Context, horseID uint) ([]models.PreFoalingSign, error)
 	AddPreFoalingSign(ctx context.Context, sign *models.PreFoalingSign) error
 	GetCurrentPregnancy(ctx context.Context, horseID uint) (*models.Pregnancy, error)
+	UpdatePregnancyStatus(ctx context.Context, horseID uint, isPregnant bool, conceptionDate *time.Time) error
+	UpdatePreFoalingChecklistItem(ctx context.Context, item *models.PreFoalingChecklistItem) error
 }

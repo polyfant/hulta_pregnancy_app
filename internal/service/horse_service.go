@@ -38,3 +38,7 @@ func (s *HorseService) DeleteHorse(id uint) error {
 func (s *HorseService) GetPregnantHorses(ctx context.Context, userID string) ([]models.Horse, error) {
 	return s.repo.GetPregnantHorses(ctx, userID)
 }
+
+func (s *HorseService) GetFamilyTree(ctx context.Context, horseID uint) (*models.FamilyTree, error) {
+	return s.repo.GetFamilyTree(ctx, horseID)
+}

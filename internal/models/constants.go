@@ -44,10 +44,10 @@ const (
     EventDeworming   EventType = "DEWORMING"
 )
 
-type BreedingStatus string
+type BreedingStatusType string
 
 const (
-    BreedingStatusActive     BreedingStatus = "ACTIVE"
-    BreedingStatusCompleted  BreedingStatus = "COMPLETED"
-    BreedingStatusCancelled  BreedingStatus = "CANCELLED"
+    BreedingStatusActive     BreedingStatusType = "ACTIVE"
+    BreedingStatusCompleted  BreedingStatusType = "COMPLETED"
+    BreedingStatusCancelled  BreedingStatusType = "CANCELLED"
 ) 

@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
+
 type Pregnancy struct {
 	ID             uint       `json:"id" gorm:"primaryKey"`
 	HorseID        uint       `json:"horse_id"`
@@ -50,7 +51,6 @@ type PreFoalingChecklistItem struct {
 
 type PregnancyGuideline struct {
 	Stage       PregnancyStage `json:"stage"`
-	Category    string         `json:"category"`
 	Description string         `json:"description"`
 }
 
@@ -61,6 +61,7 @@ type PregnancyStatus struct {
 	PregnancyPercentage float64        `json:"pregnancy_percentage,omitempty"`
 	Stage              PregnancyStage  `json:"stage,omitempty"`
 }
+
 
 // Define the default checklist using the constants from constants.go
 var DefaultPreFoalingChecklist = []PreFoalingChecklistItem{

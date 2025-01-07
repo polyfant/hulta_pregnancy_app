@@ -71,6 +71,16 @@ func (m *mockHorseRepo) GetPregnantHorses(ctx context.Context, userID string) ([
 	return args.Get(0).([]models.Horse), args.Error(1)
 }
 
+func (m *mockHorseRepo) GetFamilyTree(ctx context.Context, horseID uint) (*models.FamilyTree, error) {
+	args := m.Called(ctx, horseID)
+	return args.Get(0).(*models.FamilyTree), args.Error(1)
+}
+
+func (m *mockHorseRepo) GetOffspring(ctx context.Context, horseID uint) ([]models.Horse, error) {
+	args := m.Called(ctx, horseID)
+	return args.Get(0).([]models.Horse), args.Error(1)
+}
+
 // ... implement other required methods
 
 func TestCalculateDailyFeedRequirements(t *testing.T) {

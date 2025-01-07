@@ -29,4 +29,8 @@ func (s *HealthService) UpdateHealthRecord(ctx context.Context, record *models.H
 
 func (s *HealthService) DeleteHealthRecord(ctx context.Context, id uint) error {
     return s.repo.Delete(ctx, id)
+}
+
+func (s *HealthService) AddHealthRecord(ctx context.Context, record *models.HealthRecord) error {
+    return s.repo.Create(ctx, record)
 } 
