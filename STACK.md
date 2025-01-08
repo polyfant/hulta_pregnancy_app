@@ -1,47 +1,24 @@
-# Technical Stack
-
-## Backend Features
-
-### Pregnancy Tracking
-
--   Advanced stage calculation
--   Due date prediction with windows
--   Overdue detection and monitoring
--   Progress tracking with percentages
--   Comprehensive gestation timeline
-
-## Backend
-
--   Go 1.23.4
--   PostgreSQL (Database)
--   GORM (ORM)
--   Gin (Web Framework)
--   Zap (Logging)
--   Testify (Testing)
--   Bluemonday (Input Sanitization)
+# Tech Stack
 
 ## Frontend
 
--   React 18
--   TypeScript
--   Mantine UI
--   React Query
--   Auth0 React SDK
+-   React 18 with TypeScript
+-   Vite for blazing fast builds
+-   Mantine v7 for UI components
+-   TanStack Query for data management
+-   Phosphor Icons for consistent iconography
+-   Chart.js & Nivo for visualizations
+-   Day.js for date handling
 
-## Infrastructure
+## ML & Analytics
 
--   Docker
--   Docker Compose
--   Auth0 (Authentication & Authorization)
+-   TensorFlow.js for on-device ML
+-   Chart.js for data visualization
+-   Custom ML models for growth prediction
 
-## Development Tools
+## Privacy & Security
 
--   Air (Live Reload)
--   pgAdmin (Database Management)
--   Postman (API Testing)
-
-## Testing
-
--   Go testing package
--   Testify (Assertions & Mocking)
--   Integration Tests
+-   Web Crypto API for encryption
+-   LocalStorage for offline-first data
+-   Privacy-focused architecture
+-   Granular data controls

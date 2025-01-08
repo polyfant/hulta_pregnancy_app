@@ -1,50 +1,57 @@
-# Horse Pregnancy Tracking Frontend
+# Horse Growth Tracker Pro
 
-## Features to Implement
+A sophisticated, privacy-focused growth tracking application for horse breeders and owners.
 
-### Pregnancy Timeline
+## 🌟 Key Features
 
--   Visual pregnancy stage progression
--   Due date countdown
--   Stage transitions with alerts
--   Overdue status monitoring
--   Pre-foaling checklist integration
+### Core Functionality
 
-## Technical Requirements
+-   Comprehensive growth tracking and analysis
+-   Pregnancy monitoring and notifications
+-   Environmental impact assessment
+-   ML-powered growth predictions
+-   Breed-specific comparative analysis
 
--   React 18
--   TypeScript
--   Mantine UI
+### Privacy & Security 🔒
 
-## Tech Stack Highlights
+-   End-to-end encryption for sensitive data
+-   Granular privacy controls
+-   Anonymous data sharing options
+-   Automatic data cleanup
+-   Privacy impact assessments
+-   Local-first data storage
+-   Transparent audit logging
 
--   React 18 with TypeScript
--   Vite for building
--   Mantine v7 for UI components
--   Phosphor Icons for consistent iconography
--   TanStack Query for data fetching
--   Day.js for date handling
+### Smart Features 🧠
+
+-   ML-powered growth predictions
+-   Environmental impact analysis
+-   Breed-specific benchmarking
+-   Seasonal growth adjustments
+-   Health monitoring with early warnings
+
+### User Control 🎛️
+
+-   Customizable data retention
+-   Feature-level privacy settings
+-   Data export/purge options
+-   Anonymous usage analytics
+-   Transparent audit logs
+
+## Privacy First
+
+All features are:
+
+-   Opt-in by default
+-   Locally processed where possible
+-   Fully transparent in data usage
+-   User-controlled data retention
+-   Privacy-impact assessed
 
 ## Getting Started
 
 1. Install dependencies:
 
-```bash
-npm install
 ```
 
-2. Create .env file from template:
-
-```bash
-cp env.template.txt .env
 ```
-
-3. Start development server:
-
-```bash
-npm run dev
-```
-
-## Icon Usage
-
-We use Phosphor Icons (@phosphor-icons/react) for all iconography. See [ICONS.md](docs/ICONS.md) for usage guidelines.

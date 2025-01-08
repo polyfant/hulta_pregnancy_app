@@ -1,120 +1,47 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [Unreleased]
+## [Unreleased] - 2024-03-19
 
 ### Added
 
--   PostgreSQL database integration with GORM
--   Horse management system core functionality
--   Health tracking system
--   Pregnancy monitoring system
--   Financial management with expenses tracking
--   Breeding records management
--   Pre-foaling checklist functionality
--   Family tree visualization support
--   Validation system for all entities
--   Structured logging implementation
--   Error handling middleware
--   Database auto-migration system
--   Generic in-memory caching mechanism
--   Enhanced input sanitization
--   Caching for critical API endpoints (GetHorse, GetDashboardStats)
--   Improved test coverage for sanitization
+-   ML-powered growth predictions 🧠
+-   Environmental impact monitoring 🌍
+-   Privacy Dashboard with real-time scoring 🔒
+-   Automated privacy audits
+-   Granular privacy controls
+-   Data masking capabilities
+-   Anonymous usage analytics
+-   Scheduled data cleanup
+-   Export/purge functionality
+
+### Enhanced
+
+-   Improved data encryption
+-   Added comprehensive audit logging
+-   Enhanced privacy controls
+-   Added environmental monitoring
+
+## [0.2.0] - 2024-03-15
+
+### Added
+
+-   React frontend with TypeScript
+-   Mantine UI component library
+-   React Query for state management
+-   Comprehensive frontend validation
+-   Enhanced user experience with loading states
 
 ### Changed
 
--   Migrated from SQLite to PostgreSQL
--   Updated database schema to use proper data types
--   Improved validation logic with dedicated validators
--   Enhanced error responses with better structure
--   Standardized model definitions with GORM tags
--   Refactored handler methods to utilize caching
--   Updated project documentation and README
--   Prepared test database setup script
+-   Migrated frontend from vanilla JS to React
+-   Refactored API calls to use React Query
+-   Replaced custom styling with Mantine UI
+-   Updated project documentation
 
-### Fixed
+## [0.1.0] - 2024-03-01
 
--   Foreign key constraint issues in database schema
--   Type mismatches in model definitions
--   Validation logic for dates and IDs
--   File structure organization
--   Duplicate type definitions
--   Expense type handling (changed from enum to string)
--   SQL injection prevention in sanitization
--   Test utilities cleanup
+### Initial Release
 
-### Security
-
--   Added input validation for all endpoints
--   Implemented proper type checking
--   Added database constraint checks
--   Structured error handling to prevent information leakage
-
-## [0.2.0] - 2025-01-08
-
-### Added
-- React frontend with TypeScript
-- Mantine UI component library
-- React Query for state management
-- Jest for frontend testing
-- Comprehensive frontend validation
-- Enhanced user experience with loading states
-- Improved error handling and boundary components
-
-### Changed
-- Migrated frontend from vanilla JS to React
-- Refactored API calls to use React Query
-- Replaced custom styling with Mantine UI
-- Updated project documentation
-- Improved CI/CD pipeline configuration
-- Enhanced security with additional input validation
-
-### Fixed
-- Performance bottlenecks in data fetching
-- Inconsistent UI state management
-- Cross-browser compatibility issues
-
-### Security
-- Implemented stricter input sanitization
-- Updated authentication flow with improved token management
-- Added CSRF protection
-- Enhanced frontend security headers
-
-## [0.1.0] - 2024-01-02
-
-### Added
-
--   Initial project setup
--   Basic API structure
--   Core models definition
--   Database connection handling
--   Basic CRUD operations
--   Health check endpoints
--   Logging system
--   Error handling framework
--   Configuration management
--   API documentation structure
-
-## [0.1.0] - 2025-01-04
-
-### Initial Project Setup
-- Basic project structure
-- PostgreSQL database integration
-- Initial API handlers
-- Basic validation and middleware
-- Preliminary health and pregnancy tracking models
-
-## Future Roadmap
-- Performance optimizations
-- Advanced caching strategies
-- Enhanced security features
-- Comprehensive testing
-
-[Unreleased]: https://github.com/polyfant/hulta_pregnancy_app/compare/v0.1.0...HEAD
-[0.2.0]: https://github.com/polyfant/hulta_pregnancy_app/releases/tag/v0.2.0
-[0.1.0]: https://github.com/polyfant/hulta_pregnancy_app/releases/tag/v0.1.0
+-   Basic project structure
+-   Core functionality
+-   Initial API handlers

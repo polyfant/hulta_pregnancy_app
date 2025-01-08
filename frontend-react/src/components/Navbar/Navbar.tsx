@@ -1,5 +1,6 @@
 import { useAuth0 } from '@auth0/auth0-react';
-import { Avatar, Button, Group, Text } from '@mantine/core';
+import { Avatar, Button, Group, Text, Tooltip } from '@mantine/core';
+import { Baby } from '@phosphor-icons/react';
 import { Link, useLocation } from 'react-router-dom';
 
 export default function Navbar() {
@@ -20,6 +21,17 @@ export default function Navbar() {
 						Horses
 					</Button>
 				)}
+
+				<Tooltip label='Pregnancy Overview'>
+					<Button
+						component={Link}
+						to='/pregnancies'
+						variant='subtle'
+						leftSection={<Baby size='1.2rem' />}
+					>
+						Pregnancies
+					</Button>
+				</Tooltip>
 
 				<Group>
 					{user?.picture && <Avatar src={user.picture} radius='xl' />}
