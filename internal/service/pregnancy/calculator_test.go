@@ -222,4 +222,107 @@ func TestCalculator(t *testing.T) {
             })
         }
     })
+}
+
+func TestCalculateDueDateInfo(t *testing.T) {
+    calc := NewCalculator()
+    now := time.Now()
+
+    tests := []struct {
+        name           string
+        conceptionDate time.Time
+        expect        struct {
+            daysUntilDue    int
+            weeksUntilDue   int
+            isInDueWindow   bool
+            daysSpread      int  // Days between earliest and latest
+        }
+    }{
+        {
+            name: "Normal pregnancy - mid term",
+            conceptionDate: now.AddDate(0, 0, -170), // Half way through
+            expect: struct {
+                daysUntilDue    int
+                weeksUntilDue   int
+                isInDueWindow   bool
+                daysSpread      int
+            }{
+                daysUntilDue:  170,
+                weeksUntilDue: 24,
+                isInDueWindow: false,
+                daysSpread:    50, // 370 - 320 days
+            },
+        },
+        {
+            name: "Almost due",
+            conceptionDate: now.AddDate(0, 0, -319), // One day before earliest
+            expect: struct {
+                daysUntilDue    int
+                weeksUntilDue   int
+                isInDueWindow   bool
+                daysSpread      int
+            }{
+                daysUntilDue:  21,
+                weeksUntilDue: 3,
+                isInDueWindow: false,
+                daysSpread:    50,
+            },
+        },
+        {
+            name: "In due window",
+            conceptionDate: now.AddDate(0, 0, -330), // Between min and max
+            expect: struct {
+                daysUntilDue    int
+                weeksUntilDue   int
+                isInDueWindow   bool
+                daysSpread      int
+            }{
+                daysUntilDue:  10,
+                weeksUntilDue: 1,
+                isInDueWindow: true,
+                daysSpread:    50,
+            },
+        },
+        {
+            name: "Overdue",
+            conceptionDate: now.AddDate(0, 0, -380), // Past latest
+            expect: struct {
+                daysUntilDue    int
+                weeksUntilDue   int
+                isInDueWindow   bool
+                daysSpread      int
+            }{
+                daysUntilDue:  -40,
+                weeksUntilDue: -5,
+                isInDueWindow: false,
+                daysSpread:    50,
+            },
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            info := calc.CalculateDueDateInfo(tt.conceptionDate)
+
+            // Test days and weeks until due
+            assert.Equal(t, tt.expect.daysUntilDue, info.DaysUntilDue)
+            assert.Equal(t, tt.expect.weeksUntilDue, info.WeeksUntilDue)
+            
+            // Test due window status
+            assert.Equal(t, tt.expect.isInDueWindow, info.IsInDueWindow)
+            
+            // Test due date ranges
+            daysSpread := int(info.LatestDueDate.Sub(info.EarliestDueDate).Hours() / 24)
+            assert.Equal(t, tt.expect.daysSpread, daysSpread)
+            
+            // Test date ordering
+            assert.True(t, info.EarliestDueDate.Before(info.ExpectedDueDate))
+            assert.True(t, info.ExpectedDueDate.Before(info.LatestDueDate))
+            
+            // Validate due dates are calculated correctly
+            assert.Equal(t, tt.conceptionDate.AddDate(0, 0, calc.defaultGestationDays), info.ExpectedDueDate)
+            assert.Equal(t, tt.conceptionDate.AddDate(0, 0, calc.minGestationDays), info.EarliestDueDate)
+            assert.Equal(t, tt.conceptionDate.AddDate(0, 0, calc.maxGestationDays), info.LatestDueDate)
+        })
+    }
 } 

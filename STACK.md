@@ -1,5 +1,15 @@
 # Technical Stack
 
+## Backend Features
+
+### Pregnancy Tracking
+
+-   Advanced stage calculation
+-   Due date prediction with windows
+-   Overdue detection and monitoring
+-   Progress tracking with percentages
+-   Comprehensive gestation timeline
+
 ## Backend
 
 -   Go 1.23.4

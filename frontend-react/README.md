@@ -1,4 +1,20 @@
-# Horse Tracking Frontend
+# Horse Pregnancy Tracking Frontend
+
+## Features to Implement
+
+### Pregnancy Timeline
+
+-   Visual pregnancy stage progression
+-   Due date countdown
+-   Stage transitions with alerts
+-   Overdue status monitoring
+-   Pre-foaling checklist integration
+
+## Technical Requirements
+
+-   React 18
+-   TypeScript
+-   Mantine UI
 
 ## Tech Stack Highlights
 

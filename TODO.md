@@ -3,8 +3,8 @@
 ## High Priority
 
 -   [ ] Complete pregnancy tracking features
-    -   [x] Pregnancy stage calculation
-    -   [ ] Due date tracking
+    -   [x] Pregnancy stage calculation ✨
+    -   [x] Due date tracking ✨
     -   [ ] Pre-foaling checklist
     -   [ ] Health monitoring during pregnancy
 -   [ ] Add pregnancy notification system

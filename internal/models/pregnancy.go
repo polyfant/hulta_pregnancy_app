@@ -131,4 +131,14 @@ func (e *PregnancyEvent) BeforeCreate(tx *gorm.DB) error {
 		e.Date = time.Now()
 	}
 	return nil
+}
+
+// DueDateInfo contains comprehensive due date information
+type DueDateInfo struct {
+	ExpectedDueDate time.Time `json:"expected_due_date"`
+	EarliestDueDate time.Time `json:"earliest_due_date"`
+	LatestDueDate   time.Time `json:"latest_due_date"`
+	DaysUntilDue    int       `json:"days_until_due"`
+	WeeksUntilDue   int       `json:"weeks_until_due"`
+	IsInDueWindow   bool      `json:"is_in_due_window"`
 } 

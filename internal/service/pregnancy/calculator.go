@@ -1,6 +1,7 @@
 package pregnancy
 
 import (
+	"math"
 	"time"
 
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
@@ -10,6 +11,8 @@ type Calculator struct {
     defaultGestationDays int
     stageThresholds     map[models.PregnancyStage]int
     maxOverdueDays      int  // Maximum number of days we consider normal for overdue
+    minGestationDays    int
+    maxGestationDays    int
 }
 
 func NewCalculator() *Calculator {
@@ -21,6 +24,8 @@ func NewCalculator() *Calculator {
             models.PregnancyStageLateGestation:  340, // 48 weeks
         },
         maxOverdueDays: 30,  // Up to 30 days overdue is considered normal
+        minGestationDays: 320, // Minimum viable gestation
+        maxGestationDays: 370, // Maximum expected gestation
     }
 }
 
@@ -86,5 +91,26 @@ func (c *Calculator) GetStageInfo(conceptionDate time.Time) models.PregnancyStag
         Progress:       progress,
         DaysOverdue:    daysOverdue,
         IsOverdue:      daysOverdue > 0,
+    }
+}
+
+// DueDateInfo provides comprehensive due date information
+func (c *Calculator) CalculateDueDateInfo(conceptionDate time.Time) models.DueDateInfo {
+    expectedDueDate := conceptionDate.AddDate(0, 0, c.defaultGestationDays)
+    earliestDueDate := conceptionDate.AddDate(0, 0, c.minGestationDays)
+    latestDueDate := conceptionDate.AddDate(0, 0, c.maxGestationDays)
+    
+    now := time.Now()
+    // Round to nearest day to avoid time-of-day differences
+    daysUntilDue := int(math.Round(expectedDueDate.Sub(now).Hours() / 24))
+    
+    return models.DueDateInfo{
+        ExpectedDueDate: expectedDueDate,
+        EarliestDueDate: earliestDueDate,
+        LatestDueDate:   latestDueDate,
+        DaysUntilDue:    daysUntilDue,
+        // For weeks, we want to floor negative numbers and ceil positive numbers
+        WeeksUntilDue:   daysUntilDue / 7,
+        IsInDueWindow:   now.After(earliestDueDate) && now.Before(latestDueDate),
     }
 } 

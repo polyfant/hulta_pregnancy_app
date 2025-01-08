@@ -2,7 +2,17 @@
 
 ## Overview
 
-A Go-based application for tracking horse pregnancies and breeding activities.
+A comprehensive horse pregnancy tracking system with advanced stage monitoring and due date prediction.
+
+## Key Features
+
+### Pregnancy Tracking
+
+-   Accurate stage calculation (Early, Mid, Late, Overdue)
+-   Due date prediction with viable windows (320-370 days)
+-   Overdue monitoring and high-risk detection
+-   Progress tracking with detailed statistics
+-   Comprehensive pregnancy timeline
 
 ## Core Features
 
