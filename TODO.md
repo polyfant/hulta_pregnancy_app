@@ -3,7 +3,7 @@
 ## High Priority
 
 -   [ ] Complete pregnancy tracking features
-    -   [ ] Pregnancy stage calculation
+    -   [x] Pregnancy stage calculation
     -   [ ] Due date tracking
     -   [ ] Pre-foaling checklist
     -   [ ] Health monitoring during pregnancy

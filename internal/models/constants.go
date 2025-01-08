@@ -8,6 +8,8 @@ const (
     PregnancyStageEarlyGestation PregnancyStage = "EARLY_GESTATION"
     PregnancyStageMidGestation   PregnancyStage = "MID_GESTATION"
     PregnancyStageLateGestation  PregnancyStage = "LATE_GESTATION"
+    PregnancyStageOverdue       PregnancyStage = "OVERDUE"
+    PregnancyStageHighRisk      PregnancyStage = "HIGH_RISK"
 
     PregnancyStatusActive    string = "ACTIVE"
     PregnancyStatusCompleted string = "COMPLETED"

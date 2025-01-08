@@ -62,6 +62,16 @@ type PregnancyStatus struct {
 	Stage              PregnancyStage  `json:"stage,omitempty"`
 }
 
+type PregnancyStageInfo struct {
+	Stage           PregnancyStage `json:"stage"`
+	DaysSoFar      int            `json:"days_so_far"`
+	WeeksSoFar     int            `json:"weeks_so_far"`
+	DaysRemaining  int            `json:"days_remaining"`
+	WeeksRemaining int            `json:"weeks_remaining"`
+	Progress       float64        `json:"progress"`
+	DaysOverdue    int            `json:"days_overdue"`
+	IsOverdue      bool           `json:"is_overdue"`
+}
 
 // Define the default checklist using the constants from constants.go
 var DefaultPreFoalingChecklist = []PreFoalingChecklistItem{
