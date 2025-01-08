@@ -55,6 +55,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added database constraint checks
 -   Structured error handling to prevent information leakage
 
+## [0.2.0] - 2025-01-08
+
+### Added
+- React frontend with TypeScript
+- Mantine UI component library
+- React Query for state management
+- Jest for frontend testing
+- Comprehensive frontend validation
+- Enhanced user experience with loading states
+- Improved error handling and boundary components
+
+### Changed
+- Migrated frontend from vanilla JS to React
+- Refactored API calls to use React Query
+- Replaced custom styling with Mantine UI
+- Updated project documentation
+- Improved CI/CD pipeline configuration
+- Enhanced security with additional input validation
+
+### Fixed
+- Performance bottlenecks in data fetching
+- Inconsistent UI state management
+- Cross-browser compatibility issues
+
+### Security
+- Implemented stricter input sanitization
+- Updated authentication flow with improved token management
+- Added CSRF protection
+- Enhanced frontend security headers
+
 ## [0.1.0] - 2024-01-02
 
 ### Added
@@ -86,4 +116,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive testing
 
 [Unreleased]: https://github.com/polyfant/hulta_pregnancy_app/compare/v0.1.0...HEAD
+[0.2.0]: https://github.com/polyfant/hulta_pregnancy_app/releases/tag/v0.2.0
 [0.1.0]: https://github.com/polyfant/hulta_pregnancy_app/releases/tag/v0.1.0
