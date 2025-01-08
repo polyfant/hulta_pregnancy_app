@@ -4,55 +4,28 @@
 
 A Go-based application for tracking horse pregnancies and breeding activities.
 
-## Stack
+## Core Features
 
--   Go 1.23.4
--   PostgreSQL
--   Docker & Docker Compose
--   GORM (ORM)
--   Gin (Web Framework)
--   Zap (Logging)
--   Testify (Testing)
--   Auth0 (Authentication)
--   Bluemonday (Input Sanitization)
--   React (Frontend)
--   Mantine UI (Component Library)
--   React Query (State Management)
--   TypeScript (Frontend Language)
--   Jest (Frontend Testing)
-
-## Features
-
--   Horse pregnancy tracking
--   Breeding management
+-   Horse pregnancy tracking and monitoring
+-   Pre-foaling checklist management
 -   Health record keeping
--   Pre-foaling checklist
--   User authentication
--   Dashboard statistics
--   Auth0 Integration
--   Input Sanitization
--   Secure API Endpoints
--   User Role Management
+-   Secure user authentication
+-   Real-time pregnancy status dashboard
 
-## Project Structure
-
-## Development Setup
+## Getting Started
 
 ### Prerequisites
 
-- Go 1.23.4+
-- PostgreSQL 13+
-- Docker (optional, for containerization)
-- Node.js 18+ (for frontend)
+-   Docker and Docker Compose
+-   PostgreSQL 13+
+-   Auth0 account
 
-### Local Development
+### Quick Start
 
 1. Clone the repository
-2. Set up PostgreSQL database
-3. Configure environment variables
-4. Run backend: `go run main.go`
-5. Run frontend: `npm start`
+2. Configure environment variables
+3. Run `docker-compose up`
+4. Access the application at `http://localhost:3000`
 
-## Contributing
-
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+For detailed technical information, see [STACK.md](STACK.md)
+For development roadmap, see [TODO.md](TODO.md)
