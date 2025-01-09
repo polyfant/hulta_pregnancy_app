@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] - 2024-03-19
+## [Unreleased] - 2024-01-19
 
 ### Added
 
@@ -21,7 +21,7 @@
 -   Enhanced privacy controls
 -   Added environmental monitoring
 
-## [0.2.0] - 2024-03-15
+## [0.2.0] - 2024-01-15
 
 ### Added
 
@@ -38,7 +38,7 @@
 -   Replaced custom styling with Mantine UI
 -   Updated project documentation
 
-## [0.1.0] - 2024-03-01
+## [0.1.0] - 2024-01-08
 
 ### Initial Release
 
