@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -45,10 +45,14 @@ type FeatureFlags struct {
 }
 
 type BackupConfig struct {
-	Enabled     bool
-	Directory   string
-	Interval    time.Duration
-	MaxBackups  int
+	Enabled    bool
+	Directory  string
+	Interval   time.Duration
+	MaxBackups int
+}
+
+func LoadEnv() error {
+	return godotenv.Load()
 }
 
 func LoadConfig() *Config {
@@ -74,10 +78,10 @@ func LoadConfig() *Config {
 			Path:  getEnv("LOG_PATH", "./logs"),
 		},
 		Backup: BackupConfig{
-			Enabled:     getEnvAsBool("BACKUP_ENABLED", false),
-			Directory:   getEnv("BACKUP_DIRECTORY", "./backups"),
-			Interval:    getEnvAsDuration("BACKUP_INTERVAL", 24*time.Hour),
-			MaxBackups:  getEnvAsInt("BACKUP_MAX_BACKUPS", 30),
+			Enabled:    getEnvAsBool("BACKUP_ENABLED", false),
+			Directory:  getEnv("BACKUP_DIRECTORY", "./backups"),
+			Interval:   getEnvAsDuration("BACKUP_INTERVAL", 24*time.Hour),
+			MaxBackups: getEnvAsInt("BACKUP_MAX_BACKUPS", 30),
 		},
 	}
 
@@ -94,12 +98,6 @@ func LoadConfig() *Config {
 			EnableAuditLogging: false,
 			EnableCaching:      false,
 			StrictMode:         false,
-		}
-	case "testing":
-		config.Features = FeatureFlags{
-			EnableAuditLogging: true,
-			EnableCaching:      false,
-			StrictMode:         true,
 		}
 	}
 
@@ -136,38 +134,4 @@ func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
 		return value
 	}
 	return defaultValue
-}
-
-// LoadTestConfig loads configuration for testing environment
-func LoadTestConfig() *Config {
-	return &Config{
-		Database: DatabaseConfig{
-			Host:     "localhost",
-			Port:     5432,
-			User:     "testuser",
-			Password: "testpassword",
-			DBName:   "horse_tracking_test",
-			SSLMode:  "disable",
-		},
-		Server: ServerConfig{
-			Host: "localhost",
-			Port: 8081,
-			Mode: string(gin.TestMode),
-		},
-		Logger: LoggerConfig{
-			Path:  "./logs/test.log",
-			Level: "debug",
-		},
-		Features: FeatureFlags{
-			EnableAuditLogging: false,
-			EnableCaching:      false,
-			StrictMode:         false,
-		},
-		Backup: BackupConfig{
-			Enabled:     false,
-			Directory:   "./test_backups",
-			Interval:    1 * time.Hour,
-			MaxBackups:  10,
-		},
-	}
 }

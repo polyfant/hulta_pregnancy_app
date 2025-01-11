@@ -25,6 +25,10 @@ import (
 
 func main() {
 	// Load configuration
+	if err := config.LoadEnv(); err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
+
 	cfg := config.LoadConfig()
 
 	// Initialize logger
@@ -32,21 +36,30 @@ func main() {
 		log.Fatalf("Failed to initialize logger: %v", err)
 	}
 
+	// Log the DSN we're about to use (mask password)
+	logDsn := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable",
+		cfg.Database.Host,
+		cfg.Database.Port,
+		cfg.Database.User,
+		cfg.Database.DBName,
+	)
+	logger.Info("Attempting database connection", "dsn", logDsn)
+
 	// Construct database DSN
 	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		cfg.Database.Host, 
-		cfg.Database.Port, 
-		cfg.Database.User, 
-		cfg.Database.Password, 
+		cfg.Database.Host,
+		cfg.Database.Port,
+		cfg.Database.User,
+		cfg.Database.Password,
 		cfg.Database.DBName,
 	)
 
 	// Initialize database connection
 	db, err := database.NewPostgresDB(dsn)
 	if err != nil {
-		logger.Fatal("Failed to connect to database", 
-			"error", err, 
-			"dsn", dsn)
+		logger.Fatal("Failed to connect to database",
+			"error", err,
+			"dsn", logDsn)
 	}
 
 	// Auto-migrate models

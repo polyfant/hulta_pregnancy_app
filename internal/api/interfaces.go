@@ -5,6 +5,7 @@ import (
 	"github.com/polyfant/hulta_pregnancy_app/internal/database"
 	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service"
+	"github.com/polyfant/hulta_pregnancy_app/internal/service/breeding"
 )
 
 // HandlerConfig defines the configuration for creating a new handler
@@ -14,6 +15,7 @@ type HandlerConfig struct {
 	HorseService     *service.HorseService
 	PregnancyService *service.PregnancyService
 	HealthService    *service.HealthService
+	BreedingService  *breeding.BreedingService
 	Cache            *cache.MemoryCache
 	HorseRepo        repository.HorseRepository
 	BreedingRepo     repository.BreedingRepository
