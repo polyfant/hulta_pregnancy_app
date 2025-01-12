@@ -3,7 +3,7 @@ package models
 import "time"
 
 type User struct {
-	ID             int64      `json:"id" db:"id"`
+	ID             string     `json:"id" db:"id"`
 	Email          string     `json:"email" db:"email"`
 	HashedPassword string     `json:"-" db:"hashed_password"`
 	LastSync       time.Time  `json:"last_sync" db:"last_sync"`
@@ -14,7 +14,7 @@ type User struct {
 }
 
 type SyncData struct {
-	UserID    int64           `json:"user_id"`
+	UserID    string          `json:"user_id"`
 	Timestamp time.Time       `json:"timestamp"`
 	Horses    []Horse         `json:"horses"`
 	Health    []HealthRecord  `json:"health"`

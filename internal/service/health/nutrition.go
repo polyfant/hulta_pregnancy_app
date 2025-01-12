@@ -98,16 +98,16 @@ func (s *NutritionService) calculateBaseFeedRequirement(horse models.Horse) mode
 
 func (s *NutritionService) adjustForPregnancy(base models.FeedRequirements, stage models.PregnancyStage) models.FeedRequirements {
 	switch stage {
-	case models.PregnancyStageEarlyGestation:
+	case models.PregnancyStageEarly:
 		// Minimal increase in early pregnancy
 		base.Hay *= 1.1
 		base.Minerals *= 1.2
-	case models.PregnancyStageMidGestation:
+	case models.PregnancyStageMid:
 		// Moderate increase
 		base.Hay *= 1.2
 		base.Grain *= 1.1
 		base.Minerals *= 1.3
-	case models.PregnancyStageLateGestation:
+	case models.PregnancyStageLate:
 		// Significant increase
 		base.Hay *= 1.3
 		base.Grain *= 1.2
@@ -125,11 +125,11 @@ func (s *NutritionService) getPregnancyStage(horse models.Horse) models.Pregnanc
 	daysPregnant := int(time.Since(*horse.ConceptionDate).Hours() / 24)
 	switch {
 	case daysPregnant <= 113:
-		return models.PregnancyStageEarlyGestation
+		return models.PregnancyStageEarly
 	case daysPregnant <= 226:
-		return models.PregnancyStageMidGestation
+		return models.PregnancyStageMid
 	default:
-		return models.PregnancyStageLateGestation
+		return models.PregnancyStageLate
 	}
 }
 

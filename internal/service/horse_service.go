@@ -15,28 +15,28 @@ func NewHorseService(repo repository.HorseRepository) *HorseService {
 	return &HorseService{repo: repo}
 }
 
-func (s *HorseService) GetHorse(ctx context.Context, id uint) (*models.Horse, error) {
+func (s *HorseService) GetByID(ctx context.Context, id uint) (*models.Horse, error) {
 	return s.repo.GetByID(ctx, id)
 }
 
-func (s *HorseService) ListHorsesByUser(ctx context.Context, userID string) ([]models.Horse, error) {
+func (s *HorseService) ListByUserID(ctx context.Context, userID string) ([]models.Horse, error) {
 	return s.repo.ListByUser(ctx, userID)
 }
 
-func (s *HorseService) CreateHorse(horse *models.Horse) error {
+func (s *HorseService) Create(ctx context.Context, horse *models.Horse) error {
 	return s.repo.Create(context.Background(), horse)
 }
 
-func (s *HorseService) UpdateHorse(horse *models.Horse) error {
+func (s *HorseService) Update(ctx context.Context, horse *models.Horse) error {
 	return s.repo.Update(context.Background(), horse)
 }
 
-func (s *HorseService) DeleteHorse(id uint) error {
+func (s *HorseService) Delete(ctx context.Context, id uint) error {
 	return s.repo.Delete(context.Background(), id)
 }
 
-func (s *HorseService) GetPregnantHorses(ctx context.Context, userID string) ([]models.Horse, error) {
-	return s.repo.GetPregnantHorses(ctx, userID)
+func (s *HorseService) GetPregnant(ctx context.Context, userID string) ([]models.Horse, error) {
+	return s.repo.GetPregnant(ctx, userID)
 }
 
 func (s *HorseService) GetFamilyTree(ctx context.Context, horseID uint) (*models.FamilyTree, error) {

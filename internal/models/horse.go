@@ -2,6 +2,14 @@ package models
 
 import "time"
 
+type Gender string
+
+const (
+	GenderMare     Gender = "MARE"
+	GenderStallion Gender = "STALLION"
+	GenderGelding  Gender = "GELDING"
+)
+
 type Horse struct {
 	ID             uint       `json:"id" gorm:"primaryKey"`
 	UserID         string     `json:"user_id"`
@@ -42,10 +50,6 @@ type HorseDetails struct {
 	Horse     Horse       `json:"horse"`
 	Expenses  []Expense   `json:"expenses"`
 }
-
-const (
-	GenderGelding  = "GELDING"
-)
 
 func (h *Horse) Age() int {
 	if h.BirthDate.IsZero() {

@@ -1,116 +1,62 @@
 package pregnancy
 
 import (
-	"math"
 	"time"
 
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 )
 
-type Calculator struct {
-    defaultGestationDays int
-    stageThresholds     map[models.PregnancyStage]int
-    maxOverdueDays      int  // Maximum number of days we consider normal for overdue
-    minGestationDays    int
-    maxGestationDays    int
-}
+// Calculator handles pregnancy stage and due date calculations
+type Calculator struct{}
 
+// NewCalculator creates a new pregnancy calculator
 func NewCalculator() *Calculator {
-    return &Calculator{
-        defaultGestationDays: models.DefaultGestationDays,
-        stageThresholds: map[models.PregnancyStage]int{
-            models.PregnancyStageEarlyGestation: 98,  // 14 weeks
-            models.PregnancyStageMidGestation:   196, // 28 weeks
-            models.PregnancyStageLateGestation:  340, // 48 weeks
-        },
-        maxOverdueDays: 30,  // Up to 30 days overdue is considered normal
-        minGestationDays: 320, // Minimum viable gestation
-        maxGestationDays: 370, // Maximum expected gestation
-    }
+	return &Calculator{}
 }
 
+// CalculateStage determines the current stage of pregnancy
+func (c *Calculator) CalculateStage(pregnancy *models.Pregnancy) models.PregnancyStage {
+	if pregnancy.ConceptionDate == nil {
+		return models.PregnancyStageEarly
+	}
+
+	daysPregnant := int(time.Since(*pregnancy.ConceptionDate).Hours() / 24)
+	progressPercentage := float64(daysPregnant) / float64(models.DefaultGestationDays)
+
+	switch {
+	case progressPercentage <= 0.33:
+		return models.PregnancyStageEarly
+	case progressPercentage <= 0.66:
+		return models.PregnancyStageMid
+	default:
+		return models.PregnancyStageLate
+	}
+}
+
+// CalculateDueDate calculates the expected due date
 func (c *Calculator) CalculateDueDate(conceptionDate time.Time) time.Time {
-    return conceptionDate.AddDate(0, 0, c.defaultGestationDays)
+	return conceptionDate.AddDate(0, 0, models.DefaultGestationDays)
 }
 
-func (c *Calculator) CalculateProgress(conceptionDate time.Time) (float64, int) {
-    now := time.Now()
-    daysSinceConception := int(now.Sub(conceptionDate).Hours() / 24)
-    
-    progress := float64(daysSinceConception) / float64(c.defaultGestationDays) * 100
-    if progress > 100 {
-        progress = 100
-    }
-    
-    daysRemaining := c.defaultGestationDays - daysSinceConception
-    if daysRemaining < 0 {
-        daysRemaining = 0
-    }
-    
-    return progress, daysRemaining
+// CalculateDaysPregnant calculates the number of days pregnant
+func (c *Calculator) CalculateDaysPregnant(conceptionDate time.Time) int {
+	return int(time.Since(conceptionDate).Hours() / 24)
 }
 
-func (c *Calculator) GetPregnancyStage(daysSinceConception int) models.PregnancyStage {
-    switch {
-    case daysSinceConception <= c.stageThresholds[models.PregnancyStageEarlyGestation]:
-        return models.PregnancyStageEarlyGestation
-    case daysSinceConception <= c.stageThresholds[models.PregnancyStageMidGestation]:
-        return models.PregnancyStageMidGestation
-    case daysSinceConception <= c.stageThresholds[models.PregnancyStageLateGestation]:
-        return models.PregnancyStageLateGestation
-    case daysSinceConception <= c.stageThresholds[models.PregnancyStageLateGestation] + c.maxOverdueDays:
-        return models.PregnancyStageOverdue
-    default:
-        return models.PregnancyStageHighRisk
-    }
+// CalculateWeeksPregnant calculates the number of weeks pregnant
+func (c *Calculator) CalculateWeeksPregnant(conceptionDate time.Time) int {
+	return c.CalculateDaysPregnant(conceptionDate) / 7
 }
 
-// GetStageInfo returns detailed information about the current pregnancy stage
-func (c *Calculator) GetStageInfo(conceptionDate time.Time) models.PregnancyStageInfo {
-    daysSinceConception := int(time.Since(conceptionDate).Hours() / 24)
-    currentStage := c.GetPregnancyStage(daysSinceConception)
-    
-    // Calculate days overdue if applicable
-    daysOverdue := 0
-    if daysSinceConception > c.defaultGestationDays {
-        daysOverdue = daysSinceConception - c.defaultGestationDays
-    }
-    
-    // Calculate progress, capping at 100%
-    progress := float64(daysSinceConception) / float64(c.defaultGestationDays) * 100
-    if progress > 100 {
-        progress = 100
-    }
-    
-    return models.PregnancyStageInfo{
-        Stage:           currentStage,
-        DaysSoFar:      daysSinceConception,
-        WeeksSoFar:     daysSinceConception / 7,
-        DaysRemaining:  c.defaultGestationDays - daysSinceConception,
-        WeeksRemaining: (c.defaultGestationDays - daysSinceConception) / 7,
-        Progress:       progress,
-        DaysOverdue:    daysOverdue,
-        IsOverdue:      daysOverdue > 0,
-    }
+// CalculateIsInDueWindow checks if the pregnancy is in the due window
+func (c *Calculator) CalculateIsInDueWindow(conceptionDate time.Time) bool {
+	daysPregnant := c.CalculateDaysPregnant(conceptionDate)
+	return daysPregnant >= models.DefaultGestationDays-14 && daysPregnant <= models.DefaultGestationDays+14
 }
 
-// DueDateInfo provides comprehensive due date information
-func (c *Calculator) CalculateDueDateInfo(conceptionDate time.Time) models.DueDateInfo {
-    expectedDueDate := conceptionDate.AddDate(0, 0, c.defaultGestationDays)
-    earliestDueDate := conceptionDate.AddDate(0, 0, c.minGestationDays)
-    latestDueDate := conceptionDate.AddDate(0, 0, c.maxGestationDays)
-    
-    now := time.Now()
-    // Round to nearest day to avoid time-of-day differences
-    daysUntilDue := int(math.Round(expectedDueDate.Sub(now).Hours() / 24))
-    
-    return models.DueDateInfo{
-        ExpectedDueDate: expectedDueDate,
-        EarliestDueDate: earliestDueDate,
-        LatestDueDate:   latestDueDate,
-        DaysUntilDue:    daysUntilDue,
-        // For weeks, we want to floor negative numbers and ceil positive numbers
-        WeeksUntilDue:   daysUntilDue / 7,
-        IsInDueWindow:   now.After(earliestDueDate) && now.Before(latestDueDate),
-    }
+// CalculateDueWindow returns the earliest and latest due dates
+func (c *Calculator) CalculateDueWindow(conceptionDate time.Time) (time.Time, time.Time) {
+	earliest := conceptionDate.AddDate(0, 0, models.DefaultGestationDays-14)
+	latest := conceptionDate.AddDate(0, 0, models.DefaultGestationDays+14)
+	return earliest, latest
 } 

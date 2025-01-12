@@ -7,277 +7,217 @@ import (
 
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
+	"github.com/polyfant/hulta_pregnancy_app/internal/service/pregnancy"
 )
 
-// PregnancyService handles business logic for horse pregnancies
+// PregnancyService handles pregnancy-related business logic
 type PregnancyService struct {
-	horseRepo      repository.HorseRepository
-	pregnancyRepo  repository.PregnancyRepository
+	horseRepo     repository.HorseRepository
+	pregnancyRepo repository.PregnancyRepository
+	calculator    *pregnancy.Calculator
 }
 
 // NewPregnancyService creates a new pregnancy service instance
-func NewPregnancyService(horseRepo repository.HorseRepository, pregnancyRepo repository.PregnancyRepository) *PregnancyService {
-	return &PregnancyService{
-		horseRepo:      horseRepo,
-		pregnancyRepo:  pregnancyRepo,
+func NewPregnancyService(horseRepo repository.HorseRepository, pregnancyRepo repository.PregnancyRepository) PregnancyService {
+	return PregnancyService{
+		horseRepo:     horseRepo,
+		pregnancyRepo: pregnancyRepo,
+		calculator:    pregnancy.NewCalculator(),
 	}
 }
 
-// Core pregnancy methods
-func (s *PregnancyService) GetPregnancy(ctx context.Context, horseID uint) (*models.Pregnancy, error) {
+// GetPregnancy retrieves pregnancy information for a horse
+func (s PregnancyService) GetPregnancy(ctx context.Context, horseID uint) (*models.Pregnancy, error) {
 	return s.pregnancyRepo.GetByHorseID(ctx, horseID)
 }
 
-// StartPregnancy begins tracking a new pregnancy for a horse
-func (s *PregnancyService) StartPregnancy(ctx context.Context, horseID uint, userID string, conceptionDate time.Time) error {
+// GetPregnancies retrieves all pregnancies for a user
+func (s PregnancyService) GetPregnancies(ctx context.Context, userID string) ([]models.Pregnancy, error) {
+	pregnancies, err := s.pregnancyRepo.GetByUserID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pregnancies: %w", err)
+	}
+	return pregnancies, nil
+}
+
+// StartTracking begins tracking a new pregnancy
+func (s PregnancyService) StartTracking(ctx context.Context, horseID uint, start models.PregnancyStart) error {
+	pregnancy := &models.Pregnancy{
+		HorseID:        horseID,
+		StartDate:      start.ConceptionDate,
+		Status:         models.PregnancyStatusActive,
+		ConceptionDate: &start.ConceptionDate,
+	}
+
+	if err := s.pregnancyRepo.Create(ctx, pregnancy); err != nil {
+		return fmt.Errorf("failed to create pregnancy: %w", err)
+	}
+
 	horse, err := s.horseRepo.GetByID(ctx, horseID)
 	if err != nil {
 		return fmt.Errorf("failed to get horse: %w", err)
-	}
-
-	if horse.UserID != userID {
-		return fmt.Errorf("unauthorized: horse does not belong to user")
 	}
 
 	horse.IsPregnant = true
-	horse.ConceptionDate = &conceptionDate
-
 	if err := s.horseRepo.Update(ctx, horse); err != nil {
 		return fmt.Errorf("failed to update horse: %w", err)
 	}
 
-	pregnancy := &models.Pregnancy{
-		HorseID:        horseID,
-		StartDate:      time.Now(),
-		ConceptionDate: &conceptionDate,
-		Status:         string(models.PregnancyStatusActive),
-	}
-
-	return s.pregnancyRepo.Create(ctx, pregnancy)
+	return nil
 }
 
-// EndPregnancy completes or terminates pregnancy tracking for a horse
-func (s *PregnancyService) EndPregnancy(ctx context.Context, horseID uint, status string, endDate time.Time) error {
-	horse, err := s.horseRepo.GetByID(ctx, horseID)
+// GetStatus retrieves the current pregnancy status
+func (s PregnancyService) GetStatus(ctx context.Context, horseID uint) (*models.PregnancyStatus, error) {
+	pregnancy, err := s.pregnancyRepo.GetByHorseID(ctx, horseID)
 	if err != nil {
-		return fmt.Errorf("failed to get horse: %w", err)
+		return nil, fmt.Errorf("failed to get pregnancy: %w", err)
 	}
 
-	horse.IsPregnant = false
-	horse.ConceptionDate = nil
-
-	if err := s.horseRepo.Update(ctx, horse); err != nil {
-		return fmt.Errorf("failed to update horse: %w", err)
+	stage, err := s.GetPregnancyStage(ctx, horseID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pregnancy stage: %w", err)
 	}
 
+	return &models.PregnancyStatus{
+		Stage:        stage,
+		DaysPregnant: int(time.Since(*pregnancy.ConceptionDate).Hours() / 24),
+	}, nil
+}
+
+// GetPregnancyEvents retrieves all events for a pregnancy
+func (s PregnancyService) GetPregnancyEvents(ctx context.Context, horseID uint) ([]models.PregnancyEvent, error) {
+	return s.pregnancyRepo.GetEvents(ctx, horseID)
+}
+
+// GetGuidelines retrieves guidelines for a specific pregnancy stage
+func (s PregnancyService) GetGuidelines(ctx context.Context, stage models.PregnancyStage) ([]models.Guideline, error) {
+	guidelines := map[models.PregnancyStage][]models.Guideline{
+		models.PregnancyStageEarly: {
+			{
+				Stage:       models.PregnancyStageEarly,
+				Description: "Early pregnancy care",
+				Tips: []string{
+					"Schedule initial vet check",
+					"Maintain regular exercise routine",
+					"Monitor mare's appetite",
+				},
+			},
+		},
+		models.PregnancyStageMid: {
+			{
+				Stage:       models.PregnancyStageMid,
+				Description: "Mid-pregnancy care",
+				Tips: []string{
+					"Increase feed gradually",
+					"Continue moderate exercise",
+					"Schedule vaccination updates",
+				},
+			},
+		},
+		models.PregnancyStageLate: {
+			{
+				Stage:       models.PregnancyStageLate,
+				Description: "Late pregnancy care",
+				Tips: []string{
+					"Prepare foaling area",
+					"Monitor for signs of labor",
+					"Have vet contact ready",
+				},
+			},
+		},
+	}
+
+	if g, ok := guidelines[stage]; ok {
+		return g, nil
+	}
+	return nil, fmt.Errorf("invalid pregnancy stage: %s", stage)
+}
+
+func (s PregnancyService) GetActive(ctx context.Context, userID string) ([]models.Pregnancy, error) {
+	return s.pregnancyRepo.GetActive(ctx, userID)
+}
+
+func (s PregnancyService) UpdatePregnancy(ctx context.Context, pregnancy *models.Pregnancy) error {
+	if err := s.pregnancyRepo.Update(ctx, pregnancy); err != nil {
+		return fmt.Errorf("failed to update pregnancy: %w", err)
+	}
+	return nil
+}
+
+func (s PregnancyService) GetPreFoalingSigns(ctx context.Context, horseID uint) ([]models.PreFoalingSign, error) {
+	return s.pregnancyRepo.GetPreFoaling(ctx, horseID)
+}
+
+func (s PregnancyService) AddPreFoalingSign(ctx context.Context, sign *models.PreFoalingSign) error {
+	return s.pregnancyRepo.AddPreFoaling(ctx, sign)
+}
+
+func (s PregnancyService) GetPregnancyStage(ctx context.Context, horseID uint) (models.PregnancyStage, error) {
+	pregnancy, err := s.pregnancyRepo.GetByHorseID(ctx, horseID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get pregnancy: %w", err)
+	}
+
+	if pregnancy.ConceptionDate == nil {
+		return "", fmt.Errorf("pregnancy has no conception date")
+	}
+
+	daysPregnant := int(time.Since(*pregnancy.ConceptionDate).Hours() / 24)
+
+	switch {
+	case daysPregnant < 120:
+		return models.PregnancyStageEarly, nil
+	case daysPregnant < 240:
+		return models.PregnancyStageMid, nil
+	case daysPregnant < 340:
+		return models.PregnancyStageLate, nil
+	default:
+		return models.PregnancyStageOverdue, nil
+	}
+}
+
+func (s PregnancyService) EndPregnancy(ctx context.Context, horseID uint, status string, date time.Time) error {
 	pregnancy, err := s.pregnancyRepo.GetByHorseID(ctx, horseID)
 	if err != nil {
 		return fmt.Errorf("failed to get pregnancy: %w", err)
 	}
 
 	pregnancy.Status = status
-	pregnancy.EndDate = &endDate
+	pregnancy.EndDate = &date
 
-	return s.pregnancyRepo.Update(ctx, pregnancy)
-}
-
-// GetPregnancyStatus returns the current pregnancy status for a horse
-func (s *PregnancyService) GetPregnancyStatus(ctx context.Context, horseID uint) (*models.PregnancyStatus, error) {
-	horse, err := s.horseRepo.GetByID(ctx, horseID)
-	if err != nil {
-		return nil, err
+	if err := s.pregnancyRepo.Update(ctx, pregnancy); err != nil {
+		return fmt.Errorf("failed to update pregnancy: %w", err)
 	}
 
-	if !horse.IsPregnant || horse.ConceptionDate == nil {
-		return &models.PregnancyStatus{
-			IsPregnant: false,
-		}, nil
-	}
-
-	daysPregnant := int(time.Since(*horse.ConceptionDate).Hours() / 24)
-	progress := float64(daysPregnant) / float64(models.DefaultGestationDays) * 100
-
-	// Get the latest event
-	events, err := s.pregnancyRepo.GetEvents(ctx, horseID)
-	var lastEvent *models.PregnancyEvent
-	if err == nil && len(events) > 0 {
-		lastEvent = &events[len(events)-1]
-	}
-	
-	return &models.PregnancyStatus{
-		IsPregnant:          true,
-		ConceptionDate:      *horse.ConceptionDate,
-		
-		DaysPregnant:        daysPregnant,
-		PregnancyPercentage: progress,
-		Stage:               s.calculateStage(&models.Pregnancy{ConceptionDate: horse.ConceptionDate}),
-		LastEvent:           lastEvent,
-	}, nil
-}
-
-// GetPregnancyStage returns the current stage of pregnancy for a horse
-func (s *PregnancyService) GetPregnancyStage(ctx context.Context, horseID uint) (models.PregnancyStage, error) {
-	pregnancy, err := s.pregnancyRepo.GetByHorseID(ctx, horseID)
-	if err != nil {
-		return models.PregnancyStageUnknown, fmt.Errorf("failed to get pregnancy: %w", err)
-	}
-
-	if pregnancy == nil {
-		return models.PregnancyStageUnknown, nil
-	}
-
-	return s.calculateStage(pregnancy), nil
-}
-
-// Pre-foaling related methods
-func (s *PregnancyService) GetPreFoalingChecklist(ctx context.Context, horseID uint) ([]models.PreFoalingChecklistItem, error) {
-	// TODO: Implement pre-foaling checklist
-	return []models.PreFoalingChecklistItem{}, nil
-}
-
-func (s *PregnancyService) AddPreFoalingChecklistItem(ctx context.Context, item *models.PreFoalingChecklistItem) error {
-	return s.pregnancyRepo.AddPreFoalingChecklistItem(ctx, item)
-}
-
-func (s *PregnancyService) UpdatePreFoalingChecklistItem(ctx context.Context, item *models.PreFoalingChecklistItem) error {
-	return s.pregnancyRepo.UpdatePreFoalingChecklistItem(ctx, item)
-}
-
-func (s *PregnancyService) GetPreFoalingChecklistItem(ctx context.Context, itemID uint) (*models.PreFoalingChecklistItem, error) {
-	return s.pregnancyRepo.GetPreFoalingChecklistItem(ctx, itemID)
-}
-
-func (s *PregnancyService) DeletePreFoalingChecklistItem(ctx context.Context, itemID uint) error {
-	return s.pregnancyRepo.DeletePreFoalingChecklistItem(ctx, itemID)
-}
-
-func (s *PregnancyService) InitializePreFoalingChecklist(ctx context.Context, horseID uint) error {
-	return s.pregnancyRepo.InitializePreFoalingChecklist(ctx, horseID)
-}
-
-// GetPreFoalingSigns returns all recorded pre-foaling signs for a horse
-func (s *PregnancyService) GetPreFoalingSigns(ctx context.Context, horseID uint) ([]models.PreFoalingSign, error) {
-	// TODO: Implement pre-foaling signs tracking
-	return []models.PreFoalingSign{}, nil
-}
-
-// AddPreFoalingSign records a new pre-foaling sign observation
-func (s *PregnancyService) AddPreFoalingSign(ctx context.Context, sign *models.PreFoalingSign) error {
-	return s.pregnancyRepo.AddPreFoalingSign(ctx, sign)
-}
-
-// GetPregnancyEvents returns all events related to a horse's pregnancy
-func (s *PregnancyService) GetPregnancyEvents(ctx context.Context, horseID uint) ([]models.PregnancyEvent, error) {
-	return s.pregnancyRepo.GetEvents(ctx, horseID)
-}
-
-// AddPregnancyEvent adds a new event to the pregnancy timeline
-func (s *PregnancyService) AddPregnancyEvent(ctx context.Context, event *models.PregnancyEvent) error {
-	// TODO: Implement event adding
 	return nil
 }
 
-// Helper methods
-func (s *PregnancyService) calculateStage(pregnancy *models.Pregnancy) models.PregnancyStage {
-	if pregnancy == nil || pregnancy.ConceptionDate == nil {
-		return models.PregnancyStageUnknown
+func (s PregnancyService) AddPregnancyEvent(ctx context.Context, event *models.PregnancyEvent) error {
+	if err := s.pregnancyRepo.AddPregnancyEvent(ctx, event); err != nil {
+		return fmt.Errorf("failed to add pregnancy event: %w", err)
 	}
-
-	daysPregnant := int(time.Since(*pregnancy.ConceptionDate).Hours() / 24)
-	progressPercentage := float64(daysPregnant) / float64(models.DefaultGestationDays)
-	
-	switch {
-	case progressPercentage <= 0.33:
-		return models.PregnancyStageEarlyGestation
-	case progressPercentage <= 0.66:
-		return models.PregnancyStageMidGestation
-	default:
-		return models.PregnancyStageLateGestation
-	}
+	return nil
 }
 
-func (s *PregnancyService) UpdateHorsePregnancyStatus(ctx context.Context, horseID uint, userID string, isPregnant bool) error {
-	horse, err := s.horseRepo.GetByID(ctx, horseID)
+func (s PregnancyService) GetEvents(ctx context.Context, horseID uint) ([]models.PregnancyEvent, error) {
+	events, err := s.pregnancyRepo.GetEvents(ctx, horseID)
 	if err != nil {
-		return fmt.Errorf("failed to get horse: %w", err)
+		return nil, fmt.Errorf("failed to get pregnancy events: %w", err)
 	}
-
-	if horse.UserID != userID {
-		return fmt.Errorf("unauthorized: horse does not belong to user")
-	}
-
-	horse.IsPregnant = isPregnant
-	if !isPregnant {
-		horse.ConceptionDate = nil
-	}
-
-	return s.horseRepo.Update(ctx, horse)
+	return events, nil
 }
 
-func (s *PregnancyService) GetPregnancies(ctx context.Context, userID string) ([]models.Pregnancy, error) {
-	return s.pregnancyRepo.GetByUserID(ctx, userID)
-}
-
-func (s *PregnancyService) GetHorse(ctx context.Context, horseID uint) (*models.Horse, error) {
-	return s.horseRepo.GetByID(ctx, horseID)
-}
-
-func (s *PregnancyService) UpdateHorse(ctx context.Context, horse *models.Horse) error {
-	return s.horseRepo.Update(ctx, horse)
-}
-
-func (s *PregnancyService) UpdatePregnancy(ctx context.Context, pregnancy *models.Pregnancy) error {
-	return s.pregnancyRepo.Update(ctx, pregnancy)
-}
-
-func (s *PregnancyService) GetPregnancyGuidelinesByStage(stage models.PregnancyStage) ([]models.PregnancyGuideline, error) {
-	switch stage {
-	case models.PregnancyStageEarlyGestation:
-		return []models.PregnancyGuideline{
-			{Stage: stage, Description: "Monitor mare's appetite and weight"},
-			{Stage: stage, Description: "Continue regular exercise routine"},
-			{Stage: stage, Description: "Schedule initial pregnancy check"},
-		}, nil
-	case models.PregnancyStageMidGestation:
-		return []models.PregnancyGuideline{
-			{Stage: stage, Description: "Adjust feed for increasing nutritional needs"},
-			{Stage: stage, Description: "Monitor for any signs of discomfort"},
-			{Stage: stage, Description: "Schedule mid-term pregnancy check"},
-		}, nil
-	case models.PregnancyStageLateGestation:
-		return []models.PregnancyGuideline{
-			{Stage: stage, Description: "Prepare foaling area"},
-			{Stage: stage, Description: "Monitor for signs of approaching labor"},
-			{Stage: stage, Description: "Have vet contact information ready"},
-		}, nil
-	default:
-		return nil, fmt.Errorf("invalid pregnancy stage: %s", stage)
-	}
-}
-
-// UpdatePregnancyStatus updates the pregnancy status and conception date for a horse
-func (s *PregnancyService) UpdatePregnancyStatus(ctx context.Context, horseID uint, isPregnant bool, conceptionDate *time.Time) error {
-	horse, err := s.horseRepo.GetByID(ctx, horseID)
+func (s PregnancyService) GetPreFoalingChecklist(ctx context.Context, horseID uint) ([]models.PreFoalingChecklistItem, error) {
+	items, err := s.pregnancyRepo.GetPreFoalingChecklist(ctx, horseID)
 	if err != nil {
-		return fmt.Errorf("failed to get horse: %w", err)
+		return nil, fmt.Errorf("failed to get pre-foaling checklist: %w", err)
 	}
+	return items, nil
+}
 
-	horse.IsPregnant = isPregnant
-	horse.ConceptionDate = conceptionDate
-
-	if err := s.horseRepo.Update(ctx, horse); err != nil {
-		return fmt.Errorf("failed to update horse: %w", err)
+func (s PregnancyService) AddPreFoalingChecklistItem(ctx context.Context, item *models.PreFoalingChecklistItem) error {
+	if err := s.pregnancyRepo.AddPreFoalingChecklistItem(ctx, item); err != nil {
+		return fmt.Errorf("failed to add pre-foaling checklist item: %w", err)
 	}
-
-	if isPregnant && conceptionDate != nil {
-		pregnancy := &models.Pregnancy{
-			HorseID:        horseID,
-			StartDate:      time.Now(),
-			ConceptionDate: conceptionDate,
-			Status:         string(models.PregnancyStatusActive),
-		}
-		return s.pregnancyRepo.Create(ctx, pregnancy)
-	}
-
 	return nil
 }

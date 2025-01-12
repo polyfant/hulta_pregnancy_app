@@ -6,12 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// APIResponse represents a standardized API response
-type APIResponse struct {
-	Success bool        `json:"success"`
-	Data    interface{} `json:"data,omitempty"`
-	Error   string      `json:"error,omitempty"`
-}
+
 
 // SendSuccess sends a successful response
 func SendSuccess(c *gin.Context, data interface{}) {

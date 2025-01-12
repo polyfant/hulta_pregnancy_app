@@ -46,8 +46,8 @@ func TestHandlers(t *testing.T) {
 }
 
 func performRequest(r *gin.Engine, method, path string, body interface{}) *httptest.ResponseRecorder {
-	w := httptest.NewRecorder()
 	var req *http.Request
+	w := httptest.NewRecorder()
 
 	if body != nil {
 		jsonBody, _ := json.Marshal(body)
@@ -59,4 +59,4 @@ func performRequest(r *gin.Engine, method, path string, body interface{}) *httpt
 
 	r.ServeHTTP(w, req)
 	return w
-}
+} 

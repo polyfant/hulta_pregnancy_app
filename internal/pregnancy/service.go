@@ -11,14 +11,12 @@ import (
 
 // Service handles pregnancy-related business logic
 type Service struct {
-	pregnancyRepo repository.PregnancyRepository
+	repo repository.PregnancyRepository
 }
 
 // NewService creates a new pregnancy service
-func NewService(pregnancyRepo repository.PregnancyRepository) *Service {
-	return &Service{
-		pregnancyRepo: pregnancyRepo,
-	}
+func NewService(repo repository.PregnancyRepository) *Service {
+	return &Service{repo: repo}
 }
 
 // DefaultGestationDays is the average number of days in a horse's pregnancy
@@ -64,11 +62,11 @@ func (s *Service) CalculatePregnancyProgress(pregnancy *models.Pregnancy) (float
 	var stage string
 	switch {
 	case daysPregnant < 120:
-		stage = string(models.PregnancyStageEarlyGestation)
+		stage = string(models.PregnancyStageEarly)
 	case daysPregnant < 240:
-		stage = string(models.PregnancyStageMidGestation)
+		stage = string(models.PregnancyStageMid)
 	default:
-		stage = string(models.PregnancyStageLateGestation)
+		stage = string(models.PregnancyStageLate)
 	}
 
 	return progress, daysRemaining, stage
@@ -78,15 +76,15 @@ func (s *Service) CalculatePregnancyProgress(pregnancy *models.Pregnancy) (float
 func (s *Service) GetPregnancyGuidelines() []models.PregnancyGuideline {
 	return []models.PregnancyGuideline{
 		{
-			Stage:       models.PregnancyStageEarlyGestation,
+			Stage:       models.PregnancyStageEarly,
 			Description: "Maintain regular diet, slight increase in nutrients",
 		},
 		{
-			Stage:       models.PregnancyStageMidGestation,
-			 Description: "Increase nutrient intake, monitor weight",
+			Stage:       models.PregnancyStageMid,
+			Description: "Increase nutrient intake, monitor weight",
 		},
 		{
-			Stage:       models.PregnancyStageLateGestation,
+			Stage:       models.PregnancyStageLate,
 			Description: "High-quality diet, prepare for foaling",
 		},
 	}
@@ -108,7 +106,7 @@ func (s *Service) GetPregnancyGuidelinesByStage(stage models.PregnancyStage) []m
 
 // GetPregnancyStage retrieves the current pregnancy stage for a specific horse
 func (s *Service) GetPregnancyStage(ctx context.Context, horseID uint) (models.PregnancyStage, error) {
-	pregnancy, err := s.pregnancyRepo.GetCurrentPregnancy(ctx, horseID)
+	pregnancy, err := s.repo.GetCurrentPregnancy(ctx, horseID)
 	if err != nil {
 		return models.PregnancyStage("UNKNOWN"), fmt.Errorf("failed to get pregnancy: %w", err)
 	}
@@ -122,7 +120,7 @@ func (s *Service) GetPregnancyStage(ctx context.Context, horseID uint) (models.P
 
 func (s *Service) calculateStage(pregnancy *models.Pregnancy) models.PregnancyStage {
 	if pregnancy.ConceptionDate == nil {
-		return models.PregnancyStageEarlyGestation
+		return models.PregnancyStageEarly
 	}
 
 	daysPregnant := int(time.Since(*pregnancy.ConceptionDate).Hours() / 24)
@@ -130,19 +128,40 @@ func (s *Service) calculateStage(pregnancy *models.Pregnancy) models.PregnancySt
 	
 	switch {
 	case progressPercentage <= 0.33:
-		return models.PregnancyStageEarlyGestation
+		return models.PregnancyStageEarly
 	case progressPercentage <= 0.66:
-		return models.PregnancyStageMidGestation
+		return models.PregnancyStageMid
 	default:
-		return models.PregnancyStageLateGestation
+		return models.PregnancyStageLate
 	}
 }
 
 // GetPregnancy retrieves the pregnancy for a specific horse
 func (s *Service) GetPregnancy(ctx context.Context, horseID uint) (*models.Pregnancy, error) {
-	pregnancy, err := s.pregnancyRepo.GetByHorseID(ctx, horseID)
+	pregnancy, err := s.repo.GetByHorseID(ctx, horseID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pregnancy: %w", err)
 	}
 	return pregnancy, nil
+}
+
+func (s *Service) GetPregnancyStatus(ctx context.Context, horseID uint) (*models.PregnancyStatus, error) {
+	pregnancy, err := s.repo.GetByHorseID(ctx, horseID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pregnancy: %w", err)
+	}
+
+	if pregnancy.ConceptionDate == nil {
+		return nil, fmt.Errorf("pregnancy has no conception date")
+	}
+
+	daysPregnant := int(time.Since(*pregnancy.ConceptionDate).Hours() / 24)
+	dueDate := pregnancy.ConceptionDate.Add(340 * 24 * time.Hour)
+
+	status := &models.PregnancyStatus{
+		DaysPregnant: daysPregnant,
+		DueDate:      dueDate,
+	}
+
+	return status, nil
 }

@@ -7,60 +7,48 @@ import (
 
 // SetupRouter sets up the routing for our API
 func SetupRouter(router *gin.Engine, h *Handler) {
-	// Add CORS middleware with more permissive settings for development
+	// Add CORS middleware
 	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"*"} // Allow all origins in development
+	config.AllowOrigins = []string{"*"}
 	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
-	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept"}
+	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
 	router.Use(cors.New(config))
 
-	// Create pregnancy handler
-	pregnancyHandler := NewPregnancyHandler(h.pregnancyService)
-
-	// API routes
+	// Create API group
 	api := router.Group("/api")
 	{
-		// Dashboard route
-		api.GET("/dashboard", h.GetDashboardStats)
-
 		// Horse routes
 		api.GET("/horses", h.ListHorses)
 		api.POST("/horses", h.AddHorse)
 		api.GET("/horses/:id", h.GetHorse)
+		api.PUT("/horses/:id", h.UpdateHorse)
 		api.DELETE("/horses/:id", h.DeleteHorse)
-		api.GET("/horses/:id/offspring", h.GetHorseOffspring)
-		api.GET("/horses/:id/family", h.GetHorseFamilyTree)
 
 		// Health routes
-		api.GET("/horses/:id/health", h.GetHealthAssessment)
+		api.GET("/horses/:id/health", h.GetHealthRecords)
 		api.POST("/horses/:id/health", h.AddHealthRecord)
-
-		// Breeding cost routes
-		api.GET("/horses/:id/breeding-costs", h.GetBreedingCosts)
-		api.POST("/horses/:id/breeding-costs", h.AddBreedingCost)
+		api.PUT("/horses/:id/health/:recordId", h.UpdateHealthRecord)
+		api.DELETE("/horses/:id/health/:recordId", h.DeleteHealthRecord)
 
 		// Pregnancy routes
-		api.GET("/horses/:id/pregnancy", pregnancyHandler.GetPregnancyStatus)
-		api.POST("/horses/:id/pregnancy/start", pregnancyHandler.StartPregnancyTracking)
-		api.POST("/horses/:id/pregnancy/end", pregnancyHandler.EndPregnancyTracking)
-		api.GET("/horses/:id/pregnancy/events", pregnancyHandler.GetPregnancyEvents)
-		api.POST("/horses/:id/pregnancy/events", pregnancyHandler.AddPregnancyEvent)
-		api.GET("/horses/:id/pregnancy/guidelines", pregnancyHandler.GetPregnancyGuidelines)
-		api.GET("/horses/:id/pregnancy/foaling-signs", pregnancyHandler.CheckPreFoalingSigns)
-		api.POST("/horses/:id/pregnancy/foaling-signs", pregnancyHandler.RecordPreFoalingSign)
-		api.GET("/horses/:id/pregnancy/foaling-checklist", pregnancyHandler.GetFoalingChecklist)
-		api.GET("/horses/:id/pregnancy/post-foaling-checklist", pregnancyHandler.GetPostFoalingChecklist)
+		api.GET("/horses/:id/pregnancy", h.GetPregnancy)
+		api.POST("/horses/:id/pregnancy/start", h.StartPregnancyTracking)
+		api.GET("/horses/:id/pregnancy/status", h.GetPregnancyStatus)
+		api.GET("/horses/:id/pregnancy/events", h.GetPregnancyEvents)
+		api.POST("/horses/:id/pregnancy/events", h.AddPregnancyEvent)
+		api.GET("/horses/:id/pregnancy/guidelines", h.GetPregnancyGuidelines)
 
-		// Pregnancy routes
-		pregnancies := api.Group("/pregnancies")
-		{
-			pregnancies.GET("", pregnancyHandler.GetPregnancies)
-			pregnancies.GET("/:id/stage", pregnancyHandler.GetPregnancyStage)
-			pregnancies.GET("/guidelines", pregnancyHandler.GetPregnancyGuidelines)
-		}
-
-		// Add breeding routes
-		api.POST("/horses/:id/breeding", h.AddBreedingRecord)
+		// Breeding routes
 		api.GET("/horses/:id/breeding", h.GetBreedingRecords)
+		api.POST("/horses/:id/breeding", h.AddBreedingRecord)
+		api.PUT("/horses/:id/breeding/:recordId", h.UpdateBreedingRecord)
+		api.DELETE("/horses/:id/breeding/:recordId", h.DeleteBreedingRecord)
+
+		// User routes
+		api.GET("/user/profile", h.GetUserProfile)
+		api.PUT("/user/profile", h.UpdateUserProfile)
+
+		// Dashboard route
+		api.GET("/dashboard", h.GetDashboardStats)
 	}
 }

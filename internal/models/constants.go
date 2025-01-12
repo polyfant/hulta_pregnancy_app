@@ -1,56 +1,48 @@
 package models
 
-// Pregnancy-related constants
-type PregnancyStage string
-
-const (
-    PregnancyStageUnknown       PregnancyStage = "UNKNOWN"
-    PregnancyStageEarlyGestation PregnancyStage = "EARLY_GESTATION"
-    PregnancyStageMidGestation   PregnancyStage = "MID_GESTATION"
-    PregnancyStageLateGestation  PregnancyStage = "LATE_GESTATION"
-    PregnancyStageOverdue       PregnancyStage = "OVERDUE"
-    PregnancyStageHighRisk      PregnancyStage = "HIGH_RISK"
-
-    PregnancyStatusActive    string = "ACTIVE"
-    PregnancyStatusCompleted string = "COMPLETED"
-    PregnancyStatusAborted   string = "ABORTED"
-
-    DefaultGestationDays = 340 // Average horse pregnancy duration
-)
-
-// Priority levels
+// Priority represents the importance level
 type Priority string
 
 const (
-    PriorityHigh   Priority = "HIGH"
-    PriorityMedium Priority = "MEDIUM"
-    PriorityLow    Priority = "LOW"
+	PriorityHigh   Priority = "HIGH"
+	PriorityMedium Priority = "MEDIUM"
+	PriorityLow    Priority = "LOW"
 )
 
-// Horse-related constants
-type Gender string
-
-const (
-    GenderMare     Gender = "MARE"
-    GenderStallion Gender = "STALLION"
-)
-
-// Event types
+// EventType represents different types of events
 type EventType string
 
 const (
-    EventFoaling     EventType = "FOALING"
-    EventVetCheck    EventType = "VET_CHECK"
-    EventUltrasound  EventType = "ULTRASOUND"
-    EventVaccination EventType = "VACCINATION"
-    EventDeworming   EventType = "DEWORMING"
+	EventFoaling     EventType = "FOALING"
+	EventVetCheck    EventType = "VET_CHECK"
+	EventUltrasound  EventType = "ULTRASOUND"
+	EventVaccination EventType = "VACCINATION"
+	EventDeworming   EventType = "DEWORMING"
 )
 
+// BreedingStatus represents the status of breeding
 type BreedingStatus string
 
 const (
-    BreedingStatusActive    BreedingStatus = "ACTIVE"
-    BreedingStatusCompleted BreedingStatus = "COMPLETED"
-    BreedingStatusFailed    BreedingStatus = "FAILED"
-    BreedingStatusCancelled BreedingStatus = "CANCELLED"
+	BreedingStatusActive    BreedingStatus = "ACTIVE"
+	BreedingStatusCompleted BreedingStatus = "COMPLETED"
+	BreedingStatusFailed    BreedingStatus = "FAILED"
+	BreedingStatusCancelled BreedingStatus = "CANCELLED"
+)
+
+// HealthRecordType represents the type of health record
+type HealthRecordType string
+
+const (
+	HealthRecordTypeVetVisit    HealthRecordType = "VET_VISIT"
+	HealthRecordTypeVaccination HealthRecordType = "VACCINATION"
+	HealthRecordTypeDeworming   HealthRecordType = "DEWORMING"
+	HealthRecordTypeDental      HealthRecordType = "DENTAL"
+	HealthRecordTypeInjury      HealthRecordType = "INJURY"
+	HealthRecordTypeOther       HealthRecordType = "OTHER"
+)
+
+// Default values
+const (
+	DefaultGestationDays = 340 // Average horse pregnancy duration
 ) 

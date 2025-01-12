@@ -7,22 +7,63 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	PregnancyStatusActive   = "ACTIVE"
+	PregnancyStatusComplete = "COMPLETE"
+	PregnancyStatusLost     = "LOST"
+	PregnancyStatusAborted  = "ABORTED"
+)
 
+// PregnancyStage represents different stages of pregnancy
+type PregnancyStage string
+
+const (
+	PregnancyStageEarly   PregnancyStage = "EARLY_GESTATION"
+	PregnancyStageMid     PregnancyStage = "MID_GESTATION"
+	PregnancyStageLate    PregnancyStage = "LATE_GESTATION"
+	PregnancyStageOverdue PregnancyStage = "OVERDUE"
+)
+
+// PregnancyStatus represents the status of a pregnancy
+type PregnancyStatus struct {
+	DaysPregnant  int       `json:"daysPregnant"`
+	DueDate       time.Time `json:"dueDate"`
+	NextCheckDate time.Time `json:"nextCheckDate"`
+	Stage         PregnancyStage `json:"stage"`
+}
+
+// PregnancyStart represents the data needed to start pregnancy tracking
+type PregnancyStart struct {
+	ConceptionDate time.Time `json:"conceptionDate" binding:"required"`
+}
+
+// PregnancyGuideline represents guidelines for different pregnancy stages
+type PregnancyGuideline struct {
+	Stage       PregnancyStage `json:"stage"`
+	Description string         `json:"description"`
+	Tips        []string       `json:"tips,omitempty"`
+}
+
+// Pregnancy represents a pregnancy record
 type Pregnancy struct {
-	ID             uint       `json:"id" gorm:"primaryKey"`
-	HorseID        uint       `json:"horse_id"`
-	StartDate      time.Time  `json:"start_date"`
-	ConceptionDate *time.Time `json:"conception_date"`
-	EndDate        *time.Time `json:"end_date"`
-	Status         string     `json:"status"`
+	ID             uint           `json:"id" gorm:"primaryKey"`
+	HorseID        uint           `json:"horseID"`
+	StartDate      time.Time      `json:"startDate"`
+	EndDate        *time.Time     `json:"endDate,omitempty"`
+	Status         string         `json:"status"`
+	ConceptionDate *time.Time     `json:"conceptionDate,omitempty"`
+	Notes          string         `json:"notes,omitempty"`
+	CreatedAt      time.Time      `json:"createdAt"`
+	UpdatedAt      time.Time      `json:"updatedAt"`
 }
 
 type PregnancyEvent struct {
-	ID           uint      `gorm:"primaryKey"`
-	PregnancyID  uint      `gorm:"not null"`
-	Type         string    `gorm:"size:50"`
-	Description  string
-	Date         time.Time
+	ID           uint      `json:"id"`
+	PregnancyID  uint      `json:"pregnancy_id"`
+	UserID       string    `json:"user_id"`
+	Type         string    `json:"type"`
+	Description  string    `json:"description"`
+	Date         time.Time `json:"date"`
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
@@ -49,20 +90,6 @@ type PreFoalingChecklistItem struct {
 	UpdatedAt   time.Time
 }
 
-type PregnancyGuideline struct {
-	Stage       PregnancyStage `json:"stage"`
-	Description string         `json:"description"`
-}
-
-type PregnancyStatus struct {
-	IsPregnant          bool              `json:"is_pregnant"`
-	ConceptionDate      time.Time         `json:"conception_date,omitempty"`
-	DaysPregnant        int               `json:"days_pregnant"`
-	PregnancyPercentage float64           `json:"pregnancy_percentage"`
-	Stage               PregnancyStage    `json:"stage"`
-	LastEvent           *PregnancyEvent   `json:"last_event,omitempty"`
-}
-
 type PregnancyStageInfo struct {
 	Stage           PregnancyStage `json:"stage"`
 	DaysSoFar      int            `json:"days_so_far"`
@@ -72,6 +99,12 @@ type PregnancyStageInfo struct {
 	Progress       float64        `json:"progress"`
 	DaysOverdue    int            `json:"days_overdue"`
 	IsOverdue      bool           `json:"is_overdue"`
+}
+
+type Guideline struct {
+	Stage       PregnancyStage `json:"stage"`
+	Description string         `json:"description"`
+	Tips        []string       `json:"tips"`
 }
 
 // Define the default checklist using the constants from constants.go
@@ -111,7 +144,7 @@ func (p *Pregnancy) DaysPregnant() int {
 }
 
 func (p *Pregnancy) ExpectedDueDate() time.Time {
-	return p.StartDate.AddDate(0, 0, 340)
+	return p.StartDate.AddDate(0, 0, DefaultGestationDays)
 }
 
 func (e *PregnancyEvent) Validate() error {

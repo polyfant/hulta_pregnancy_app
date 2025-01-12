@@ -2,37 +2,45 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
 )
 
 type HealthService struct {
-	healthRepo repository.HealthRepository
+	repo repository.HealthRepository
 }
 
-func NewHealthService(healthRepo repository.HealthRepository) *HealthService {
-	return &HealthService{
-		healthRepo: healthRepo,
+func NewHealthService(repo repository.HealthRepository) HealthService {
+	return HealthService{repo: repo}
+}
+
+func (s HealthService) CreateRecord(ctx context.Context, record *models.HealthRecord) error {
+	if err := s.repo.CreateRecord(ctx, record); err != nil {
+		return fmt.Errorf("failed to create health record: %w", err)
 	}
+	return nil
 }
 
-func (s *HealthService) GetHealthRecords(ctx context.Context, horseID uint) ([]models.HealthRecord, error) {
-	return s.healthRepo.GetByHorseID(ctx, horseID)
+func (s HealthService) GetRecords(ctx context.Context, horseID uint) ([]models.HealthRecord, error) {
+	records, err := s.repo.GetRecords(ctx, horseID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get health records: %w", err)
+	}
+	return records, nil
 }
 
-func (s *HealthService) CreateHealthRecord(ctx context.Context, record *models.HealthRecord) error {
-	return s.healthRepo.Create(ctx, record)
+func (s HealthService) UpdateRecord(ctx context.Context, record *models.HealthRecord) error {
+	if err := s.repo.UpdateRecord(ctx, record); err != nil {
+		return fmt.Errorf("failed to update health record: %w", err)
+	}
+	return nil
 }
 
-func (s *HealthService) UpdateHealthRecord(ctx context.Context, record *models.HealthRecord) error {
-	return s.healthRepo.Update(ctx, record)
-}
-
-func (s *HealthService) DeleteHealthRecord(ctx context.Context, id uint) error {
-	return s.healthRepo.Delete(ctx, id)
-}
-
-func (s *HealthService) AddHealthRecord(ctx context.Context, record *models.HealthRecord) error {
-	return s.healthRepo.Create(ctx, record)
+func (s HealthService) DeleteRecord(ctx context.Context, id uint) error {
+	if err := s.repo.DeleteRecord(ctx, id); err != nil {
+		return fmt.Errorf("failed to delete health record: %w", err)
+	}
+	return nil
 } 

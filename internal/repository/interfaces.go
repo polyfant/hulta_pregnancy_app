@@ -17,6 +17,7 @@ type HorseRepository interface {
 	GetPregnantHorses(ctx context.Context, userID string) ([]models.Horse, error)
 	GetOffspring(ctx context.Context, horseID uint) ([]models.Horse, error)
 	GetFamilyTree(ctx context.Context, horseID uint) (*models.FamilyTree, error)
+	GetPregnant(ctx context.Context, userID string) ([]models.Horse, error)
 }
 
 type ExpenseRepository interface {
@@ -66,11 +67,14 @@ type PregnancyRepository interface {
 	GetCurrentPregnancy(ctx context.Context, horseID uint) (*models.Pregnancy, error)
 	UpdatePregnancyStatus(ctx context.Context, horseID uint, isPregnant bool, conceptionDate *time.Time) error
 	UpdatePreFoalingChecklistItem(ctx context.Context, item *models.PreFoalingChecklistItem) error
+	GetActive(ctx context.Context, userID string) ([]models.Pregnancy, error)
+	AddPreFoaling(ctx context.Context, sign *models.PreFoalingSign) error
+	GetPreFoaling(ctx context.Context, horseID uint) ([]models.PreFoalingSign, error)
 }
 
 type HealthRepository interface {
-	Create(ctx context.Context, record *models.HealthRecord) error
-	GetByHorseID(ctx context.Context, horseID uint) ([]models.HealthRecord, error)
-	Update(ctx context.Context, record *models.HealthRecord) error
-	Delete(ctx context.Context, id uint) error
+	CreateRecord(ctx context.Context, record *models.HealthRecord) error
+	GetRecords(ctx context.Context, horseID uint) ([]models.HealthRecord, error)
+	UpdateRecord(ctx context.Context, record *models.HealthRecord) error
+	DeleteRecord(ctx context.Context, id uint) error
 }
