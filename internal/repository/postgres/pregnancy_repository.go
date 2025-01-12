@@ -119,4 +119,10 @@ func (r *PregnancyRepository) GetPreFoalingSigns(ctx context.Context, horseID ui
 
 func (r *PregnancyRepository) UpdatePreFoalingChecklistItem(ctx context.Context, item *models.PreFoalingChecklistItem) error {
 	return r.db.WithContext(ctx).Save(item).Error
+}
+
+func (r *PregnancyRepository) GetEvents(ctx context.Context, horseID uint) ([]models.PregnancyEvent, error) {
+	var events []models.PregnancyEvent
+	err := r.db.WithContext(ctx).Where("horse_id = ?", horseID).Find(&events).Error
+	return events, err
 } 

@@ -156,8 +156,8 @@ func TestEndPregnancyTracking(t *testing.T) {
 			name:    "Valid end tracking",
 			horseID: "1",
 			payload: map[string]interface{}{
-				"end_date": time.Now(),
-				"status":   "FOALED",
+				"foalingDate": time.Now(),
+				"outcome":     "FOALED",
 			},
 			wantStatus: http.StatusOK,
 		},
@@ -165,8 +165,8 @@ func TestEndPregnancyTracking(t *testing.T) {
 			name:    "Future end date",
 			horseID: "1",
 			payload: map[string]interface{}{
-				"end_date": time.Now().AddDate(0, 1, 0),
-				"status":   "FOALED",
+				"foalingDate": time.Now().AddDate(0, 1, 0),
+				"outcome":     "FOALED",
 			},
 			wantStatus: http.StatusBadRequest,
 		},
@@ -174,8 +174,8 @@ func TestEndPregnancyTracking(t *testing.T) {
 			name:    "Invalid status",
 			horseID: "1",
 			payload: map[string]interface{}{
-				"end_date": time.Now(),
-				"status":   "INVALID_STATUS",
+				"foalingDate": time.Now(),
+				"outcome":     "INVALID_STATUS",
 			},
 			wantStatus: http.StatusBadRequest,
 		},

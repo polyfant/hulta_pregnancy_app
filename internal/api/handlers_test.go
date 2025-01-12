@@ -2,16 +2,18 @@ package api
 
 import (
 	"context"
+	"time"
 
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/polyfant/hulta_pregnancy_app/internal/cache"
-	"github.com/polyfant/hulta_pregnancy_app/internal/models"
-	"github.com/polyfant/hulta_pregnancy_app/internal/service"
-	"github.com/polyfant/hulta_pregnancy_app/internal/mocks"
-	"github.com/polyfant/hulta_pregnancy_app/internal/repository/postgres"
 	"github.com/polyfant/hulta_pregnancy_app/internal/database"
+	"github.com/polyfant/hulta_pregnancy_app/internal/mocks"
+	"github.com/polyfant/hulta_pregnancy_app/internal/models"
+	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
+	"github.com/polyfant/hulta_pregnancy_app/internal/repository/postgres"
+	"github.com/polyfant/hulta_pregnancy_app/internal/service"
 )
 
 // MockDatabase implements the Database interface for testing
@@ -232,6 +234,83 @@ func (m *MockHealthService) AddHealthRecord(ctx context.Context, record *models.
 	return args.Error(0)
 }
 
+type mockPregnancyRepo struct {
+	repository.PregnancyRepository
+	getEventsFn func(ctx context.Context, horseID uint) ([]models.PregnancyEvent, error)
+}
+
+// Implement all required methods
+func (m *mockPregnancyRepo) GetPregnancy(ctx context.Context, id uint) (*models.Pregnancy, error) {
+	return nil, nil
+}
+
+func (m *mockPregnancyRepo) GetByHorseID(ctx context.Context, horseID uint) (*models.Pregnancy, error) {
+	return nil, nil
+}
+
+func (m *mockPregnancyRepo) GetByUserID(ctx context.Context, userID string) ([]models.Pregnancy, error) {
+	return nil, nil
+}
+
+func (m *mockPregnancyRepo) Create(ctx context.Context, pregnancy *models.Pregnancy) error {
+	return nil
+}
+
+func (m *mockPregnancyRepo) Update(ctx context.Context, pregnancy *models.Pregnancy) error {
+	return nil
+}
+
+func (m *mockPregnancyRepo) GetEvents(ctx context.Context, horseID uint) ([]models.PregnancyEvent, error) {
+	if m.getEventsFn != nil {
+		return m.getEventsFn(ctx, horseID)
+	}
+	return []models.PregnancyEvent{}, nil
+}
+
+func (m *mockPregnancyRepo) AddPregnancyEvent(ctx context.Context, event *models.PregnancyEvent) error {
+	return nil
+}
+
+func (m *mockPregnancyRepo) GetPreFoalingChecklist(ctx context.Context, horseID uint) ([]models.PreFoalingChecklistItem, error) {
+	return nil, nil
+}
+
+func (m *mockPregnancyRepo) GetPreFoalingChecklistItem(ctx context.Context, itemID uint) (*models.PreFoalingChecklistItem, error) {
+	return nil, nil
+}
+
+func (m *mockPregnancyRepo) AddPreFoalingChecklistItem(ctx context.Context, item *models.PreFoalingChecklistItem) error {
+	return nil
+}
+
+func (m *mockPregnancyRepo) DeletePreFoalingChecklistItem(ctx context.Context, itemID uint) error {
+	return nil
+}
+
+func (m *mockPregnancyRepo) InitializePreFoalingChecklist(ctx context.Context, horseID uint) error {
+	return nil
+}
+
+func (m *mockPregnancyRepo) GetPreFoalingSigns(ctx context.Context, horseID uint) ([]models.PreFoalingSign, error) {
+	return nil, nil
+}
+
+func (m *mockPregnancyRepo) AddPreFoalingSign(ctx context.Context, sign *models.PreFoalingSign) error {
+	return nil
+}
+
+func (m *mockPregnancyRepo) GetCurrentPregnancy(ctx context.Context, horseID uint) (*models.Pregnancy, error) {
+	return nil, nil
+}
+
+func (m *mockPregnancyRepo) UpdatePregnancyStatus(ctx context.Context, horseID uint, isPregnant bool, conceptionDate *time.Time) error {
+	return nil
+}
+
+func (m *mockPregnancyRepo) UpdatePreFoalingChecklistItem(ctx context.Context, item *models.PreFoalingChecklistItem) error {
+	return nil
+}
+
 func setupTestHandler() (*Handler, *mocks.MockDB) {
 	db := mocks.NewMockDB()
 	mockDB := &database.PostgresDB{DB: db.GetDB()}
@@ -240,7 +319,11 @@ func setupTestHandler() (*Handler, *mocks.MockDB) {
 	horseRepo := postgres.NewHorseRepository(db.GetDB())
 	userRepo := postgres.NewUserRepository(db.GetDB())
 	healthRepo := postgres.NewHealthRepository(db.GetDB())
-	pregnancyRepo := postgres.NewPregnancyRepository(db.GetDB())
+	pregnancyRepo := &mockPregnancyRepo{
+		getEventsFn: func(ctx context.Context, horseID uint) ([]models.PregnancyEvent, error) {
+			return []models.PregnancyEvent{}, nil
+		},
+	}
 
 	// Create services with repositories
 	horseService := service.NewHorseService(horseRepo)

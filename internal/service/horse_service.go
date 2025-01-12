@@ -15,8 +15,8 @@ func NewHorseService(repo repository.HorseRepository) *HorseService {
 	return &HorseService{repo: repo}
 }
 
-func (s *HorseService) GetHorse(id uint) (*models.Horse, error) {
-	return s.repo.GetByID(context.Background(), id)
+func (s *HorseService) GetHorse(ctx context.Context, id uint) (*models.Horse, error) {
+	return s.repo.GetByID(ctx, id)
 }
 
 func (s *HorseService) ListHorsesByUser(ctx context.Context, userID string) ([]models.Horse, error) {

@@ -55,11 +55,12 @@ type PregnancyGuideline struct {
 }
 
 type PregnancyStatus struct {
-	IsPregnant          bool           `json:"is_pregnant"`
-	ConceptionDate      time.Time      `json:"conception_date,omitempty"`
-	DaysPregnant        int            `json:"days_pregnant,omitempty"`
-	PregnancyPercentage float64        `json:"pregnancy_percentage,omitempty"`
-	Stage              PregnancyStage  `json:"stage,omitempty"`
+	IsPregnant          bool              `json:"is_pregnant"`
+	ConceptionDate      time.Time         `json:"conception_date,omitempty"`
+	DaysPregnant        int               `json:"days_pregnant"`
+	PregnancyPercentage float64           `json:"pregnancy_percentage"`
+	Stage               PregnancyStage    `json:"stage"`
+	LastEvent           *PregnancyEvent   `json:"last_event,omitempty"`
 }
 
 type PregnancyStageInfo struct {

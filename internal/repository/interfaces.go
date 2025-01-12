@@ -54,7 +54,7 @@ type PregnancyRepository interface {
 	GetByUserID(ctx context.Context, userID string) ([]models.Pregnancy, error)
 	Create(ctx context.Context, pregnancy *models.Pregnancy) error
 	Update(ctx context.Context, pregnancy *models.Pregnancy) error
-	GetPregnancyEvents(ctx context.Context, horseID uint) ([]models.PregnancyEvent, error)
+	GetEvents(ctx context.Context, horseID uint) ([]models.PregnancyEvent, error)
 	AddPregnancyEvent(ctx context.Context, event *models.PregnancyEvent) error
 	GetPreFoalingChecklist(ctx context.Context, horseID uint) ([]models.PreFoalingChecklistItem, error)
 	GetPreFoalingChecklistItem(ctx context.Context, itemID uint) (*models.PreFoalingChecklistItem, error)
