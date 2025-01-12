@@ -14,6 +14,7 @@ import (
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service"
+	"github.com/polyfant/hulta_pregnancy_app/internal/service/breeding"
 )
 
 // Handler handles HTTP requests
@@ -22,6 +23,7 @@ type Handler struct {
 	userService          *service.UserService
 	pregnancyService     *service.PregnancyService
 	healthService        *service.HealthService
+	breedingService      *breeding.BreedingService
 	cache                *cache.MemoryCache
 	db                   *database.PostgresDB
 	horseRepo           repository.HorseRepository
@@ -35,6 +37,7 @@ func NewHandler(config HandlerConfig) *Handler {
 		userService:      config.UserService,
 		pregnancyService: config.PregnancyService,
 		healthService:    config.HealthService,
+		breedingService:  config.BreedingService,
 		cache:           config.Cache,
 		db:             config.Database,
 		horseRepo:      config.HorseRepo,
@@ -759,4 +762,58 @@ func (h *Handler) GetPregnancyStatus(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, pregnancy)
+}
+
+func (h *Handler) AddBreedingRecord(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	id := c.Param("id")
+	horseID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
+		return
+	}
+
+	var record models.BreedingRecord
+	if err := c.ShouldBindJSON(&record); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid request data"})
+		return
+	}
+
+	record.HorseID = uint(horseID)
+	record.UserID = userID
+
+	if err := h.breedingService.AddBreedingRecord(c.Request.Context(), &record); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, record)
+}
+
+func (h *Handler) GetBreedingRecords(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	id := c.Param("id")
+	horseID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
+		return
+	}
+
+	records, err := h.breedingService.GetBreedingRecords(c.Request.Context(), uint(horseID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, records)
 }

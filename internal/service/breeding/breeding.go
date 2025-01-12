@@ -2,6 +2,7 @@ package breeding
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -43,7 +44,13 @@ func (s *BreedingService) GetBreedingRecords(ctx context.Context, horseID uint) 
 	return s.breedingRepo.GetRecords(ctx, horseID)
 }
 
-func (s *BreedingService) CreateBreedingRecord(ctx context.Context, record *models.BreedingRecord) error {
+func (s *BreedingService) AddBreedingRecord(ctx context.Context, record *models.BreedingRecord) error {
+	// Validate the record
+	if record.Date.After(time.Now()) {
+		return errors.New("breeding date cannot be in the future")
+	}
+
+	// Add the record
 	return s.breedingRepo.CreateRecord(ctx, record)
 }
 
@@ -60,20 +67,21 @@ func (s *BreedingService) GetBreedingStatus(ctx context.Context, horseID uint) (
 	if err != nil {
 		return nil, fmt.Errorf("failed to get breeding records: %w", err)
 	}
-	// Calculate breeding status
-	status := &models.BreedingStatus{
-		HorseID:          horseID,
-		LastBreedingDate: nil,
-		IsBreeding:       false,
-	}
 
+	status := models.BreedingStatusActive
 	if len(records) > 0 {
 		lastRecord := records[len(records)-1]
-		status.LastBreedingDate = &lastRecord.Date
-		status.IsBreeding = lastRecord.Status == "ACTIVE"
+		switch lastRecord.Status {
+		case string(models.BreedingStatusCompleted):
+			status = models.BreedingStatusCompleted
+		case string(models.BreedingStatusFailed):
+			status = models.BreedingStatusFailed
+		case string(models.BreedingStatusCancelled):
+			status = models.BreedingStatusCancelled
+		}
 	}
 
-	return status, nil
+	return &status, nil
 }
 
 func (s *BreedingService) UpdateBreedingStatus(ctx context.Context, horseID uint, status string) error {

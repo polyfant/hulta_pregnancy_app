@@ -58,5 +58,9 @@ func SetupRouter(router *gin.Engine, h *Handler) {
 			pregnancies.GET("/:id/stage", pregnancyHandler.GetPregnancyStage)
 			pregnancies.GET("/guidelines", pregnancyHandler.GetPregnancyGuidelines)
 		}
+
+		// Add breeding routes
+		api.POST("/horses/:id/breeding", h.AddBreedingRecord)
+		api.GET("/horses/:id/breeding", h.GetBreedingRecords)
 	}
 }

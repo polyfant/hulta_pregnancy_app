@@ -14,9 +14,18 @@ import (
 )
 
 func setupTestData(db *database.PostgresDB) error {
-	// Clean up existing test data
+	// Clean up existing test data in the correct order
+	if err := db.GetDB().Exec("DELETE FROM pre_foaling_signs WHERE horse_id = ?", 1).Error; err != nil {
+		return fmt.Errorf("failed to clean up foaling signs: %v", err)
+	}
 	if err := db.GetDB().Exec("DELETE FROM breeding_records WHERE horse_id = ?", 1).Error; err != nil {
 		return fmt.Errorf("failed to clean up breeding records: %v", err)
+	}
+	if err := db.GetDB().Exec("DELETE FROM health_records WHERE horse_id = ?", 1).Error; err != nil {
+		return fmt.Errorf("failed to clean up health records: %v", err)
+	}
+	if err := db.GetDB().Exec("DELETE FROM pregnancies WHERE horse_id = ?", 1).Error; err != nil {
+		return fmt.Errorf("failed to clean up pregnancies: %v", err)
 	}
 	if err := db.GetDB().Exec("DELETE FROM horses WHERE user_id = ?", "test_user_id").Error; err != nil {
 		return fmt.Errorf("failed to clean up test data: %v", err)
