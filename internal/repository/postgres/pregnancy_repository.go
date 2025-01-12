@@ -105,12 +105,6 @@ func (r *PregnancyRepository) AddPregnancyEvent(ctx context.Context, event *mode
 	return r.db.WithContext(ctx).Create(event).Error
 }
 
-func (r *PregnancyRepository) GetPregnancyEvents(ctx context.Context, horseID uint) ([]models.PregnancyEvent, error) {
-	var events []models.PregnancyEvent
-	err := r.db.WithContext(ctx).Where("horse_id = ?", horseID).Find(&events).Error
-	return events, err
-}
-
 func (r *PregnancyRepository) GetPreFoalingSigns(ctx context.Context, horseID uint) ([]models.PreFoalingSign, error) {
 	var signs []models.PreFoalingSign
 	err := r.db.WithContext(ctx).Where("horse_id = ?", horseID).Find(&signs).Error
