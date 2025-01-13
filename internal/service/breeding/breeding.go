@@ -6,13 +6,16 @@ import (
 
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
+	"github.com/polyfant/hulta_pregnancy_app/internal/service"
 )
 
 type BreedingService struct {
 	repo repository.BreedingRepository
 }
 
-func NewBreedingService(repo repository.BreedingRepository) *BreedingService {
+var _ service.BreedingService = (*BreedingService)(nil)
+
+func NewBreedingService(repo repository.BreedingRepository) service.BreedingService {
 	return &BreedingService{repo: repo}
 }
 

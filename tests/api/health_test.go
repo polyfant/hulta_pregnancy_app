@@ -10,15 +10,15 @@ import (
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 )
 
-func TestHealthHandler(t *testing.T) {
-	handler := setupTestHandler(t)
+func TestHealthService(t *testing.T) {
+	handler, _, _, _, mockHealthRepo, _ := setupTestHandler()
 	ctx := setupTestContext(t)
 
 	t.Run("AddHealthRecord", func(t *testing.T) {
 		horseID := uint(1)
 		record := &models.HealthRecord{
 			HorseID:     horseID,
-			Type:        models.HealthRecordTypeVaccination,
+			Type:        string(models.HealthRecordTypeVaccination),
 			Description: "Annual vaccination",
 			Date:        time.Now(),
 		}
@@ -26,9 +26,9 @@ func TestHealthHandler(t *testing.T) {
 		mockHealthRepo.On("CreateRecord", mock.Anything, record).
 			Return(nil).Once()
 
-		err := handler.HealthService.CreateRecord(ctx, record)
+		err := handler.GetHealthService().CreateRecord(ctx, record)
 		assert.NoError(t, err)
 
 		mockHealthRepo.AssertExpectations(t)
 	})
-} 
+}

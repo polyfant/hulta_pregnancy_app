@@ -3,12 +3,11 @@ package api
 import (
 	"context"
 
-	"github.com/polyfant/hulta_pregnancy_app/internal/cache"
 	"github.com/polyfant/hulta_pregnancy_app/internal/database"
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service"
-	"github.com/polyfant/hulta_pregnancy_app/internal/service/breeding"
+	"github.com/polyfant/hulta_pregnancy_app/internal/cache"
 )
 
 // APIHandlerConfig defines the configuration for creating a new handler
@@ -18,7 +17,7 @@ type APIHandlerConfig struct {
 	HorseService     service.HorseService
 	PregnancyService service.PregnancyService
 	HealthService    service.HealthService
-	BreedingService  breeding.BreedingService
+	BreedingService  service.BreedingService
 	Cache            *cache.MemoryCache
 	HorseRepo        repository.HorseRepository
 	BreedingRepo     repository.BreedingRepository
@@ -42,14 +41,6 @@ type PregnancyService interface {
 	GetGuidelines(ctx context.Context, stage models.PregnancyStage) ([]models.Guideline, error)
 }
 
-// BreedingService defines the interface for breeding-related operations
-type BreedingService interface {
-	CreateRecord(ctx context.Context, record *models.BreedingRecord) error
-	GetRecords(ctx context.Context, horseID uint) ([]models.BreedingRecord, error)
-	UpdateRecord(ctx context.Context, record *models.BreedingRecord) error
-	DeleteRecord(ctx context.Context, id uint) error
-}
-
 // UserService defines the interface for user-related operations
 type UserService interface {
 	GetByID(ctx context.Context, userID string) (*models.User, error)
@@ -59,4 +50,4 @@ type UserService interface {
 	GetDashboardStats(ctx context.Context, userID string) (*models.DashboardStats, error)
 	GetProfile(ctx context.Context, userID string) (*models.User, error)
 	UpdateProfile(ctx context.Context, user *models.User) error
-} 
+}

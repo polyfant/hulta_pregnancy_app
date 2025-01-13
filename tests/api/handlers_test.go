@@ -17,7 +17,7 @@ import (
 
 func TestHandlers(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	handler := setupTestHandler(t)
+	handler, mockHorse, _, _, _, _ := setupTestHandler()
 	router := gin.New()
 	api.SetupRouter(router, handler)
 
@@ -29,7 +29,7 @@ func TestHandlers(t *testing.T) {
 			UserID: "test_user",
 		}
 
-		mockHorseRepo.On("GetByID", mock.Anything, horseID).
+		mockHorse.On("GetByID", mock.Anything, horseID).
 			Return(expectedHorse, nil).Once()
 
 		w := performRequest(router, "GET", "/api/horses/1", nil)
@@ -41,7 +41,7 @@ func TestHandlers(t *testing.T) {
 		assert.Equal(t, expectedHorse.ID, response.ID)
 		assert.Equal(t, expectedHorse.Name, response.Name)
 
-		mockHorseRepo.AssertExpectations(t)
+		mockHorse.AssertExpectations(t)
 	})
 }
 
@@ -50,13 +50,13 @@ func performRequest(r *gin.Engine, method, path string, body interface{}) *httpt
 	w := httptest.NewRecorder()
 
 	if body != nil {
-		jsonBody, _ := json.Marshal(body)
-		req = httptest.NewRequest(method, path, bytes.NewBuffer(jsonBody))
-		req.Header.Set("Content-Type", "application/json")
+		jsonBytes, _ := json.Marshal(body)
+		req, _ = http.NewRequest(method, path, bytes.NewBuffer(jsonBytes))
+		req.Header.Add("Content-Type", "application/json")
 	} else {
-		req = httptest.NewRequest(method, path, nil)
+		req, _ = http.NewRequest(method, path, nil)
 	}
 
 	r.ServeHTTP(w, req)
 	return w
-} 
+}

@@ -47,6 +47,8 @@ type BreedingRepository interface {
 	Create(ctx context.Context, cost *models.BreedingCost) error
 	GetRecords(ctx context.Context, horseID uint) ([]models.BreedingRecord, error)
 	CreateRecord(ctx context.Context, record *models.BreedingRecord) error
+	UpdateRecord(ctx context.Context, record *models.BreedingRecord) error
+	DeleteRecord(ctx context.Context, id uint) error
 }
 
 type PregnancyRepository interface {

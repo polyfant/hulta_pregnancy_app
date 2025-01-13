@@ -11,7 +11,7 @@ import (
 )
 
 func TestBreedingService(t *testing.T) {
-	handler := setupTestHandler(t)
+	handler, _, _, _, _, mockBreedingRepo := setupTestHandler()
 	ctx := setupTestContext(t)
 
 	t.Run("AddBreedingRecord", func(t *testing.T) {
@@ -24,9 +24,22 @@ func TestBreedingService(t *testing.T) {
 		mockBreedingRepo.On("CreateRecord", mock.Anything, record).
 			Return(nil).Once()
 
-		err := handler.BreedingService.CreateRecord(ctx, record)
+		err := handler.GetBreedingService().CreateRecord(ctx, record)
 		assert.NoError(t, err)
 
 		mockBreedingRepo.AssertExpectations(t)
 	})
-} 
+
+	t.Run("GetBreedingRecords", func(t *testing.T) {
+		horseID := 1
+
+		mockBreedingRepo.On("GetRecords", mock.Anything, uint(horseID)).
+			Return([]models.BreedingRecord{}, nil).Once()
+
+		records, err := handler.GetBreedingService().GetRecords(ctx, uint(horseID))
+		assert.NoError(t, err)
+		assert.Empty(t, records)
+
+		mockBreedingRepo.AssertExpectations(t)
+	})
+}

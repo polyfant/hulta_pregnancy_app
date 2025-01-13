@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service"
+	"github.com/polyfant/hulta_pregnancy_app/internal/api/types"
 )
 
 type PregnancyHandler struct {
@@ -24,13 +25,13 @@ func NewPregnancyHandler(service service.PregnancyService) *PregnancyHandler {
 func (h *PregnancyHandler) GetPregnancies(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User not authenticated"})
+		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
 		return
 	}
 
 	pregnancies, err := h.service.GetActive(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, pregnancies)
@@ -39,13 +40,13 @@ func (h *PregnancyHandler) GetPregnancies(c *gin.Context) {
 func (h *PregnancyHandler) GetPregnancyStage(c *gin.Context) {
 	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
 	stage, err := h.service.GetPregnancyStage(c.Request.Context(), uint(horseID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"stage": stage})
@@ -55,13 +56,13 @@ func (h *PregnancyHandler) GetPregnancyStage(c *gin.Context) {
 func (h *PregnancyHandler) GetPregnancyStatus(c *gin.Context) {
 	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
 	status, err := h.service.GetStatus(c.Request.Context(), uint(horseID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 
@@ -71,18 +72,18 @@ func (h *PregnancyHandler) GetPregnancyStatus(c *gin.Context) {
 func (h *PregnancyHandler) StartPregnancyTracking(c *gin.Context) {
 	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
 	var start models.PregnancyStart
 	if err := c.ShouldBindJSON(&start); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid request data"})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid request data"})
 		return
 	}
 
 	if err := h.service.StartTracking(c.Request.Context(), uint(horseID), start); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 
@@ -92,7 +93,7 @@ func (h *PregnancyHandler) StartPregnancyTracking(c *gin.Context) {
 func (h *PregnancyHandler) EndPregnancyTracking(c *gin.Context) {
 	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
@@ -101,13 +102,13 @@ func (h *PregnancyHandler) EndPregnancyTracking(c *gin.Context) {
 		Date   time.Time `json:"date"`
 	}
 	if err := c.ShouldBindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid request data"})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid request data"})
 		return
 	}
 
 	pregnancy, err := h.service.GetPregnancy(c.Request.Context(), uint(horseID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 
@@ -115,7 +116,7 @@ func (h *PregnancyHandler) EndPregnancyTracking(c *gin.Context) {
 	pregnancy.EndDate = &data.Date
 
 	if err := h.service.UpdatePregnancy(c.Request.Context(), pregnancy); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 
@@ -125,13 +126,13 @@ func (h *PregnancyHandler) EndPregnancyTracking(c *gin.Context) {
 func (h *PregnancyHandler) GetPregnancyEvents(c *gin.Context) {
 	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
-	events, err := h.service.GetEvents(c.Request.Context(), uint(horseID))
+	events, err := h.service.GetPregnancyEvents(c.Request.Context(), uint(horseID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 
@@ -141,12 +142,12 @@ func (h *PregnancyHandler) GetPregnancyEvents(c *gin.Context) {
 func (h *PregnancyHandler) AddPregnancyEvent(c *gin.Context) {
 	var event models.PregnancyEvent
 	if err := c.ShouldBindJSON(&event); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 
 	if err := h.service.AddPregnancyEvent(c.Request.Context(), &event); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 
@@ -156,14 +157,14 @@ func (h *PregnancyHandler) AddPregnancyEvent(c *gin.Context) {
 func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
 	// Get existing checklist
 	items, err := h.service.GetPreFoalingChecklist(c.Request.Context(), uint(horseID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 
@@ -172,12 +173,12 @@ func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 		// Get horse to check pregnancy status and due date
 		pregnancy, err := h.service.GetPregnancy(c.Request.Context(), uint(horseID))
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+			c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 			return
 		}
 
 		if pregnancy.ConceptionDate == nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Horse is not pregnant"})
+			c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Horse is not pregnant"})
 			return
 		}
 
@@ -267,7 +268,7 @@ func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 		// Add each item to database
 		for _, item := range items {
 			if err := h.service.AddPreFoalingChecklistItem(c.Request.Context(), &item); err != nil {
-				c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to initialize checklist"})
+				c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: "Failed to initialize checklist"})
 				return
 			}
 		}
@@ -280,7 +281,7 @@ func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 func (h *PregnancyHandler) GetPostFoalingChecklist(c *gin.Context) {
 	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
@@ -288,7 +289,7 @@ func (h *PregnancyHandler) GetPostFoalingChecklist(c *gin.Context) {
 		FoalingDate time.Time `json:"foalingDate" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Foaling date is required"})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Foaling date is required"})
 		return
 	}
 
@@ -325,7 +326,7 @@ func (h *PregnancyHandler) GetPostFoalingChecklist(c *gin.Context) {
 func (h *PregnancyHandler) GetPregnancyGuidelines(c *gin.Context) {
 	stageStr := c.Query("stage")
 	if stageStr == "" {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Stage parameter is required"})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Stage parameter is required"})
 		return
 	}
 	
@@ -333,7 +334,7 @@ func (h *PregnancyHandler) GetPregnancyGuidelines(c *gin.Context) {
 	
 	guidelines, err := h.service.GetGuidelines(c.Request.Context(), stage)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 	
@@ -343,13 +344,13 @@ func (h *PregnancyHandler) GetPregnancyGuidelines(c *gin.Context) {
 func (h *PregnancyHandler) CheckPreFoalingSigns(c *gin.Context) {
 	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
 	signs, err := h.service.GetPreFoalingSigns(c.Request.Context(), uint(horseID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, signs)
@@ -358,13 +359,13 @@ func (h *PregnancyHandler) CheckPreFoalingSigns(c *gin.Context) {
 func (h *PregnancyHandler) RecordPreFoalingSign(c *gin.Context) {
 	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
 	var sign models.PreFoalingSign
 	if err := c.ShouldBindJSON(&sign); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 
@@ -372,7 +373,7 @@ func (h *PregnancyHandler) RecordPreFoalingSign(c *gin.Context) {
 	sign.Date = time.Now()
 
 	if err := h.service.AddPreFoalingSign(c.Request.Context(), &sign); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 	c.JSON(http.StatusCreated, sign)
@@ -381,12 +382,12 @@ func (h *PregnancyHandler) RecordPreFoalingSign(c *gin.Context) {
 func (h *PregnancyHandler) UpdatePregnancy(c *gin.Context) {
 	var pregnancy models.Pregnancy
 	if err := c.ShouldBindJSON(&pregnancy); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 
 	if err := h.service.UpdatePregnancy(c.Request.Context(), &pregnancy); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 
@@ -396,13 +397,13 @@ func (h *PregnancyHandler) UpdatePregnancy(c *gin.Context) {
 func (h *PregnancyHandler) GetPregnancy(c *gin.Context) {
 	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
 	pregnancy, err := h.service.GetPregnancy(c.Request.Context(), uint(horseID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 

@@ -10,8 +10,8 @@ import (
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 )
 
-func TestPregnancyHandler(t *testing.T) {
-	handler := setupTestHandler(t)
+func TestPregnancyService(t *testing.T) {
+	handler, _, _, _, mockPregnancyRepo, _ := setupTestHandler()
 	ctx := setupTestContext(t)
 
 	t.Run("StartPregnancyTracking", func(t *testing.T) {
@@ -20,15 +20,18 @@ func TestPregnancyHandler(t *testing.T) {
 			ConceptionDate: time.Now(),
 		}
 
-		mockPregnancyRepo.On("Create", mock.Anything, mock.AnythingOfType("*models.Pregnancy")).
+		mockPregnancyRepo.On("StartTracking", mock.Anything, horseID, start).
 			Return(nil).Once()
-		mockHorseRepo.On("Update", mock.Anything, mock.AnythingOfType("*models.Horse")).
-			Return(nil).Once()
+		mockPregnancyRepo.On("GetByHorseID", mock.Anything, horseID).
+			Return(&models.Pregnancy{HorseID: horseID}, nil).Once()
 
-		err := handler.PregnancyService.StartTracking(ctx, horseID, start)
+		err := handler.GetPregnancyService().StartTracking(ctx, horseID, start)
 		assert.NoError(t, err)
 
+		pregnancy, err := handler.GetPregnancyService().GetPregnancy(ctx, horseID)
+		assert.NoError(t, err)
+		assert.Equal(t, horseID, pregnancy.HorseID)
+
 		mockPregnancyRepo.AssertExpectations(t)
-		mockHorseRepo.AssertExpectations(t)
 	})
 } 

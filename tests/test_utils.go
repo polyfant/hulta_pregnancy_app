@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -18,18 +17,12 @@ func SetupTestDB(t *testing.T) *database.PostgresDB {
 	os.Setenv("DB_NAME", "jonas")
 	os.Setenv("APP_ENV", "test")
 
-	cfg := config.LoadConfig()
-	
-	// Construct test DSN
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		cfg.Database.Host,
-		cfg.Database.Port,
-		cfg.Database.User,
-		cfg.Database.Password,
-		cfg.Database.DBName,
-	)
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("Failed to load config: %v", err)
+	}
 
-	db, err := database.NewPostgresDB(dsn)
+	db, err := database.NewPostgresDB(cfg.Database)
 	if err != nil {
 		t.Fatalf("Failed to connect to test database: %v", err)
 	}

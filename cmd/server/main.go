@@ -32,14 +32,19 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
-	defer db.Close()
+
+	sqlDB, err := db.DB.DB()
+	if err != nil {
+		return fmt.Errorf("error getting underlying *sql.DB: %w", err)
+	}
+	defer sqlDB.Close()
 
 	// Initialize repositories
-	horseRepo := repository.NewHorseRepository(db)
-	userRepo := repository.NewUserRepository(db)
-	pregnancyRepo := repository.NewPregnancyRepository(db)
-	healthRepo := repository.NewHealthRepository(db)
-	breedingRepo := repository.NewBreedingRepository(db)
+	horseRepo := repository.NewHorseRepository(db.DB)
+	userRepo := repository.NewUserRepository(db.DB)
+	pregnancyRepo := repository.NewPregnancyRepository(db.DB)
+	healthRepo := repository.NewHealthRepository(db.DB)
+	breedingRepo := repository.NewBreedingRepository(db.DB)
 
 	// Initialize cache
 	cache := cache.NewMemoryCache()
@@ -53,7 +58,7 @@ func run() error {
 
 	// Initialize handler
 	handler := api.NewHandler(api.HandlerConfig{
-		Database:         db,
+		Database:         db.DB,
 		UserService:      userService,
 		HorseService:     horseService,
 		PregnancyService: pregnancyService,

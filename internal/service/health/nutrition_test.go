@@ -34,6 +34,26 @@ func (m *mockHealthRepo) Delete(ctx context.Context, id uint) error {
 	return args.Error(0)
 }
 
+func (m *mockHealthRepo) CreateRecord(ctx context.Context, record *models.HealthRecord) error {
+	args := m.Called(ctx, record)
+	return args.Error(0)
+}
+
+func (m *mockHealthRepo) GetRecords(ctx context.Context, horseID uint) ([]models.HealthRecord, error) {
+	args := m.Called(ctx, horseID)
+	return args.Get(0).([]models.HealthRecord), args.Error(1)
+}
+
+func (m *mockHealthRepo) UpdateRecord(ctx context.Context, record *models.HealthRecord) error {
+	args := m.Called(ctx, record)
+	return args.Error(0)
+}
+
+func (m *mockHealthRepo) DeleteRecord(ctx context.Context, id uint) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
 type mockHorseRepo struct {
 	mock.Mock
 }
@@ -78,6 +98,11 @@ func (m *mockHorseRepo) GetFamilyTree(ctx context.Context, horseID uint) (*model
 
 func (m *mockHorseRepo) GetOffspring(ctx context.Context, horseID uint) ([]models.Horse, error) {
 	args := m.Called(ctx, horseID)
+	return args.Get(0).([]models.Horse), args.Error(1)
+}
+
+func (m *mockHorseRepo) GetPregnant(ctx context.Context, userID string) ([]models.Horse, error) {
+	args := m.Called(ctx, userID)
 	return args.Get(0).([]models.Horse), args.Error(1)
 }
 

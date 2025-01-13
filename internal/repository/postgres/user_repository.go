@@ -51,18 +51,14 @@ func (r *UserRepository) GetDashboardStats(ctx context.Context, userID string) (
 	stats := &models.DashboardStats{}
 	
 	// Get total horses
-	var totalHorses int64
-	if err := r.db.WithContext(ctx).Model(&models.Horse{}).Where("user_id = ?", userID).Count(&totalHorses).Error; err != nil {
+	if err := r.db.WithContext(ctx).Model(&models.Horse{}).Where("user_id = ?", userID).Count(&stats.TotalHorses).Error; err != nil {
 		return nil, err
 	}
-	stats.TotalHorses = int(totalHorses)
 
 	// Get pregnant mares
-	var pregnantMares int64
-	if err := r.db.WithContext(ctx).Model(&models.Horse{}).Where("user_id = ? AND is_pregnant = true", userID).Count(&pregnantMares).Error; err != nil {
+	if err := r.db.WithContext(ctx).Model(&models.Horse{}).Where("user_id = ? AND is_pregnant = true", userID).Count(&stats.PregnantMares).Error; err != nil {
 		return nil, err
 	}
-	stats.PregnantMares = int(pregnantMares)
 
 	return stats, nil
 } 

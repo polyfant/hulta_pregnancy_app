@@ -22,6 +22,7 @@ const (
 	PregnancyStageMid     PregnancyStage = "MID_GESTATION"
 	PregnancyStageLate    PregnancyStage = "LATE_GESTATION"
 	PregnancyStageOverdue PregnancyStage = "OVERDUE"
+	PregnancyStageHighRisk PregnancyStage = "HIGH_RISK"
 )
 
 // PregnancyStatus represents the status of a pregnancy

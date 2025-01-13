@@ -10,23 +10,18 @@ import (
 )
 
 func TestHorseService(t *testing.T) {
-	handler := setupTestHandler(t)
+	handler, mockHorseRepo, _, _, _, _ := setupTestHandler()
 	ctx := setupTestContext(t)
 
 	t.Run("GetHorse", func(t *testing.T) {
 		horseID := uint(1)
-		expectedHorse := &models.Horse{
-			ID:     horseID,
-			Name:   "Test Horse",
-			UserID: "test_user",
-		}
 
 		mockHorseRepo.On("GetByID", mock.Anything, horseID).
-			Return(expectedHorse, nil).Once()
+			Return(&models.Horse{ID: horseID}, nil).Once()
 
-		horse, err := handler.HorseService.GetByID(ctx, horseID)
+		horse, err := handler.GetHorseService().GetByID(ctx, horseID)
 		assert.NoError(t, err)
-		assert.Equal(t, expectedHorse, horse)
+		assert.Equal(t, horseID, horse.ID)
 
 		mockHorseRepo.AssertExpectations(t)
 	})

@@ -51,6 +51,13 @@ type HorseDetails struct {
 	Expenses  []Expense   `json:"expenses"`
 }
 
+type HorseFamilyTree struct {
+    Horse     *Horse   `json:"horse"`
+    Parents   []Horse  `json:"parents"`
+    Offspring []Horse  `json:"offspring"`
+    Siblings  []Horse  `json:"siblings"`
+}
+
 func (h *Horse) Age() int {
 	if h.BirthDate.IsZero() {
 		return 0

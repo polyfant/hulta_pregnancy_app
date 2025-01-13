@@ -9,16 +9,16 @@ import (
 )
 
 // UserService handles user-related business logic
-type UserService struct {
+type UserServiceImpl struct {
 	repo repository.UserRepository
 }
 
 func NewUserService(repo repository.UserRepository) UserService {
-	return UserService{repo: repo}
+	return &UserServiceImpl{repo: repo}
 }
 
 // Core user management methods
-func (s UserService) GetByID(ctx context.Context, id string) (*models.User, error) {
+func (s *UserServiceImpl) GetByID(ctx context.Context, id string) (*models.User, error) {
 	user, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)
@@ -26,21 +26,21 @@ func (s UserService) GetByID(ctx context.Context, id string) (*models.User, erro
 	return user, nil
 }
 
-func (s UserService) Create(ctx context.Context, user *models.User) error {
+func (s *UserServiceImpl) Create(ctx context.Context, user *models.User) error {
 	if err := s.repo.Create(ctx, user); err != nil {
 		return fmt.Errorf("failed to create user: %w", err)
 	}
 	return nil
 }
 
-func (s UserService) Update(ctx context.Context, user *models.User) error {
+func (s *UserServiceImpl) Update(ctx context.Context, user *models.User) error {
 	if err := s.repo.Update(ctx, user); err != nil {
 		return fmt.Errorf("failed to update user: %w", err)
 	}
 	return nil
 }
 
-func (s UserService) GetByEmail(ctx context.Context, email string) (*models.User, error) {
+func (s *UserServiceImpl) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	user, err := s.repo.GetByEmail(ctx, email)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user by email: %w", err)
@@ -48,14 +48,14 @@ func (s UserService) GetByEmail(ctx context.Context, email string) (*models.User
 	return user, nil
 }
 
-func (s UserService) GetDashboardStats(ctx context.Context, userID string) (*models.DashboardStats, error) {
+func (s *UserServiceImpl) GetDashboardStats(ctx context.Context, userID string) (*models.DashboardStats, error) {
 	return s.repo.GetDashboardStats(ctx, userID)
 }
 
-func (s UserService) GetProfile(ctx context.Context, userID string) (*models.User, error) {
+func (s *UserServiceImpl) GetProfile(ctx context.Context, userID string) (*models.User, error) {
 	return s.repo.GetByID(ctx, userID)
 }
 
-func (s UserService) UpdateProfile(ctx context.Context, user *models.User) error {
+func (s *UserServiceImpl) UpdateProfile(ctx context.Context, user *models.User) error {
 	return s.repo.Update(ctx, user)
 }

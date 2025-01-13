@@ -12,6 +12,13 @@ const (
 	CleanupInterval   = 5 * time.Minute
 )
 
+// Cache defines the interface for caching operations
+type Cache interface {
+	Get(key string) (interface{}, bool)
+	Set(key string, value interface{}, expiration time.Duration)
+	Delete(key string)
+}
+
 type CacheItem struct {
 	Value      interface{}
 	Expiration int64

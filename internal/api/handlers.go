@@ -7,11 +7,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/polyfant/hulta_pregnancy_app/internal/api/types"
 	"github.com/polyfant/hulta_pregnancy_app/internal/cache"
-	"github.com/polyfant/hulta_pregnancy_app/internal/database"
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service"
-	"github.com/polyfant/hulta_pregnancy_app/internal/service/breeding"
+	"gorm.io/gorm"
 )
 
 // Handler handles HTTP requests
@@ -20,22 +19,22 @@ type Handler struct {
 	userService      service.UserService
 	pregnancyService service.PregnancyService
 	healthService    service.HealthService
-	breedingService  breeding.BreedingService
-	cache            *cache.MemoryCache
-	db               *database.PostgresDB
+	breedingService  service.BreedingService
+	cache            cache.Cache
+	db               *gorm.DB
 	horseRepo        repository.HorseRepository
 	breedingRepo     repository.BreedingRepository
 }
 
 // HandlerConfig defines the configuration for creating a new handler
 type HandlerConfig struct {
-	Database         *database.PostgresDB
+	Database         *gorm.DB
 	UserService      service.UserService
 	HorseService     service.HorseService
 	PregnancyService service.PregnancyService
 	HealthService    service.HealthService
-	BreedingService  breeding.BreedingService
-	Cache            *cache.MemoryCache
+	BreedingService  service.BreedingService
+	Cache            cache.Cache
 	HorseRepo        repository.HorseRepository
 	BreedingRepo     repository.BreedingRepository
 }
@@ -774,4 +773,29 @@ func (h *Handler) GetPregnancyStatus(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, status)
+}
+
+// GetHorseService returns the horse service
+func (h *Handler) GetHorseService() service.HorseService {
+    return h.horseService
+}
+
+// GetUserService returns the user service
+func (h *Handler) GetUserService() service.UserService {
+    return h.userService
+}
+
+// GetPregnancyService returns the pregnancy service
+func (h *Handler) GetPregnancyService() service.PregnancyService {
+    return h.pregnancyService
+}
+
+// GetHealthService returns the health service
+func (h *Handler) GetHealthService() service.HealthService {
+    return h.healthService
+}
+
+// GetBreedingService returns the breeding service
+func (h *Handler) GetBreedingService() service.BreedingService {
+    return h.breedingService
 }
