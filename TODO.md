@@ -1,13 +1,23 @@
 # Current Priorities
 
-## High Priority
+## High Priority (MVP Target: Mid-February 2025)
 
--   [x] Complete core ML features
-    -   [ ] Pregnancy stage calculation ✨
-    -   [ ] Due date tracking ✨
+-   [ ] Complete core ML features
+    -   [ ] Pregnancy stage calculation 
+        - [ ] Basic stage tracking (Early/Mid/Late/Pre-foaling)
+        - [ ] Mobile-friendly stage visualization
+        - [ ] Weather impact foundation
+    -   [ ] Due date tracking 
+        - [ ] Base calculation (340 days)
+        - [ ] Mobile calendar view
+        - [ ] Adjustable windows
     -   [ ] Pre-foaling checklist
+        - [ ] Season-specific items
+        - [ ] Mobile-friendly checkboxes
     -   [ ] Health monitoring during pregnancy
--   [x] Implement privacy controls
+        - [ ] Vital signs tracking
+        - [ ] Mobile-optimized data entry
+-   [ ] Implement privacy controls
     -   [ ] Stage change alerts
     -   [ ] Pre-foaling notifications
     -   [ ] Health check reminders
@@ -18,31 +28,36 @@
 -   [ ] Finalize Auth0 integration
     -   [ ] User roles and permissions
     -   [ ] Secure data access
+-   [ ] Mobile-First UI/UX 
+    -   [ ] Touch-friendly interface
+    -   [ ] Bottom navigation
+    -   [ ] Offline capability
+    -   [ ] Swipe gestures
 
 ## Medium Priority
 
--   [ ] Complete breeding cost tracking
--   [ ] Add nutrition tracking
--   [ ] Implement expense tracking
--   [ ] Add breeding statistics
--   [ ] Enhance dashboard visualizations
+- [ ] Complete breeding cost tracking
+- [ ] Add nutrition tracking
+- [ ] Implement expense tracking
+- [ ] Add breeding statistics
+- [ ] Enhance dashboard visualizations
 
 ## Technical Improvements
 
--   [ ] Add more unit tests
-    -   [ ] Pregnancy calculations
-    -   [ ] Stage transitions
-    -   [ ] Notification triggers
--   [ ] Improve error handling
--   [ ] Add API documentation
--   [ ] Set up CI/CD pipeline
+- [ ] Add more unit tests
+    - [ ] Pregnancy calculations
+    - [ ] Stage transitions
+    - [ ] Notification triggers
+- [ ] Improve error handling
+- [ ] Add API documentation
+- [ ] Set up CI/CD pipeline
 
 ## Future Considerations
 
--   [ ] Add data export functionality
--   [ ] Add batch operations
--   [ ] Advanced statistics and reporting
--   [ ] Mobile app integration
+- [ ] Add data export functionality
+- [ ] Add batch operations
+- [ ] Advanced statistics and reporting
+- [ ] Mobile app integration
 
 ## Feature Plan
 
