@@ -19,6 +19,13 @@ func TestHandlers(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	handler, mockHorse, _, _, _, _ := setupTestHandler()
 	router := gin.New()
+	
+	// Add test auth middleware
+	router.Use(func(c *gin.Context) {
+		c.Set("user_id", "test_user")
+		c.Next()
+	})
+	
 	api.SetupRouter(router, handler)
 
 	t.Run("GetHorse", func(t *testing.T) {

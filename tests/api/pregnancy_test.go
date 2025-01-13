@@ -11,7 +11,7 @@ import (
 )
 
 func TestPregnancyService(t *testing.T) {
-	handler, _, _, _, mockPregnancyRepo, _ := setupTestHandler()
+	handler, mockHorse, _, mockPregnancyRepo, _, _ := setupTestHandler()
 	ctx := setupTestContext(t)
 
 	t.Run("StartPregnancyTracking", func(t *testing.T) {
@@ -20,8 +20,17 @@ func TestPregnancyService(t *testing.T) {
 			ConceptionDate: time.Now(),
 		}
 
-		mockPregnancyRepo.On("StartTracking", mock.Anything, horseID, start).
-			Return(nil).Once()
+		mockPregnancyRepo.On("Create", mock.Anything, mock.MatchedBy(func(p *models.Pregnancy) bool {
+			return p.HorseID == horseID && !p.ConceptionDate.IsZero()
+		})).Return(nil).Once()
+
+		mockHorse.On("GetByID", mock.Anything, horseID).
+			Return(&models.Horse{ID: horseID}, nil).Once()
+
+		mockHorse.On("Update", mock.Anything, mock.MatchedBy(func(h *models.Horse) bool {
+			return h.ID == horseID && h.IsPregnant
+		})).Return(nil).Once()
+
 		mockPregnancyRepo.On("GetByHorseID", mock.Anything, horseID).
 			Return(&models.Pregnancy{HorseID: horseID}, nil).Once()
 
@@ -33,5 +42,6 @@ func TestPregnancyService(t *testing.T) {
 		assert.Equal(t, horseID, pregnancy.HorseID)
 
 		mockPregnancyRepo.AssertExpectations(t)
+		mockHorse.AssertExpectations(t)
 	})
-} 
+}
