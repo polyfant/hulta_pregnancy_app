@@ -42,7 +42,27 @@
 -   Fixed database configuration structure
 -   Fixed repository constructor implementations
 
-## [0.2.0] - 2024-01-15
+## [0.3.0] - 2025-01-15
+
+### Added
+- Privacy change logging system 🔒
+- Data retention controls for weather and health data
+- Automated data cleanup based on retention settings
+- Transaction support for privacy preference updates
+
+### Changed
+- Updated privacy preferences to use upsert functionality
+- Improved test database setup and cleanup
+- Enhanced error handling in privacy repository
+- Optimized weather data retention period to 30 days
+
+### Fixed
+- Fixed privacy change log table creation
+- Improved transaction rollback handling
+- Fixed weather data deletion test
+- Updated test assertions for better reliability
+
+## [0.2.0] - 2025-01-01
 
 ### Added
 

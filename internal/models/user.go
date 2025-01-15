@@ -11,6 +11,29 @@ type User struct {
 	UpdatedAt      time.Time  `json:"updated_at" db:"updated_at"`
 	LastLogin      *time.Time `json:"last_login" db:"last_login"`
 	IsActive       bool       `json:"is_active" db:"is_active"`
+	WeatherSettings WeatherSettings `json:"weather_settings" gorm:"embedded"`
+}
+
+// WeatherSettings stores user preferences for weather tracking
+type WeatherSettings struct {
+	NotificationsEnabled bool    `json:"notifications_enabled" gorm:"default:false"`
+	DefaultLatitude     float64 `json:"default_latitude"`
+	DefaultLongitude    float64 `json:"default_longitude"`
+	UpdateFrequency     string  `json:"update_frequency" gorm:"default:'hourly'"` // hourly, daily, realtime
+	ForecastAlerts      bool    `json:"forecast_alerts" gorm:"default:false"`
+}
+
+type UserSettings struct {
+	WeatherNotificationsEnabled bool `json:"weatherNotificationsEnabled"`
+	WeatherPreferences         WeatherPreferences `json:"weatherPreferences"`
+}
+
+type WeatherPreferences struct {
+	Enabled        bool    `json:"enabled"`
+	ForecastAlerts bool    `json:"forecastAlerts"`
+	DefaultLatitude  float64 `json:"defaultLatitude"`
+	DefaultLongitude float64 `json:"defaultLongitude"`
+	UpdateFrequency string  `json:"updateFrequency"`
 }
 
 type SyncData struct {
@@ -28,6 +51,3 @@ type UserDashboard struct {
 	UpcomingEvents       int    `json:"upcoming_events"`
 	ActivePregnancies    int    `json:"active_pregnancies"`
 }
-
-
-
