@@ -51,6 +51,14 @@ type TemperatureThresholds struct {
 	MaxCritical float64 // maximum critical temperature
 }
 
+// PregnancyWeatherAdvice contains recommendations based on weather and pregnancy stage
+type PregnancyWeatherAdvice struct {
+	WeatherData     *WeatherData `json:"weather_data"`
+	Recommendations []string     `json:"recommendations"`
+	RiskLevel       string       `json:"risk_level"`
+	StageSpecific   bool         `json:"stage_specific"`
+}
+
 // GetDefaultThresholds returns default temperature thresholds for horses
 func GetDefaultThresholds() TemperatureThresholds {
 	return TemperatureThresholds{

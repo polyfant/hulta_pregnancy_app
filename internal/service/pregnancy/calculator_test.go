@@ -16,17 +16,27 @@ func TestGetPregnancyStage(t *testing.T) {
 		daysSinceConception int
 		expectedStage     models.PregnancyStage
 	}{
-		{"Early stage", 50, models.PregnancyStageEarly},
-		{"Mid stage", 150, models.PregnancyStageMid},
-		{"Late stage", 300, models.PregnancyStageLate},
-		{"Overdue", 345, models.PregnancyStageOverdue},
-		{"High risk", 380, models.PregnancyStageHighRisk},
+		{"Early stage - just started", 1, models.PregnancyStageEarly},
+		{"Early stage - middle", 50, models.PregnancyStageEarly},
+		{"Early stage - end", 98, models.PregnancyStageEarly},
+		{"Mid stage - start", 99, models.PregnancyStageMid},
+		{"Mid stage - middle", 150, models.PregnancyStageMid},
+		{"Mid stage - end", 196, models.PregnancyStageMid},
+		{"Late stage - start", 197, models.PregnancyStageLate},
+		{"Late stage - middle", 300, models.PregnancyStageLate},
+		{"Late stage - end", 339, models.PregnancyStageLate},
+		{"Overdue - start", 340, models.PregnancyStageOverdue},
+		{"Overdue - middle", 355, models.PregnancyStageOverdue},
+		{"Overdue - end", 369, models.PregnancyStageOverdue},
+		{"High risk - start", 370, models.PregnancyStageHighRisk},
+		{"High risk - middle", 380, models.PregnancyStageHighRisk},
+		{"High risk - extreme", 400, models.PregnancyStageHighRisk},
 	}
 	
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			stage := calc.GetPregnancyStage(tt.daysSinceConception)
-			assert.Equal(t, tt.expectedStage, stage)
+			assert.Equal(t, tt.expectedStage, stage, "For %d days since conception", tt.daysSinceConception)
 		})
 	}
 }
@@ -38,28 +48,146 @@ func TestGetStageInfo(t *testing.T) {
 	tests := []struct {
 		name           string
 		conceptionDate time.Time
-		expectOverdue  bool
-		expectDaysOverdue int
+		expect         struct {
+			stage          models.PregnancyStage
+			daysSoFar      int
+			weeksSoFar     int
+			daysRemaining  int
+			weeksRemaining int
+			progress       float64
+			daysOverdue    int
+			isOverdue      bool
+		}
 	}{
 		{
-			name: "Normal pregnancy",
+			name: "Early pregnancy",
+			conceptionDate: now.AddDate(0, 0, -50),
+			expect: struct {
+				stage          models.PregnancyStage
+				daysSoFar      int
+				weeksSoFar     int
+				daysRemaining  int
+				weeksRemaining int
+				progress       float64
+				daysOverdue    int
+				isOverdue      bool
+			}{
+				stage:          models.PregnancyStageEarly,
+				daysSoFar:      50,
+				weeksSoFar:     7,
+				daysRemaining:  290,
+				weeksRemaining: 41,
+				progress:       14.7,
+				daysOverdue:    0,
+				isOverdue:      false,
+			},
+		},
+		{
+			name: "Mid pregnancy",
+			conceptionDate: now.AddDate(0, 0, -150),
+			expect: struct {
+				stage          models.PregnancyStage
+				daysSoFar      int
+				weeksSoFar     int
+				daysRemaining  int
+				weeksRemaining int
+				progress       float64
+				daysOverdue    int
+				isOverdue      bool
+			}{
+				stage:          models.PregnancyStageMid,
+				daysSoFar:      150,
+				weeksSoFar:     21,
+				daysRemaining:  190,
+				weeksRemaining: 27,
+				progress:       44.1,
+				daysOverdue:    0,
+				isOverdue:      false,
+			},
+		},
+		{
+			name: "Late pregnancy",
 			conceptionDate: now.AddDate(0, 0, -300),
-			expectOverdue: false,
-			expectDaysOverdue: 0,
+			expect: struct {
+				stage          models.PregnancyStage
+				daysSoFar      int
+				weeksSoFar     int
+				daysRemaining  int
+				weeksRemaining int
+				progress       float64
+				daysOverdue    int
+				isOverdue      bool
+			}{
+				stage:          models.PregnancyStageLate,
+				daysSoFar:      300,
+				weeksSoFar:     42,
+				daysRemaining:  40,
+				weeksRemaining: 5,
+				progress:       88.2,
+				daysOverdue:    0,
+				isOverdue:      false,
+			},
 		},
 		{
 			name: "Overdue pregnancy",
 			conceptionDate: now.AddDate(0, 0, -350),
-			expectOverdue: true,
-			expectDaysOverdue: 10,
+			expect: struct {
+				stage          models.PregnancyStage
+				daysSoFar      int
+				weeksSoFar     int
+				daysRemaining  int
+				weeksRemaining int
+				progress       float64
+				daysOverdue    int
+				isOverdue      bool
+			}{
+				stage:          models.PregnancyStageOverdue,
+				daysSoFar:      350,
+				weeksSoFar:     50,
+				daysRemaining:  0,
+				weeksRemaining: 0,
+				progress:       100.0,
+				daysOverdue:    10,
+				isOverdue:      true,
+			},
+		},
+		{
+			name: "High risk pregnancy",
+			conceptionDate: now.AddDate(0, 0, -380),
+			expect: struct {
+				stage          models.PregnancyStage
+				daysSoFar      int
+				weeksSoFar     int
+				daysRemaining  int
+				weeksRemaining int
+				progress       float64
+				daysOverdue    int
+				isOverdue      bool
+			}{
+				stage:          models.PregnancyStageHighRisk,
+				daysSoFar:      380,
+				weeksSoFar:     54,
+				daysRemaining:  0,
+				weeksRemaining: 0,
+				progress:       100.0,
+				daysOverdue:    40,
+				isOverdue:      true,
+			},
 		},
 	}
 	
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			info := calc.GetStageInfo(tt.conceptionDate)
-			assert.Equal(t, tt.expectOverdue, info.IsOverdue)
-			assert.Equal(t, tt.expectDaysOverdue, info.DaysOverdue)
+			
+			assert.Equal(t, tt.expect.stage, info.Stage, "Stage mismatch")
+			assert.InDelta(t, tt.expect.daysSoFar, info.DaysSoFar, 1, "Days so far mismatch")
+			assert.InDelta(t, tt.expect.weeksSoFar, info.WeeksSoFar, 1, "Weeks so far mismatch")
+			assert.InDelta(t, tt.expect.daysRemaining, info.DaysRemaining, 1, "Days remaining mismatch")
+			assert.InDelta(t, tt.expect.weeksRemaining, info.WeeksRemaining, 1, "Weeks remaining mismatch")
+			assert.InDelta(t, tt.expect.progress, info.Progress, 0.1, "Progress mismatch")
+			assert.InDelta(t, tt.expect.daysOverdue, info.DaysOverdue, 1, "Days overdue mismatch")
+			assert.Equal(t, tt.expect.isOverdue, info.IsOverdue, "Overdue status mismatch")
 		})
 	}
 }

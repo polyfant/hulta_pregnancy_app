@@ -1,6 +1,7 @@
 package api
 
 import (
+
 	"net/http"
 	"strconv"
 	"time"
@@ -13,11 +14,13 @@ import (
 
 type PregnancyHandler struct {
 	service service.PregnancyService
+	weatherService service.WeatherService
 }
 
-func NewPregnancyHandler(service service.PregnancyService) *PregnancyHandler {
+func NewPregnancyHandler(service service.PregnancyService, weatherService service.WeatherService) *PregnancyHandler {
 	return &PregnancyHandler{
 		service: service,
+		weatherService: weatherService,
 	}
 }
 
@@ -408,4 +411,28 @@ func (h *PregnancyHandler) GetPregnancy(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, pregnancy)
+}
+
+func (h *PregnancyHandler) GetPregnancyWeatherAdvice(c *gin.Context) {
+	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
+		return
+	}
+
+	// Get pregnancy stage first
+	stage, err := h.service.GetPregnancyStage(c.Request.Context(), uint(horseID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: "Failed to get pregnancy stage"})
+		return
+	}
+
+	// Get weather advice based on stage
+	advice, err := h.weatherService.GetPregnancyWeatherAdvice(c.Request.Context(), string(stage))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: "Failed to get weather advice"})
+		return
+	}
+
+	c.JSON(http.StatusOK, advice)
 }

@@ -64,3 +64,10 @@ type BreedingService interface {
 	UpdateRecord(ctx context.Context, record *models.BreedingRecord) error
 	DeleteRecord(ctx context.Context, id uint) error
 }
+
+// WeatherService defines the interface for weather-related operations
+type WeatherService interface {
+	GetCurrentWeather(ctx context.Context, latitude, longitude float64) (*models.WeatherData, error)
+	GetLatestWeatherData(ctx context.Context) (*models.WeatherData, error)
+	GetPregnancyWeatherAdvice(ctx context.Context, stage string) (*models.PregnancyWeatherAdvice, error)
+}

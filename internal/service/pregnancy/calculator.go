@@ -42,11 +42,13 @@ func (c *Calculator) GetStageInfo(conceptionDate time.Time) *models.PregnancySta
 	daysRemaining := defaultGestationDays - daysSinceConception
 	daysOverdue := 0
 	isOverdue := false
+	progress := (float64(daysSinceConception) / float64(defaultGestationDays)) * 100
 
 	if daysSinceConception > defaultGestationDays {
 		daysOverdue = daysSinceConception - defaultGestationDays
 		daysRemaining = 0
 		isOverdue = true
+		progress = 100.0 // Cap progress at 100%
 	}
 
 	return &models.PregnancyStageInfo{
@@ -55,7 +57,7 @@ func (c *Calculator) GetStageInfo(conceptionDate time.Time) *models.PregnancySta
 		WeeksSoFar:     daysSinceConception / 7,
 		DaysRemaining:  daysRemaining,
 		WeeksRemaining: daysRemaining / 7,
-		Progress:       float64(daysSinceConception) / float64(defaultGestationDays) * 100,
+		Progress:       progress,
 		DaysOverdue:    daysOverdue,
 		IsOverdue:      isOverdue,
 	}

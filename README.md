@@ -2,7 +2,7 @@
 
 ## Overview
 
-A comprehensive horse pregnancy tracking system with advanced stage monitoring and due date prediction.
+A comprehensive horse pregnancy tracking system with advanced stage monitoring, due date prediction, and environmental condition monitoring.
 
 ## Key Features
 
@@ -14,11 +14,20 @@ A comprehensive horse pregnancy tracking system with advanced stage monitoring a
 -   Progress tracking with detailed statistics
 -   Comprehensive pregnancy timeline
 
+### Environmental Monitoring
+
+-   Heat index calculation for horse comfort
+-   Stage-sensitive temperature thresholds
+-   Automatic stress level determination
+-   Weather impact alerts for late-stage pregnancies
+-   Customized recommendations based on conditions
+
 ## Core Features
 
 -   Horse pregnancy tracking and monitoring
 -   Pre-foaling checklist management
 -   Health record keeping
+-   Environmental condition monitoring
 -   Secure user authentication
 -   Real-time pregnancy status dashboard
 

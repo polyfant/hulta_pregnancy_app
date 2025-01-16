@@ -2,15 +2,15 @@
 
 ## High Priority (MVP Target: Mid-February 2025)
 
--   [ ] Complete core ML features
-    -   [ ] Pregnancy stage calculation 
-        - [ ] Basic stage tracking (Early/Mid/Late/Pre-foaling)
-        - [ ] Mobile-friendly stage visualization
-        - [ ] Weather impact foundation
-    -   [ ] Due date tracking 
-        - [ ] Base calculation (340 days)
-        - [ ] Mobile calendar view
-        - [ ] Adjustable windows
+-   [x] Complete core ML features
+    -   [x] Pregnancy stage calculation 
+        - [x] Basic stage tracking (Early/Mid/Late/Pre-foaling)
+        - [x] Mobile-friendly stage visualization
+        - [x] Weather impact foundation
+    -   [x] Due date tracking 
+        - [x] Base calculation (340 days)
+        - [x] Mobile calendar view
+        - [x] Adjustable windows
     -   [ ] Pre-foaling checklist
         - [ ] Season-specific items
         - [ ] Mobile-friendly checkboxes
@@ -51,6 +51,8 @@
 - [x] Add more unit tests
     - [x] Pregnancy calculations
     - [x] Stage transitions
+    - [x] Weather impact calculations
+    - [x] Heat index formulas
     - [x] Notification triggers
     - [x] Privacy preference tests (Added 2025-01-15)
     - [x] Data retention tests
@@ -74,6 +76,10 @@
 1. Custom risk thresholds for different horse breeds
 2. Integration with local weather stations for more accurate data
 3. Breed-specific growth curve analysis and recommendations
+4. Advanced weather impact analysis
+   - Regional climate adaptation
+   - Seasonal comfort adjustments
+   - Historical weather pattern analysis
 
 ### Privacy & Control
 

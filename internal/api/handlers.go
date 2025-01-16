@@ -20,6 +20,8 @@ type Handler struct {
 	pregnancyService service.PregnancyService
 	healthService    service.HealthService
 	breedingService  service.BreedingService
+	weatherService   service.WeatherService
+	pregnancyHandler *PregnancyHandler
 	cache            cache.Cache
 	db               *gorm.DB
 	horseRepo        repository.HorseRepository
@@ -34,6 +36,7 @@ type HandlerConfig struct {
 	PregnancyService service.PregnancyService
 	HealthService    service.HealthService
 	BreedingService  service.BreedingService
+	WeatherService   service.WeatherService
 	Cache            cache.Cache
 	HorseRepo        repository.HorseRepository
 	BreedingRepo     repository.BreedingRepository
@@ -41,17 +44,21 @@ type HandlerConfig struct {
 
 // NewHandler creates a new handler instance
 func NewHandler(config HandlerConfig) *Handler {
-	return &Handler{
+	h := &Handler{
 		horseService:     config.HorseService,
 		userService:      config.UserService,
 		pregnancyService: config.PregnancyService,
 		healthService:    config.HealthService,
 		breedingService:  config.BreedingService,
+		weatherService:   config.WeatherService,
 		cache:            config.Cache,
 		db:               config.Database,
 		horseRepo:        config.HorseRepo,
 		breedingRepo:     config.BreedingRepo,
 	}
+	
+	h.pregnancyHandler = NewPregnancyHandler(config.PregnancyService, config.WeatherService)
+	return h
 }
 
 // Start starts the HTTP server
