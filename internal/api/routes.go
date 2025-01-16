@@ -1,54 +1,69 @@
 package api
 
 import (
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/polyfant/hulta_pregnancy_app/internal/middleware"
 )
 
-// SetupRouter sets up the routing for our API
-func SetupRouter(router *gin.Engine, h *Handler) {
-	// Add CORS middleware
-	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"*"}
-	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
-	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
-	router.Use(cors.New(config))
+// RegisterRoutes sets up all API routes
+func RegisterRoutes(router *gin.Engine, handlers *Handlers) {
+	// Apply global middleware
+	router.Use(gin.Logger())
+	router.Use(gin.Recovery())
+	router.Use(middleware.CORSMiddleware())
 
-	// Create API group
+	// API routes group
 	api := router.Group("/api")
 	{
-		// Horse routes
-		api.GET("/horses", h.ListHorses)
-		api.POST("/horses", h.AddHorse)
-		api.GET("/horses/:id", h.GetHorse)
-		api.PUT("/horses/:id", h.UpdateHorse)
-		api.DELETE("/horses/:id", h.DeleteHorse)
-
-		// Health routes
-		api.GET("/horses/:id/health", h.GetHealthRecords)
-		api.POST("/horses/:id/health", h.AddHealthRecord)
-		api.PUT("/horses/:id/health/:recordId", h.UpdateHealthRecord)
-		api.DELETE("/horses/:id/health/:recordId", h.DeleteHealthRecord)
+		// Health check
+		api.GET("/health", handlers.HealthHandler.HandleHealthCheck)
 
 		// Pregnancy routes
-		api.GET("/horses/:id/pregnancy", h.GetPregnancy)
-		api.POST("/horses/:id/pregnancy/start", h.StartPregnancyTracking)
-		api.GET("/horses/:id/pregnancy/status", h.GetPregnancyStatus)
-		api.GET("/horses/:id/pregnancy/events", h.GetPregnancyEvents)
-		api.POST("/horses/:id/pregnancy/events", h.AddPregnancyEvent)
-		api.GET("/horses/:id/pregnancy/guidelines", h.GetPregnancyGuidelines)
+		pregnancy := api.Group("/pregnancy")
+		{
+			pregnancy.POST("", handlers.PregnancyHandler.HandleCreatePregnancy)
+			pregnancy.GET("/:id", handlers.PregnancyHandler.HandleGetPregnancy)
+			pregnancy.PUT("/:id", handlers.PregnancyHandler.HandleUpdatePregnancy)
+			pregnancy.DELETE("/:id", handlers.PregnancyHandler.HandleDeletePregnancy)
+			pregnancy.GET("", handlers.PregnancyHandler.HandleListPregnancies)
+		}
 
-		// Breeding routes
-		api.GET("/horses/:id/breeding", h.GetBreedingRecords)
-		api.POST("/horses/:id/breeding", h.AddBreedingRecord)
-		api.PUT("/horses/:id/breeding/:recordId", h.UpdateBreedingRecord)
-		api.DELETE("/horses/:id/breeding/:recordId", h.DeleteBreedingRecord)
+		// Vital signs routes
+		vitals := api.Group("/vitals")
+		{
+			vitals.POST("", handlers.VitalsHandler.HandleRecordVitalSigns)
+			vitals.GET("/horse/:id", handlers.VitalsHandler.HandleGetVitalSigns)
+			vitals.GET("/horse/:id/latest", handlers.VitalsHandler.HandleGetLatestVitalSigns)
+			vitals.GET("/horse/:id/alerts", handlers.VitalsHandler.HandleGetAlerts)
+			vitals.GET("/alerts/:id", handlers.VitalsHandler.HandleGetAlert)
+			vitals.PUT("/alerts/:id/acknowledge", handlers.VitalsHandler.HandleAcknowledgeAlert)
+			vitals.GET("/horse/:id/trends", handlers.VitalsHandler.HandleGetTrends)
+		}
 
-		// User routes
-		api.GET("/user/profile", h.GetUserProfile)
-		api.PUT("/user/profile", h.UpdateUserProfile)
+		// Weather routes
+		weather := api.Group("/weather")
+		{
+			weather.GET("/current", handlers.WeatherHandler.HandleGetCurrentWeather)
+			weather.GET("/recommendations", handlers.WeatherHandler.HandleGetRecommendations)
+		}
 
-		// Dashboard route
-		api.GET("/dashboard", h.GetDashboardStats)
+		// Feedback routes
+		feedback := api.Group("/feedback")
+		{
+			feedback.POST("/feature", handlers.FeedbackHandler.HandleFeatureRequest)
+			feedback.GET("/features", handlers.FeedbackHandler.HandleListFeatures)
+			feedback.POST("/features/:id/vote", handlers.FeedbackHandler.HandleFeatureVote)
+			feedback.GET("/votes", handlers.FeedbackHandler.HandleGetUserVotes)
+		}
+
+		// Privacy routes
+		privacy := api.Group("/privacy")
+		{
+			privacy.GET("/preferences", handlers.PrivacyHandler.HandleGetPreferences)
+			privacy.PUT("/preferences", handlers.PrivacyHandler.HandleUpdatePreferences)
+		}
 	}
+
+	// WebSocket endpoint
+	router.GET("/ws", gin.WrapF(handlers.WebSocketHandler.ServeHTTP))
 }

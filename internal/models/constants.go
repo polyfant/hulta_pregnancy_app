@@ -4,9 +4,9 @@ package models
 type Priority string
 
 const (
-	PriorityHigh   Priority = "HIGH"
-	PriorityMedium Priority = "MEDIUM"
 	PriorityLow    Priority = "LOW"
+	PriorityMedium Priority = "MEDIUM"
+	PriorityHigh   Priority = "HIGH"
 )
 
 // EventType represents different types of events
@@ -42,7 +42,28 @@ const (
 	HealthRecordTypeOther       HealthRecordType = "OTHER"
 )
 
+// Vital signs normal ranges for horses
+const (
+	// Temperature ranges (in Celsius)
+	MinNormalTemperature = 37.5
+	MaxNormalTemperature = 38.5
+	MinSafeTemperature  = 35.0 // Below this requires immediate attention
+	MaxSafeTemperature  = 42.0 // Above this requires immediate attention
+
+	// Heart rate ranges (beats per minute)
+	MinNormalHeartRate = 28
+	MaxNormalHeartRate = 44
+	MinSafeHeartRate  = 20 // Below this requires immediate attention
+	MaxSafeHeartRate  = 100 // Above this requires immediate attention
+
+	// Respiration ranges (breaths per minute)
+	MinNormalRespiration = 8
+	MaxNormalRespiration = 16
+	MinSafeRespiration  = 4  // Below this requires immediate attention
+	MaxSafeRespiration  = 40 // Above this requires immediate attention
+)
+
 // Default values
 const (
 	DefaultGestationDays = 340 // Average horse pregnancy duration
-) 
+)

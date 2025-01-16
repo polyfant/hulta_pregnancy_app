@@ -10,22 +10,25 @@ import (
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service"
+	"github.com/polyfant/hulta_pregnancy_app/internal/service/checklist"
+	"github.com/polyfant/hulta_pregnancy_app/internal/service/health"
+	"github.com/polyfant/hulta_pregnancy_app/internal/service/notification"
+	"github.com/polyfant/hulta_pregnancy_app/internal/service/pregnancy"
+	"github.com/polyfant/hulta_pregnancy_app/internal/service/privacy"
+	"github.com/polyfant/hulta_pregnancy_app/internal/service/vitals"
+	"github.com/polyfant/hulta_pregnancy_app/internal/service/weather"
+	"github.com/polyfant/hulta_pregnancy_app/internal/websocket"
 	"gorm.io/gorm"
 )
 
-// Handler handles HTTP requests
-type Handler struct {
-	horseService     service.HorseService
-	userService      service.UserService
-	pregnancyService service.PregnancyService
-	healthService    service.HealthService
-	breedingService  service.BreedingService
-	weatherService   service.WeatherService
-	pregnancyHandler *PregnancyHandler
-	cache            cache.Cache
-	db               *gorm.DB
-	horseRepo        repository.HorseRepository
-	breedingRepo     repository.BreedingRepository
+// Handlers contains all HTTP handlers
+type Handlers struct {
+	PregnancyHandler *PregnancyHandler
+	HealthHandler    *HealthHandler
+	VitalsHandler    *VitalsHandler
+	WeatherHandler   *WeatherHandler
+	PrivacyHandler   *PrivacyHandler
+	WebSocketHandler *websocket.Hub
 }
 
 // HandlerConfig defines the configuration for creating a new handler
@@ -33,13 +36,53 @@ type HandlerConfig struct {
 	Database         *gorm.DB
 	UserService      service.UserService
 	HorseService     service.HorseService
-	PregnancyService service.PregnancyService
-	HealthService    service.HealthService
+	PregnancyService pregnancy.Service
+	HealthService    health.Service
 	BreedingService  service.BreedingService
-	WeatherService   service.WeatherService
+	WeatherService   weather.Service
+	ChecklistService checklist.Service
+	PrivacyService   privacy.Service
+	VitalsService    vitals.Service
+	NotificationService notification.Service
+	WebSocketHub     *websocket.Hub
 	Cache            cache.Cache
 	HorseRepo        repository.HorseRepository
 	BreedingRepo     repository.BreedingRepository
+}
+
+// NewHandlers creates a new Handlers instance
+func NewHandlers(config HandlerConfig) *Handlers {
+	return &Handlers{
+		PregnancyHandler: NewPregnancyHandler(config.PregnancyService, config.WeatherService, config.ChecklistService),
+		HealthHandler:    NewHealthHandler(config.HealthService),
+		VitalsHandler:    NewVitalsHandler(config.VitalsService),
+		WeatherHandler:   NewWeatherHandler(config.WeatherService, config.NotificationService),
+		PrivacyHandler:   NewPrivacyHandler(config.PrivacyService),
+		WebSocketHandler: config.WebSocketHub,
+	}
+}
+
+// Handler handles HTTP requests
+type Handler struct {
+	horseService     service.HorseService
+	userService      service.UserService
+	pregnancyService pregnancy.Service
+	healthService    health.Service
+	breedingService  service.BreedingService
+	weatherService   weather.Service
+	checklistService checklist.Service
+	privacyService   privacy.Service
+	vitalsService    vitals.Service
+	pregnancyHandler *PregnancyHandler
+	healthHandler    *HealthHandler
+	vitalsHandler    *VitalsHandler
+	weatherHandler   *WeatherHandler
+	privacyHandler   *PrivacyHandler
+	websocketHandler *websocket.Hub
+	cache            cache.Cache
+	db               *gorm.DB
+	horseRepo        repository.HorseRepository
+	breedingRepo     repository.BreedingRepository
 }
 
 // NewHandler creates a new handler instance
@@ -51,13 +94,23 @@ func NewHandler(config HandlerConfig) *Handler {
 		healthService:    config.HealthService,
 		breedingService:  config.BreedingService,
 		weatherService:   config.WeatherService,
+		checklistService: config.ChecklistService,
+		privacyService:   config.PrivacyService,
+		vitalsService:    config.VitalsService,
 		cache:            config.Cache,
 		db:               config.Database,
 		horseRepo:        config.HorseRepo,
 		breedingRepo:     config.BreedingRepo,
 	}
-	
-	h.pregnancyHandler = NewPregnancyHandler(config.PregnancyService, config.WeatherService)
+
+	handlers := NewHandlers(config)
+	h.pregnancyHandler = handlers.PregnancyHandler
+	h.healthHandler = handlers.HealthHandler
+	h.vitalsHandler = handlers.VitalsHandler
+	h.weatherHandler = handlers.WeatherHandler
+	h.privacyHandler = handlers.PrivacyHandler
+	h.websocketHandler = handlers.WebSocketHandler
+
 	return h
 }
 
@@ -793,16 +846,46 @@ func (h *Handler) GetUserService() service.UserService {
 }
 
 // GetPregnancyService returns the pregnancy service
-func (h *Handler) GetPregnancyService() service.PregnancyService {
+func (h *Handler) GetPregnancyService() pregnancy.Service {
     return h.pregnancyService
 }
 
 // GetHealthService returns the health service
-func (h *Handler) GetHealthService() service.HealthService {
+func (h *Handler) GetHealthService() health.Service {
     return h.healthService
 }
 
 // GetBreedingService returns the breeding service
 func (h *Handler) GetBreedingService() service.BreedingService {
     return h.breedingService
+}
+
+// GetChecklistService returns the checklist service
+func (h *Handler) GetChecklistService() checklist.Service {
+    return h.checklistService
+}
+
+// GetPrivacyService returns the privacy service
+func (h *Handler) GetPrivacyService() privacy.Service {
+    return h.privacyService
+}
+
+// GetVitalsService returns the vitals service
+func (h *Handler) GetVitalsService() vitals.Service {
+    return h.vitalsService
+}
+
+// GetNotificationService returns the notification service
+func (h *Handler) GetNotificationService() notification.Service {
+    return h.notificationService
+}
+
+// GetWeatherService returns the weather service
+func (h *Handler) GetWeatherService() weather.Service {
+    return h.weatherService
+}
+
+// GetWebSocketHandler returns the websocket handler
+func (h *Handler) GetWebSocketHandler() *websocket.Hub {
+    return h.websocketHandler
 }

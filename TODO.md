@@ -61,6 +61,11 @@
     - [x] Transaction rollback
     - [x] Privacy change logging
     - [x] Data cleanup errors
+- [x] Improve service organization
+    - [x] Split interfaces into domain-specific files
+    - [x] Rename generic service files to be more specific
+    - [x] Move constants to domain-specific files
+    - [x] Consolidate duplicate service implementations
 
 ## Future Considerations
 

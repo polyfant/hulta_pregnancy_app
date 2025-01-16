@@ -8,4 +8,4 @@ const (
 
 func CalculateDueDate(conceptionDate time.Time) time.Time {
     return conceptionDate.AddDate(0, 0, DefaultGestationDays)
-} 
+}

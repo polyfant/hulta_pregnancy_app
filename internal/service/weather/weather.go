@@ -6,44 +6,33 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
+
+	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 )
 
-// WeatherData represents weather conditions
-type WeatherData struct {
-	Temperature float64   // Temperature in Celsius
-	WindSpeed   float64   // Wind speed in m/s
-	Description string    // Text description of weather
-	Conditions  []string  // List of weather conditions
-}
-
-// HasSevereConditions checks if there are any severe weather conditions:
-// - Wind speed > 20 m/s
-// - Thunderstorm, tornado, hurricane, or blizzard
-func (w *WeatherData) HasSevereConditions() bool {
-	if w.WindSpeed > 20 {
-		return true
-	}
-	for _, condition := range w.Conditions {
-		switch condition {
-		case "thunderstorm", "tornado", "hurricane", "blizzard":
-			return true
-		}
-	}
-	return false
+// Service defines the interface for weather operations
+type Service interface {
+	GetCurrentWeather(ctx context.Context, location string) (*models.WeatherData, error)
+	GetForecast(ctx context.Context, location string, days int) ([]*models.WeatherData, error)
+	GetWeatherAlerts(ctx context.Context, location string) ([]*models.WeatherAlert, error)
+	GetRecommendations(ctx context.Context, weatherData *models.WeatherData) ([]*models.WeatherRecommendation, error)
+	GetLatestWeatherData(ctx context.Context) (*models.WeatherData, error)
+	GetPregnancyWeatherAdvice(ctx context.Context, stage string) (*models.PregnancyWeatherAdvice, error)
 }
 
 // Repository interface for weather data persistence
 type Repository interface {
-	SaveWeatherData(ctx context.Context, data *WeatherData) error
-	GetLatestWeatherData(ctx context.Context) (*WeatherData, error)
+	SaveWeatherData(ctx context.Context, data *models.WeatherData) error
+	GetLatestWeatherData(ctx context.Context) (*models.WeatherData, error)
+	SaveWeatherAlert(ctx context.Context, alert *models.WeatherAlert) error
+	GetWeatherAlerts(ctx context.Context, location string) ([]*models.WeatherAlert, error)
 }
 
-// Service provides weather-related functionality
-type Service struct {
-	apiKey     string
-	httpClient *http.Client
-	repo       Repository
+// HTTPClient interface for making HTTP requests
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
 }
 
 // ServiceConfig holds configuration for the weather service
@@ -52,28 +41,26 @@ type ServiceConfig struct {
 	HTTPTimeout time.Duration
 }
 
+// service implements the Service interface
+type service struct {
+	apiKey     string
+	httpClient HTTPClient
+	repo       Repository
+}
+
 // NewService creates a new weather service
-func NewService(cfg ServiceConfig, repo Repository) *Service {
-	return &Service{
-		apiKey: cfg.APIKey,
-		httpClient: &http.Client{
-			Timeout: cfg.HTTPTimeout,
-		},
-		repo: repo,
+func NewService(cfg ServiceConfig, repo Repository, httpClient HTTPClient) *service {
+	return &service{
+		apiKey:     cfg.APIKey,
+		httpClient: httpClient,
+		repo:       repo,
 	}
 }
 
 // GetCurrentWeather retrieves current weather data for a location
-func (s *Service) GetCurrentWeather(ctx context.Context, latitude, longitude float64) (*WeatherData, error) {
-	// Build API URL with API key and coordinates
-	url := fmt.Sprintf(
-		"https://api.weatherapi.com/v1/current.json?key=%s&q=%.6f,%.6f",
-		s.apiKey,
-		latitude,
-		longitude,
-	)
-
-	// Make HTTP request
+func (s *service) GetCurrentWeather(ctx context.Context, lat, lon float64) (*models.WeatherData, error) {
+	url := fmt.Sprintf("https://api.openweathermap.org/data/2.5/weather?lat=%f&lon=%f&appid=%s&units=metric", lat, lon, s.apiKey)
+	
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
@@ -89,115 +76,97 @@ func (s *Service) GetCurrentWeather(ctx context.Context, latitude, longitude flo
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	// Parse response
-	var apiResp struct {
-		Current struct {
-			TempC     float64 `json:"temp_c"`
-			WindKph   float64 `json:"wind_kph"`
-			Condition struct {
-				Text string `json:"text"`
-			} `json:"condition"`
-		} `json:"current"`
-	}
-
+	var apiResp WeatherAPIResponse
 	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
 
-	// Convert wind speed from km/h to m/s
-	windSpeed := apiResp.Current.WindKph * 0.277778
-
-	weatherData := &WeatherData{
-		Temperature: apiResp.Current.TempC,
-		WindSpeed:   windSpeed,
-		Description: apiResp.Current.Condition.Text,
-		Conditions:  []string{apiResp.Current.Condition.Text},
+	weatherData := &models.WeatherData{
+		Temperature: apiResp.Main.Temp,
+		WindSpeed:  apiResp.Wind.Speed,
+		Timestamp:  time.Now(),
 	}
 
-	// Save weather data if repository is available
-	if s.repo != nil {
-		if err := s.repo.SaveWeatherData(ctx, weatherData); err != nil {
-			// Log error but don't fail the request
-			fmt.Printf("failed to save weather data: %v\n", err)
-		}
+	// Save the weather data
+	if err := s.repo.SaveWeatherData(ctx, weatherData); err != nil {
+		return nil, fmt.Errorf("saving weather data: %w", err)
 	}
 
 	return weatherData, nil
 }
 
 // GetLatestWeatherData retrieves the most recent weather data from storage
-func (s *Service) GetLatestWeatherData(ctx context.Context) (*WeatherData, error) {
-	if s.repo == nil {
-		return nil, fmt.Errorf("no repository configured")
-	}
-
+func (s *service) GetLatestWeatherData(ctx context.Context) (*models.WeatherData, error) {
 	return s.repo.GetLatestWeatherData(ctx)
-}
-
-// PregnancyWeatherAdvice contains recommendations based on weather and pregnancy stage
-type PregnancyWeatherAdvice struct {
-	WeatherData     *WeatherData `json:"weather_data"`
-	Recommendations []string     `json:"recommendations"`
-	RiskLevel       string       `json:"risk_level"`    // HIGH, MODERATE, or LOW
-	StageSpecific   bool         `json:"stage_specific"`
 }
 
 // GetPregnancyWeatherAdvice provides tailored recommendations based on:
 // - Current weather conditions
 // - Pregnancy stage (EARLY_GESTATION, MID_GESTATION, LATE_GESTATION, OVERDUE)
 // - Risk factors (temperature, wind, severe conditions)
-func (s *Service) GetPregnancyWeatherAdvice(ctx context.Context, stage string) (*PregnancyWeatherAdvice, error) {
+func (s *service) GetPregnancyWeatherAdvice(ctx context.Context, stage string) (*models.PregnancyWeatherAdvice, error) {
 	weather, err := s.GetLatestWeatherData(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get weather data: %w", err)
+		return nil, fmt.Errorf("getting latest weather: %w", err)
 	}
 
-	advice := &PregnancyWeatherAdvice{
-		WeatherData: weather,
-		RiskLevel:   s.calculateRiskLevel(weather, stage),
-	}
+	riskLevel := s.calculateRiskLevel(weather, stage)
+	recommendations := s.getRecommendations(weather, stage)
 
-	advice.Recommendations = s.getRecommendations(weather, stage)
-	advice.StageSpecific = stage == "LATE_GESTATION" || stage == "OVERDUE"
+	return &models.PregnancyWeatherAdvice{
+		WeatherData:     weather,
+		Recommendations: recommendations,
+		RiskLevel:       riskLevel,
+		StageSpecific:   true,
+	}, nil
+}
 
-	return advice, nil
+// WeatherAPIResponse represents the structure of the weather API response
+type WeatherAPIResponse struct {
+	Main struct {
+		Temp float64 `json:"temp"`
+	} `json:"main"`
+	Wind struct {
+		Speed float64 `json:"speed"`
+	} `json:"wind"`
+	Weather []struct {
+		Main        string `json:"main"`
+		Description string `json:"description"`
+	} `json:"weather"`
 }
 
 // calculateRiskLevel determines risk based on weather and pregnancy stage:
 // HIGH risk:
-// - Severe conditions (wind > 20 m/s, storms)
 // - Temperature ≥ 30°C in late stage
 // - Temperature ≥ 35°C any stage
+// - Wind speed > 20 m/s
 // MODERATE risk:
 // - Wind speed > 15 m/s
 // - Temperature ≥ 28°C or ≤ 5°C
 // - Temperature ≥ 25°C in late stage
-func (s *Service) calculateRiskLevel(weather *WeatherData, stage string) string {
-	// Check for severe conditions first
-	if weather.HasSevereConditions() {
+func (s *service) calculateRiskLevel(weather *models.WeatherData, stage string) string {
+	if weather.WindSpeed > 20 {
 		return "HIGH"
 	}
 
-	// Temperature-based risk (adjusted for pregnancy stage)
-	isLateStage := stage == "LATE_GESTATION" || stage == "OVERDUE"
-	
-	// High wind speed without severe conditions
-	if weather.WindSpeed > 15 {
+	if weather.Temperature >= 35 {
+		return "HIGH"
+	}
+
+	if stage == "LATE_GESTATION" || stage == "OVERDUE" {
+		if weather.Temperature >= 30 {
+			return "HIGH"
+		}
+		if weather.Temperature >= 25 {
+			return "MODERATE"
+		}
+	}
+
+	if weather.WindSpeed > 15 || weather.Temperature >= 28 || weather.Temperature <= 5 {
 		return "MODERATE"
 	}
 
-	// Temperature checks
-	switch {
-	case weather.Temperature >= 30 && isLateStage,
-		weather.Temperature >= 35:
-		return "HIGH"
-	case (weather.Temperature >= 25 && isLateStage) ||
-		weather.Temperature >= 28 ||
-		weather.Temperature <= 5:  // Cold weather threshold adjusted
-		return "MODERATE"
-	default:
-		return "LOW"
-	}
+	return "LOW"
 }
 
 // getRecommendations generates advice based on conditions:
@@ -206,71 +175,61 @@ func (s *Service) calculateRiskLevel(weather *WeatherData, stage string) string 
 // - Wind-specific (shelter, protection)
 // - Stage-specific (late pregnancy care)
 // - Emergency recommendations for severe conditions
-func (s *Service) getRecommendations(weather *WeatherData, stage string) []string {
-	recommendations := []string{
-		"Ensure constant access to fresh water",  // Simplified for test matching
-		"Monitor food intake",  // Simplified for test matching
-	}
+func (s *service) getRecommendations(data *models.WeatherData, stage string) []string {
+	var recommendations []string
 
-	// Temperature-based recommendations
-	if weather.Temperature >= 25 {  // This is in Celsius
+	// Base recommendations
+	recommendations = append(recommendations, "Ensure fresh water is always available")
+	recommendations = append(recommendations, "Monitor food and water intake")
+
+	// Temperature recommendations
+	if data.Temperature >= 28 {
 		recommendations = append(recommendations,
-			"Provide extra water sources",
-			"Add electrolytes to water if needed",
-			"Ensure adequate shade in all paddocks",
-			"Consider adding salt blocks for mineral balance",
+			"Provide shade and ventilation",
+			"Consider using fans or misting systems",
 			"Monitor for signs of heat stress",
 		)
-	}
-
-	if weather.Temperature >= 30 {  // This is in Celsius
+	} else if data.Temperature <= 5 {
 		recommendations = append(recommendations,
-			"Move to a shaded, well-ventilated area",
-			"Consider hosing with cool water if showing signs of distress",
-			"Schedule activities during cooler hours",
-			"Increase hay portions as more energy is used for cooling",
-			"Set up fans in the stable if available",
+			"Provide adequate shelter from cold",
+			"Consider using blankets if necessary",
+			"Ensure adequate feed for warmth",
 		)
 	}
 
-	if weather.Temperature <= 5 {
+	// Wind recommendations
+	if data.WindSpeed > 15 {
 		recommendations = append(recommendations,
-			"Provide extra hay for warmth",
-			"Ensure water sources aren't frozen",
-			"Consider a warm mash meal",
-			"Check blanket needs based on coat condition",
+			"Ensure access to wind shelter",
+			"Monitor for signs of stress",
 		)
 	}
 
-	// Wind-specific recommendations
-	if weather.WindSpeed > 15 {
-		recommendations = append(recommendations,
-			"Ensure wind breaks are available",
-			"Check shelter stability",
-			"Consider indoor housing if severe",
-		)
-	}
-
-	// Stage-specific additions
+	// Stage-specific recommendations
 	if stage == "LATE_GESTATION" || stage == "OVERDUE" {
 		recommendations = append(recommendations,
-			"Monitor more frequently",  // Simplified for test matching
-			"Keep exercise light and in good conditions only",
-			"Ensure bedding is extra deep and clean",
-			"Contact vet if signs of distress",  // Added for test matching
-			"Have emergency contact numbers ready",
+			"Monitor more frequently",
+			"Ensure easy access to shelter",
+			"Keep stress levels minimal",
 		)
 	}
 
-	// Add severe weather recommendations
-	if weather.HasSevereConditions() {
+	// Emergency conditions
+	if data.WindSpeed > 20 || data.Temperature >= 35 {
 		recommendations = append(recommendations,
-			"Consider indoor housing",  // Added for test matching
-			"Contact vet if signs of distress",
-			"Monitor vital signs more frequently",
-			"Ensure emergency supplies are accessible",
+			"URGENT: Move to protected shelter",
+			"Contact veterinarian if signs of distress",
+			"Monitor vital signs frequently",
 		)
 	}
 
 	return recommendations
+}
+
+// PregnancyWeatherAdvice contains recommendations based on weather and pregnancy stage
+type PregnancyWeatherAdvice struct {
+	WeatherData     *models.WeatherData `json:"weather_data"`
+	Recommendations []string             `json:"recommendations"`
+	RiskLevel       string               `json:"risk_level"`    // HIGH, MODERATE, or LOW
+	StageSpecific   bool                 `json:"stage_specific"`
 }

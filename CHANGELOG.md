@@ -31,6 +31,11 @@
 -   Improved main.go error handling and structure
 -   Updated PregnancyEvent model with UserID field
 -   Refactored service initialization in main.go
+-   Improved service organization
+  - Split interfaces into domain-specific files for better maintainability
+  - Renamed generic service files to be more specific
+  - Moved constants to domain-specific files
+  - Consolidated duplicate service implementations
 
 ### Fixed
 

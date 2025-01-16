@@ -11,7 +11,7 @@ import (
 func main() {
 	root := "c:/Programmering/Go/horse_tracking_go"
 	oldImport := "github.com/polyfant/hulta_pregnancy_app"
-	newImport := "github.com/polyfant/horse_tracking_go"
+	newImport := "github.com/polyfant/hulta_pregnancy_app"
 
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -50,7 +50,7 @@ func main() {
 	})
 
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
+		fmt.Printf("Error updating imports: %v\n", err)
 		os.Exit(1)
 	}
 }

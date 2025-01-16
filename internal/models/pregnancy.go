@@ -79,18 +79,6 @@ type PreFoalingSign struct {
 	UpdatedAt   time.Time
 }
 
-type PreFoalingChecklistItem struct {
-	ID          uint      `gorm:"primaryKey"`
-	HorseID     uint      `gorm:"not null"`
-	Description string
-	IsCompleted bool      `gorm:"default:false"`
-	DueDate     time.Time
-	Priority    Priority  `gorm:"size:50"`
-	Notes       string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
-
 type PregnancyStageInfo struct {
 	Stage           PregnancyStage `json:"stage"`
 	DaysSoFar      int            `json:"days_so_far"`

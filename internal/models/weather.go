@@ -1,6 +1,7 @@
 package models
 
 import (
+	"strings"
 	"time"
 )
 
@@ -16,6 +17,9 @@ type WeatherData struct {
 	Precipitation float64   `json:"precipitation"` // in mm
 	Pressure      float64   `json:"pressure"`    // in hPa
 	RainAmount    float64   `json:"rain_amount"` // in mm
+	Conditions    []string  `json:"conditions"`
+	Description   string    `json:"description"`
+	Location      string    `json:"location"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 }
@@ -59,6 +63,25 @@ type PregnancyWeatherAdvice struct {
 	StageSpecific   bool         `json:"stage_specific"`
 }
 
+// WeatherRecommendation represents weather-based recommendations
+type WeatherRecommendation struct {
+	Severity    string `json:"severity"`
+	Message     string `json:"message"`
+	Action      string `json:"action"`
+	TimeOfDay   string `json:"time_of_day,omitempty"`
+	Temperature string `json:"temperature,omitempty"`
+}
+
+// WeatherAlert represents a weather alert notification
+type WeatherAlert struct {
+	ID        uint      `json:"id"`
+	Severity  string    `json:"severity"`
+	Message   string    `json:"message"`
+	Type      string    `json:"type"`
+	CreatedAt string    `json:"created_at"`
+	HorseID   uint      `json:"horse_id"`
+}
+
 // GetDefaultThresholds returns default temperature thresholds for horses
 func GetDefaultThresholds() TemperatureThresholds {
 	return TemperatureThresholds{
@@ -90,4 +113,23 @@ func (w *WeatherData) CalculateStressIndex() float64 {
 	}
 	
 	return normalizedTHI
+}
+
+// HasSevereConditions checks if there are any severe weather conditions:
+// - Wind speed > 20 m/s
+// - Thunderstorm, tornado, hurricane, or blizzard
+func (w *WeatherData) HasSevereConditions() bool {
+	if w.WindSpeed > 20 {
+		return true
+	}
+
+	severeConditions := []string{"thunderstorm", "tornado", "hurricane", "blizzard"}
+	for _, condition := range w.Conditions {
+		for _, severe := range severeConditions {
+			if strings.Contains(strings.ToLower(condition), severe) {
+				return true
+			}
+		}
+	}
+	return false
 }

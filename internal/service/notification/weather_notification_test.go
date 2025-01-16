@@ -14,19 +14,19 @@ type MockWeatherService struct {
 	mock.Mock
 }
 
-func (m *MockWeatherService) GetCurrentWeather(ctx context.Context, lat, lon float64) (*weather.WeatherData, error) {
+func (m *MockWeatherService) GetCurrentWeather(ctx context.Context, lat, lon float64) (*models.WeatherData, error) {
 	args := m.Called(ctx, lat, lon)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*weather.WeatherData), args.Error(1)
+	return args.Get(0).(*models.WeatherData), args.Error(1)
 }
 
 func TestWeatherNotificationService_ProcessWeatherNotifications(t *testing.T) {
 	tests := []struct {
 		name          string
 		user          *models.User
-		weatherData   *weather.WeatherData
+		weatherData   *models.WeatherData
 		expectedNotif *Notification
 		mockError     error
 	}{
@@ -49,7 +49,7 @@ func TestWeatherNotificationService_ProcessWeatherNotifications(t *testing.T) {
 					DefaultLongitude:    -120.0,
 				},
 			},
-			weatherData: &weather.WeatherData{
+			weatherData: &models.WeatherData{
 				Temperature: 35.0,
 				Description: "Hot",
 				Conditions:  []string{"hot"},
@@ -72,7 +72,7 @@ func TestWeatherNotificationService_ProcessWeatherNotifications(t *testing.T) {
 					DefaultLongitude:    -120.0,
 				},
 			},
-			weatherData: &weather.WeatherData{
+			weatherData: &models.WeatherData{
 				Temperature: -5.0,
 				Description: "Cold",
 				Conditions:  []string{"cold"},
@@ -95,7 +95,7 @@ func TestWeatherNotificationService_ProcessWeatherNotifications(t *testing.T) {
 					DefaultLongitude:    -120.0,
 				},
 			},
-			weatherData: &weather.WeatherData{
+			weatherData: &models.WeatherData{
 				Temperature: 25.0,
 				Description: "Thunderstorm",
 				Conditions:  []string{"thunderstorm"},
