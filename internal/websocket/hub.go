@@ -120,6 +120,50 @@ func (h *Hub) Broadcast(message interface{}) {
 	h.broadcast <- message
 }
 
+// BroadcastToHorse sends a message to clients connected to a specific horse
+func (h *Hub) BroadcastToHorse(horseID uint, message interface{}) {
+	jsonMessage, err := json.Marshal(message)
+	if err != nil {
+		log.Printf("Error marshaling message: %v", err)
+		return
+	}
+
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	for client := range h.clients {
+		if client.horseID == horseID {
+			select {
+			case client.send <- jsonMessage:
+			default:
+				close(client.send)
+				delete(h.clients, client)
+			}
+		}
+	}
+}
+
+// GetActiveClientsCount returns the number of active WebSocket clients
+func (h *Hub) GetActiveClientsCount() int {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return len(h.clients)
+}
+
+// GetActiveClientsByHorse returns the number of active clients for a specific horse
+func (h *Hub) GetActiveClientsByHorse(horseID uint) int {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	count := 0
+	for client := range h.clients {
+		if client.horseID == horseID {
+			count++
+		}
+	}
+	return count
+}
+
 // readPump pumps messages from the websocket connection to the hub
 func (c *Client) readPump() {
 	defer func() {

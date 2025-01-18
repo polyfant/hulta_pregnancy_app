@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
-	"github.com/polyfant/hulta_pregnancy_app/internal/testutils"
+	"github.com/polyfant/hulta_pregnancy_app/internal/testutil"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 )

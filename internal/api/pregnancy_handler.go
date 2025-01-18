@@ -9,21 +9,26 @@ import (
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service/checklist"
+	"github.com/polyfant/hulta_pregnancy_app/internal/service/weather"
 	"github.com/polyfant/hulta_pregnancy_app/internal/api/types"
 )
 
 type PregnancyHandler struct {
 	service        service.PregnancyService
-	weatherService service.WeatherService
+	weatherService weather.Service
 	checklistSvc   *checklist.Service
 }
 
-func NewPregnancyHandler(service service.PregnancyService, weatherService service.WeatherService, checklistSvc *checklist.Service) *PregnancyHandler {
-	return &PregnancyHandler{
-		service:        service,
-		weatherService: weatherService,
-		checklistSvc:   checklistSvc,
-	}
+func NewPregnancyHandler(
+    service service.PregnancyService, 
+    weatherService weather.Service, 
+    checklistSvc *checklist.Service,
+) *PregnancyHandler {
+    return &PregnancyHandler{
+        service:        service,
+        weatherService: weatherService,
+        checklistSvc:   checklistSvc,
+    }
 }
 
 // Add the missing methods
@@ -34,7 +39,7 @@ func (h *PregnancyHandler) GetPregnancies(c *gin.Context) {
 		return
 	}
 
-	pregnancies, err := h.service.GetActive(c.Request.Context(), userID)
+	pregnancies, err := h.service.GetByUserID(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -42,14 +47,14 @@ func (h *PregnancyHandler) GetPregnancies(c *gin.Context) {
 	c.JSON(http.StatusOK, pregnancies)
 }
 
-func (h *PregnancyHandler) GetPregnancyStage(c *gin.Context) {
+func (h *PregnancyHandler) calculatePregnancyStage(c *gin.Context) {
 	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
-	stage, err := h.service.GetPregnancyStage(c.Request.Context(), uint(horseID))
+	stage, err := h.service.calculatePregnancyStage(c.Request.Context(), uint(horseID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -120,7 +125,7 @@ func (h *PregnancyHandler) EndPregnancyTracking(c *gin.Context) {
 	pregnancy.Status = data.Status
 	pregnancy.EndDate = &data.Date
 
-	if err := h.service.UpdatePregnancy(c.Request.Context(), pregnancy); err != nil {
+	if err := h.service.Update(c.Request.Context(), pregnancy); err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -274,7 +279,7 @@ func (h *PregnancyHandler) CheckPreFoalingSigns(c *gin.Context) {
 		return
 	}
 
-	signs, err := h.service.GetPreFoalingSigns(c.Request.Context(), uint(horseID))
+	signs, err := h.service.GetPreFoaling(c.Request.Context(), uint(horseID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -298,21 +303,21 @@ func (h *PregnancyHandler) RecordPreFoalingSign(c *gin.Context) {
 	sign.HorseID = uint(horseID)
 	sign.Date = time.Now()
 
-	if err := h.service.AddPreFoalingSign(c.Request.Context(), &sign); err != nil {
+	if err := h.service.AddPreFoaling(c.Request.Context(), &sign); err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 	c.JSON(http.StatusCreated, sign)
 }
 
-func (h *PregnancyHandler) UpdatePregnancy(c *gin.Context) {
+func (h *PregnancyHandler) Update(c *gin.Context) {
 	var pregnancy models.Pregnancy
 	if err := c.ShouldBindJSON(&pregnancy); err != nil {
 		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	if err := h.service.UpdatePregnancy(c.Request.Context(), &pregnancy); err != nil {
+	if err := h.service.Update(c.Request.Context(), &pregnancy); err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -344,7 +349,7 @@ func (h *PregnancyHandler) GetPregnancyWeatherAdvice(c *gin.Context) {
 	}
 
 	// Get pregnancy stage first
-	stage, err := h.service.GetPregnancyStage(c.Request.Context(), uint(horseID))
+	stage, err := h.service.calculatePregnancyStage(c.Request.Context(), uint(horseID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: "Failed to get pregnancy stage"})
 		return
@@ -391,7 +396,7 @@ func (h *PregnancyHandler) HandleGetPregnancy(c *gin.Context) {
 	c.JSON(http.StatusOK, pregnancy)
 }
 
-func (h *PregnancyHandler) HandleUpdatePregnancy(c *gin.Context) {
+func (h *PregnancyHandler) HandleUpdate(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid pregnancy ID"})

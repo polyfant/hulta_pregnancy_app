@@ -460,3 +460,15 @@ func (r *PostgresBreedingRepository) UpdateRecord(ctx context.Context, record *m
 func (r *PostgresBreedingRepository) DeleteRecord(ctx context.Context, id uint) error {
     return r.db.WithContext(ctx).Delete(&models.BreedingRecord{}, id).Error
 }
+
+func (r *PostgresHealthRepository) GetByID(ctx context.Context, id uint) (*models.HealthRecord, error) {
+    var record models.HealthRecord
+    if err := r.db.WithContext(ctx).First(&record, id).Error; err != nil {
+        return nil, err
+    }
+    return &record, nil
+}
+
+func (r *PostgresPregnancyRepository) Delete(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).Delete(&models.Pregnancy{}, id).Error
+}

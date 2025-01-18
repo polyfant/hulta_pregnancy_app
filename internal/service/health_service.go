@@ -20,19 +20,18 @@ func NewHealthService(repo repository.HealthRepository) HealthService {
 }
 
 // GetRecords retrieves health records for a specific horse
-func (s *HealthServiceImpl) GetRecords(ctx context.Context, horseID uint) ([]*models.HealthRecord, error) {
+func (s *HealthServiceImpl) GetRecords(ctx context.Context, horseID uint) ([]models.HealthRecord, error) {
 	records, err := s.repo.GetRecords(ctx, horseID)
 	if err != nil {
 		return nil, err
 	}
 	
-	// Convert []models.HealthRecord to []*models.HealthRecord
-	healthRecords := make([]*models.HealthRecord, len(records))
-	for i := range records {
-		healthRecords[i] = &records[i]
-	}
-	
-	return healthRecords, nil
+	return records, nil
+}
+
+// GetByID retrieves a specific health record by its ID
+func (s *HealthServiceImpl) GetByID(ctx context.Context, id uint) (*models.HealthRecord, error) {
+	return s.repo.GetByID(ctx, id)
 }
 
 // CreateRecord adds a new health record

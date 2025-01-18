@@ -5,22 +5,40 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"github.com/lib/pq"
+	"github.com/joho/godotenv"
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-// SetupTestDB creates a test database with required tables
+// SetupTestDB creates a test database connection
 func SetupTestDB() (*gorm.DB, error) {
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	// Load test environment variables
+	if err := godotenv.Load("../../.env.test"); err != nil {
+		return nil, fmt.Errorf("error loading .env.test file: %w", err)
+	}
+
+	// Get database connection parameters from environment variables
+	host := getEnvOrDefault("TEST_DB_HOST", "localhost")
+	port := getEnvOrDefault("TEST_DB_PORT", "5432")
+	user := getEnvOrDefault("TEST_DB_USER", "postgres")
+	password := getEnvOrDefault("TEST_DB_PASSWORD", "postgres")
+	dbname := getEnvOrDefault("TEST_DB_NAME", "horse_tracking_test")
+
+	// Create database connection string
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
+
+	// Open database connection
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to connect to test database: %w", err)
 	}
 
 	// Auto-migrate all required tables
@@ -34,21 +52,19 @@ func SetupTestDB() (*gorm.DB, error) {
 		&models.Pregnancy{},
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to auto-migrate tables: %w", err)
 	}
 
 	return db, nil
 }
 
-// CreateTestPregnancy creates a test pregnancy record
-func CreateTestPregnancy(db *gorm.DB, horseID uint, daysUntilDue int) error {
-	conception := time.Now().AddDate(0, 0, -310+daysUntilDue) // 340 days - daysUntilDue
-	pregnancy := &models.Pregnancy{
-		HorseID:        horseID,
-		ConceptionDate: &conception,
-		Status:         "ACTIVE",
+// getEnvOrDefault returns environment variable value or default if not set
+func getEnvOrDefault(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
 	}
-	return db.Create(pregnancy).Error
+	return value
 }
 
 // CreateTestServer creates a test HTTP server with the given handler

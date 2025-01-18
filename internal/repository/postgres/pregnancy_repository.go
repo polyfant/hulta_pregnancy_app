@@ -119,4 +119,9 @@ func (r *PregnancyRepository) GetEvents(ctx context.Context, horseID uint) ([]mo
 	var events []models.PregnancyEvent
 	err := r.db.WithContext(ctx).Where("horse_id = ?", horseID).Find(&events).Error
 	return events, err
-} 
+}
+
+// Delete removes a pregnancy record by its ID
+func (r *PregnancyRepository) Delete(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).Delete(&models.Pregnancy{}, id).Error
+}

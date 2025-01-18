@@ -72,11 +72,13 @@ type PregnancyRepository interface {
 	GetActive(ctx context.Context, userID string) ([]models.Pregnancy, error)
 	AddPreFoaling(ctx context.Context, sign *models.PreFoalingSign) error
 	GetPreFoaling(ctx context.Context, horseID uint) ([]models.PreFoalingSign, error)
+	Delete(ctx context.Context, id uint) error
 }
 
 type HealthRepository interface {
 	CreateRecord(ctx context.Context, record *models.HealthRecord) error
 	GetRecords(ctx context.Context, horseID uint) ([]models.HealthRecord, error)
+	GetByID(ctx context.Context, id uint) (*models.HealthRecord, error)
 	UpdateRecord(ctx context.Context, record *models.HealthRecord) error
 	DeleteRecord(ctx context.Context, id uint) error
 }

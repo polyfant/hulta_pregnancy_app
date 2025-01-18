@@ -31,4 +31,13 @@ func (r *HealthRepository) Update(ctx context.Context, record *models.HealthReco
 
 func (r *HealthRepository) Delete(ctx context.Context, id uint) error {
 	return r.db.WithContext(ctx).Delete(&models.HealthRecord{}, id).Error
-} 
+}
+
+func (r *HealthRepository) GetByID(ctx context.Context, id uint) (*models.HealthRecord, error) {
+	var record models.HealthRecord
+	err := r.db.WithContext(ctx).First(&record, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &record, nil
+}

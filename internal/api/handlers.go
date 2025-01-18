@@ -8,7 +8,6 @@ import (
 	"github.com/polyfant/hulta_pregnancy_app/internal/api/types"
 	"github.com/polyfant/hulta_pregnancy_app/internal/cache"
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
-	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service/checklist"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service/health"
@@ -21,115 +20,80 @@ import (
 	"gorm.io/gorm"
 )
 
-// Handlers contains all HTTP handlers
+// Handlers contains all HTTP handlers and services
 type Handlers struct {
+	HorseService      service.HorseService
+	UserService       service.UserService
+	PregnancyService  service.PregnancyService
+	HealthService     health.Service
+	BreedingService   service.BreedingService
+	WeatherService    weather.Service
+	ChecklistService  checklist.Service
+	PrivacyService    privacy.Service
+	VitalsService     vitals.Service
+	NotificationService notification.Service
+	WebSocketHub      *websocket.Hub
+
+	// Added back dependencies
+	Cache    cache.Cache
+	Database *gorm.DB
+
+	// Specific handler instances
 	PregnancyHandler *PregnancyHandler
 	HealthHandler    *HealthHandler
 	VitalsHandler    *VitalsHandler
 	WeatherHandler   *WeatherHandler
 	PrivacyHandler   *PrivacyHandler
-	WebSocketHandler *websocket.Hub
 }
 
-// HandlerConfig defines the configuration for creating a new handler
-type HandlerConfig struct {
-	Database         *gorm.DB
-	UserService      service.UserService
-	HorseService     service.HorseService
-	PregnancyService pregnancy.Service
-	HealthService    health.Service
-	BreedingService  service.BreedingService
-	WeatherService   weather.Service
-	ChecklistService checklist.Service
-	PrivacyService   privacy.Service
-	VitalsService    vitals.Service
-	NotificationService notification.Service
-	WebSocketHub     *websocket.Hub
-	Cache            cache.Cache
-	HorseRepo        repository.HorseRepository
-	BreedingRepo     repository.BreedingRepository
-}
-
-// NewHandlers creates a new Handlers instance
-func NewHandlers(config HandlerConfig) *Handlers {
+// NewHandlers creates a new Handlers instance with all services and handlers
+func NewHandlers(
+	horseService service.HorseService,
+	userService service.UserService,
+	pregnancyService service.PregnancyService,
+	healthService health.Service,
+	breedingService service.BreedingService,
+	weatherService weather.Service,
+	checklistService checklist.Service,
+	privacyService privacy.Service,
+	vitalsService vitals.Service,
+	notificationService notification.Service,
+	webSocketHub *websocket.Hub,
+	cache cache.Cache,
+	database *gorm.DB,
+) *Handlers {
 	return &Handlers{
-		PregnancyHandler: NewPregnancyHandler(config.PregnancyService, config.WeatherService, config.ChecklistService),
-		HealthHandler:    NewHealthHandler(config.HealthService),
-		VitalsHandler:    NewVitalsHandler(config.VitalsService),
-		WeatherHandler:   NewWeatherHandler(config.WeatherService, config.NotificationService),
-		PrivacyHandler:   NewPrivacyHandler(config.PrivacyService),
-		WebSocketHandler: config.WebSocketHub,
+		HorseService:      horseService,
+		UserService:       userService,
+		PregnancyService:  pregnancyService,
+		HealthService:     healthService,
+		BreedingService:   breedingService,
+		WeatherService:    weatherService,
+		ChecklistService:  checklistService,
+		PrivacyService:    privacyService,
+		VitalsService:     vitalsService,
+		NotificationService: notificationService,
+		WebSocketHub:      webSocketHub,
+		Cache:             cache,
+		Database:          database,
+
+		PregnancyHandler: NewPregnancyHandler(pregnancyService, weatherService, checklistService),
+		HealthHandler:    NewHealthHandler(healthService),
+		VitalsHandler:    NewVitalsHandler(vitalsService),
+		WeatherHandler:   NewWeatherHandler(weatherService, notificationService),
+		PrivacyHandler:   NewPrivacyHandler(privacyService),
 	}
-}
-
-// Handler handles HTTP requests
-type Handler struct {
-	horseService     service.HorseService
-	userService      service.UserService
-	pregnancyService pregnancy.Service
-	healthService    health.Service
-	breedingService  service.BreedingService
-	weatherService   weather.Service
-	checklistService checklist.Service
-	privacyService   privacy.Service
-	vitalsService    vitals.Service
-	pregnancyHandler *PregnancyHandler
-	healthHandler    *HealthHandler
-	vitalsHandler    *VitalsHandler
-	weatherHandler   *WeatherHandler
-	privacyHandler   *PrivacyHandler
-	websocketHandler *websocket.Hub
-	cache            cache.Cache
-	db               *gorm.DB
-	horseRepo        repository.HorseRepository
-	breedingRepo     repository.BreedingRepository
-}
-
-// NewHandler creates a new handler instance
-func NewHandler(config HandlerConfig) *Handler {
-	h := &Handler{
-		horseService:     config.HorseService,
-		userService:      config.UserService,
-		pregnancyService: config.PregnancyService,
-		healthService:    config.HealthService,
-		breedingService:  config.BreedingService,
-		weatherService:   config.WeatherService,
-		checklistService: config.ChecklistService,
-		privacyService:   config.PrivacyService,
-		vitalsService:    config.VitalsService,
-		cache:            config.Cache,
-		db:               config.Database,
-		horseRepo:        config.HorseRepo,
-		breedingRepo:     config.BreedingRepo,
-	}
-
-	handlers := NewHandlers(config)
-	h.pregnancyHandler = handlers.PregnancyHandler
-	h.healthHandler = handlers.HealthHandler
-	h.vitalsHandler = handlers.VitalsHandler
-	h.weatherHandler = handlers.WeatherHandler
-	h.privacyHandler = handlers.PrivacyHandler
-	h.websocketHandler = handlers.WebSocketHandler
-
-	return h
-}
-
-// Start starts the HTTP server
-func (h *Handler) Start(port string) error {
-	router := gin.Default()
-	SetupRouter(router, h)
-	return router.Run(":" + port)
 }
 
 // ListHorses handles GET /horses
-func (h *Handler) ListHorses(c *gin.Context) {
+func (h *Handlers) ListHorses(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
 		return
 	}
 
-	horses, err := h.horseService.ListByUserID(c.Request.Context(), userID)
+	horses, err := h.HorseService.ListByUserID(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -138,7 +102,7 @@ func (h *Handler) ListHorses(c *gin.Context) {
 }
 
 // AddHorse handles POST /horses
-func (h *Handler) AddHorse(c *gin.Context) {
+func (h *Handlers) AddHorse(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
@@ -152,7 +116,7 @@ func (h *Handler) AddHorse(c *gin.Context) {
 	}
 	
 	horse.UserID = userID
-	if err := h.horseService.Create(c.Request.Context(), &horse); err != nil {
+	if err := h.HorseService.Create(c.Request.Context(), &horse); err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -161,7 +125,7 @@ func (h *Handler) AddHorse(c *gin.Context) {
 }
 
 // GetHorse handles GET /horses/:id
-func (h *Handler) GetHorse(c *gin.Context) {
+func (h *Handlers) GetHorse(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
@@ -174,7 +138,7 @@ func (h *Handler) GetHorse(c *gin.Context) {
 		return
 	}
 
-	horse, err := h.horseService.GetByID(c.Request.Context(), uint(id))
+	horse, err := h.HorseService.GetByID(c.Request.Context(), uint(id))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -189,7 +153,7 @@ func (h *Handler) GetHorse(c *gin.Context) {
 }
 
 // UpdateHorse handles PUT /horses/:id
-func (h *Handler) UpdateHorse(c *gin.Context) {
+func (h *Handlers) UpdateHorse(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
@@ -203,7 +167,7 @@ func (h *Handler) UpdateHorse(c *gin.Context) {
 	}
 
 	// Verify ownership
-	existingHorse, err := h.horseService.GetByID(c.Request.Context(), horse.ID)
+	existingHorse, err := h.HorseService.GetByID(c.Request.Context(), horse.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -213,7 +177,7 @@ func (h *Handler) UpdateHorse(c *gin.Context) {
 		return
 	}
 
-	if err := h.horseService.Update(c.Request.Context(), &horse); err != nil {
+	if err := h.HorseService.Update(c.Request.Context(), &horse); err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -222,7 +186,7 @@ func (h *Handler) UpdateHorse(c *gin.Context) {
 }
 
 // DeleteHorse handles DELETE /horses/:id
-func (h *Handler) DeleteHorse(c *gin.Context) {
+func (h *Handlers) DeleteHorse(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
@@ -236,7 +200,7 @@ func (h *Handler) DeleteHorse(c *gin.Context) {
 	}
 
 	// Verify ownership
-	horse, err := h.horseService.GetByID(c.Request.Context(), uint(id))
+	horse, err := h.HorseService.GetByID(c.Request.Context(), uint(id))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -246,7 +210,7 @@ func (h *Handler) DeleteHorse(c *gin.Context) {
 		return
 	}
 
-	if err := h.horseService.Delete(c.Request.Context(), uint(id)); err != nil {
+	if err := h.HorseService.Delete(c.Request.Context(), uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -255,7 +219,7 @@ func (h *Handler) DeleteHorse(c *gin.Context) {
 }
 
 // GetHealthRecords handles GET /horses/:id/health
-func (h *Handler) GetHealthRecords(c *gin.Context) {
+func (h *Handlers) GetHealthRecords(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
@@ -269,7 +233,7 @@ func (h *Handler) GetHealthRecords(c *gin.Context) {
 	}
 
 	// Verify horse ownership
-	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	horse, err := h.HorseService.GetByID(c.Request.Context(), uint(horseID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -279,7 +243,7 @@ func (h *Handler) GetHealthRecords(c *gin.Context) {
 		return
 	}
 
-	records, err := h.healthService.GetRecords(c.Request.Context(), uint(horseID))
+	records, err := h.HealthService.GetRecords(c.Request.Context(), uint(horseID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -289,7 +253,7 @@ func (h *Handler) GetHealthRecords(c *gin.Context) {
 }
 
 // AddHealthRecord handles POST /horses/:id/health
-func (h *Handler) AddHealthRecord(c *gin.Context) {
+func (h *Handlers) AddHealthRecord(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
@@ -303,7 +267,7 @@ func (h *Handler) AddHealthRecord(c *gin.Context) {
 	}
 
 	// Verify horse ownership
-	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	horse, err := h.HorseService.GetByID(c.Request.Context(), uint(horseID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -322,7 +286,7 @@ func (h *Handler) AddHealthRecord(c *gin.Context) {
 	record.HorseID = uint(horseID)
 	record.UserID = userID
 
-	if err := h.healthService.CreateRecord(c.Request.Context(), &record); err != nil {
+	if err := h.HealthService.CreateRecord(c.Request.Context(), &record); err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -331,7 +295,7 @@ func (h *Handler) AddHealthRecord(c *gin.Context) {
 }
 
 // UpdateHealthRecord handles PUT /horses/:id/health/:recordId
-func (h *Handler) UpdateHealthRecord(c *gin.Context) {
+func (h *Handlers) UpdateHealthRecord(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
@@ -345,7 +309,7 @@ func (h *Handler) UpdateHealthRecord(c *gin.Context) {
 	}
 
 	// Verify horse ownership
-	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	horse, err := h.HorseService.GetByID(c.Request.Context(), uint(horseID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -364,7 +328,7 @@ func (h *Handler) UpdateHealthRecord(c *gin.Context) {
 	record.HorseID = uint(horseID)
 	record.UserID = userID
 
-	if err := h.healthService.UpdateRecord(c.Request.Context(), &record); err != nil {
+	if err := h.HealthService.UpdateRecord(c.Request.Context(), &record); err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -373,7 +337,7 @@ func (h *Handler) UpdateHealthRecord(c *gin.Context) {
 }
 
 // DeleteHealthRecord handles DELETE /horses/:id/health/:recordId
-func (h *Handler) DeleteHealthRecord(c *gin.Context) {
+func (h *Handlers) DeleteHealthRecord(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
@@ -387,7 +351,7 @@ func (h *Handler) DeleteHealthRecord(c *gin.Context) {
 	}
 
 	// Verify horse ownership
-	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	horse, err := h.HorseService.GetByID(c.Request.Context(), uint(horseID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -403,7 +367,7 @@ func (h *Handler) DeleteHealthRecord(c *gin.Context) {
 		return
 	}
 
-	if err := h.healthService.DeleteRecord(c.Request.Context(), uint(recordID)); err != nil {
+	if err := h.HealthService.DeleteRecord(c.Request.Context(), uint(recordID)); err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -412,14 +376,14 @@ func (h *Handler) DeleteHealthRecord(c *gin.Context) {
 }
 
 // GetUserProfile handles GET /user/profile
-func (h *Handler) GetUserProfile(c *gin.Context) {
+func (h *Handlers) GetUserProfile(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
 		return
 	}
 
-	profile, err := h.userService.GetProfile(c.Request.Context(), userID)
+	profile, err := h.UserService.GetProfile(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -429,14 +393,14 @@ func (h *Handler) GetUserProfile(c *gin.Context) {
 }
 
 // UpdateUserProfile handles PUT /user/profile
-func (h *Handler) UpdateUserProfile(c *gin.Context) {
+func (h *Handlers) UpdateUserProfile(c *gin.Context) {
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	if err := h.userService.UpdateProfile(c.Request.Context(), &user); err != nil {
+	if err := h.UserService.UpdateProfile(c.Request.Context(), &user); err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -445,14 +409,14 @@ func (h *Handler) UpdateUserProfile(c *gin.Context) {
 }
 
 // GetDashboardStats handles GET /dashboard
-func (h *Handler) GetDashboardStats(c *gin.Context) {
+func (h *Handlers) GetDashboardStats(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
 		return
 	}
 
-	stats, err := h.userService.GetDashboardStats(c.Request.Context(), userID)
+	stats, err := h.UserService.GetDashboardStats(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -462,7 +426,7 @@ func (h *Handler) GetDashboardStats(c *gin.Context) {
 }
 
 // GetPregnancyGuidelines handles GET /horses/:id/pregnancy/guidelines
-func (h *Handler) GetPregnancyGuidelines(c *gin.Context) {
+func (h *Handlers) GetPregnancyGuidelines(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
@@ -476,7 +440,7 @@ func (h *Handler) GetPregnancyGuidelines(c *gin.Context) {
 	}
 
 	// Verify horse ownership
-	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	horse, err := h.HorseService.GetByID(c.Request.Context(), uint(horseID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -487,7 +451,7 @@ func (h *Handler) GetPregnancyGuidelines(c *gin.Context) {
 	}
 
 	stage := models.PregnancyStage(c.Query("stage"))
-	guidelines, err := h.pregnancyService.GetGuidelines(c.Request.Context(), stage)
+	guidelines, err := h.PregnancyService.GetGuidelines(c.Request.Context(), stage)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -496,7 +460,7 @@ func (h *Handler) GetPregnancyGuidelines(c *gin.Context) {
 }
 
 // StartPregnancyTracking handles POST /horses/:id/pregnancy/start
-func (h *Handler) StartPregnancyTracking(c *gin.Context) {
+func (h *Handlers) StartPregnancyTracking(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
@@ -510,7 +474,7 @@ func (h *Handler) StartPregnancyTracking(c *gin.Context) {
 	}
 
 	// Verify horse ownership
-	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	horse, err := h.HorseService.GetByID(c.Request.Context(), uint(horseID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -526,7 +490,7 @@ func (h *Handler) StartPregnancyTracking(c *gin.Context) {
 		return
 	}
 
-	if err := h.pregnancyService.StartTracking(c.Request.Context(), uint(horseID), start); err != nil {
+	if err := h.PregnancyService.StartTracking(c.Request.Context(), uint(horseID), start); err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -534,8 +498,8 @@ func (h *Handler) StartPregnancyTracking(c *gin.Context) {
 	c.Status(http.StatusCreated)
 }
 
-// GetPregnancyEvents handles GET /horses/:id/pregnancy/events
-func (h *Handler) GetPregnancyEvents(c *gin.Context) {
+// GetEvents handles GET /horses/:id/pregnancy/events
+func (h *Handlers) GetEvents(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
@@ -549,7 +513,7 @@ func (h *Handler) GetPregnancyEvents(c *gin.Context) {
 	}
 
 	// Verify horse ownership
-	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	horse, err := h.HorseService.GetByID(c.Request.Context(), uint(horseID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -559,7 +523,7 @@ func (h *Handler) GetPregnancyEvents(c *gin.Context) {
 		return
 	}
 
-	events, err := h.pregnancyService.GetPregnancyEvents(c.Request.Context(), uint(horseID))
+	events, err := h.PregnancyService.GetEvents(c.Request.Context(), uint(horseID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -569,7 +533,7 @@ func (h *Handler) GetPregnancyEvents(c *gin.Context) {
 }
 
 // AddPregnancyEvent handles POST /horses/:id/pregnancy/events
-func (h *Handler) AddPregnancyEvent(c *gin.Context) {
+func (h *Handlers) AddPregnancyEvent(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
@@ -583,7 +547,7 @@ func (h *Handler) AddPregnancyEvent(c *gin.Context) {
 	}
 
 	// Verify horse ownership
-	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	horse, err := h.HorseService.GetByID(c.Request.Context(), uint(horseID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -602,7 +566,7 @@ func (h *Handler) AddPregnancyEvent(c *gin.Context) {
 	event.PregnancyID = uint(horseID)
 	event.UserID = userID
 
-	if err := h.pregnancyService.AddPregnancyEvent(c.Request.Context(), &event); err != nil {
+	if err := h.PregnancyService.AddPregnancyEvent(c.Request.Context(), &event); err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -611,7 +575,7 @@ func (h *Handler) AddPregnancyEvent(c *gin.Context) {
 }
 
 // GetBreedingRecords handles GET /horses/:id/breeding
-func (h *Handler) GetBreedingRecords(c *gin.Context) {
+func (h *Handlers) GetBreedingRecords(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
@@ -625,7 +589,7 @@ func (h *Handler) GetBreedingRecords(c *gin.Context) {
 	}
 
 	// Verify horse ownership
-	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	horse, err := h.HorseService.GetByID(c.Request.Context(), uint(horseID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -635,7 +599,7 @@ func (h *Handler) GetBreedingRecords(c *gin.Context) {
 		return
 	}
 
-	records, err := h.breedingService.GetRecords(c.Request.Context(), uint(horseID))
+	records, err := h.BreedingService.GetRecords(c.Request.Context(), uint(horseID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -645,7 +609,7 @@ func (h *Handler) GetBreedingRecords(c *gin.Context) {
 }
 
 // AddBreedingRecord handles POST /horses/:id/breeding
-func (h *Handler) AddBreedingRecord(c *gin.Context) {
+func (h *Handlers) AddBreedingRecord(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
@@ -659,7 +623,7 @@ func (h *Handler) AddBreedingRecord(c *gin.Context) {
 	}
 
 	// Verify horse ownership
-	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	horse, err := h.HorseService.GetByID(c.Request.Context(), uint(horseID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -678,7 +642,7 @@ func (h *Handler) AddBreedingRecord(c *gin.Context) {
 	record.HorseID = uint(horseID)
 	record.UserID = userID
 
-	if err := h.breedingService.CreateRecord(c.Request.Context(), &record); err != nil {
+	if err := h.BreedingService.CreateRecord(c.Request.Context(), &record); err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -687,7 +651,7 @@ func (h *Handler) AddBreedingRecord(c *gin.Context) {
 }
 
 // UpdateBreedingRecord handles PUT /horses/:id/breeding/:recordId
-func (h *Handler) UpdateBreedingRecord(c *gin.Context) {
+func (h *Handlers) UpdateBreedingRecord(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
@@ -701,7 +665,7 @@ func (h *Handler) UpdateBreedingRecord(c *gin.Context) {
 	}
 
 	// Verify horse ownership
-	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	horse, err := h.HorseService.GetByID(c.Request.Context(), uint(horseID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -720,7 +684,7 @@ func (h *Handler) UpdateBreedingRecord(c *gin.Context) {
 	record.HorseID = uint(horseID)
 	record.UserID = userID
 
-	if err := h.breedingService.UpdateRecord(c.Request.Context(), &record); err != nil {
+	if err := h.BreedingService.UpdateRecord(c.Request.Context(), &record); err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -729,7 +693,7 @@ func (h *Handler) UpdateBreedingRecord(c *gin.Context) {
 }
 
 // DeleteBreedingRecord handles DELETE /horses/:id/breeding/:recordId
-func (h *Handler) DeleteBreedingRecord(c *gin.Context) {
+func (h *Handlers) DeleteBreedingRecord(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
@@ -743,7 +707,7 @@ func (h *Handler) DeleteBreedingRecord(c *gin.Context) {
 	}
 
 	// Verify horse ownership
-	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	horse, err := h.HorseService.GetByID(c.Request.Context(), uint(horseID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -759,7 +723,7 @@ func (h *Handler) DeleteBreedingRecord(c *gin.Context) {
 		return
 	}
 
-	if err := h.breedingService.DeleteRecord(c.Request.Context(), uint(recordID)); err != nil {
+	if err := h.BreedingService.DeleteRecord(c.Request.Context(), uint(recordID)); err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -768,7 +732,7 @@ func (h *Handler) DeleteBreedingRecord(c *gin.Context) {
 }
 
 // GetPregnancy handles GET /horses/:id/pregnancy
-func (h *Handler) GetPregnancy(c *gin.Context) {
+func (h *Handlers) GetPregnancy(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
@@ -782,7 +746,7 @@ func (h *Handler) GetPregnancy(c *gin.Context) {
 	}
 
 	// Verify horse ownership
-	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	horse, err := h.HorseService.GetByID(c.Request.Context(), uint(horseID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -792,7 +756,7 @@ func (h *Handler) GetPregnancy(c *gin.Context) {
 		return
 	}
 
-	pregnancy, err := h.pregnancyService.GetPregnancy(c.Request.Context(), uint(horseID))
+	pregnancy, err := h.PregnancyService.GetPregnancy(c.Request.Context(), uint(horseID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -802,7 +766,7 @@ func (h *Handler) GetPregnancy(c *gin.Context) {
 }
 
 // GetPregnancyStatus handles GET /horses/:id/pregnancy/status
-func (h *Handler) GetPregnancyStatus(c *gin.Context) {
+func (h *Handlers) GetPregnancyStatus(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
@@ -816,7 +780,7 @@ func (h *Handler) GetPregnancyStatus(c *gin.Context) {
 	}
 
 	// Verify horse ownership
-	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	horse, err := h.HorseService.GetByID(c.Request.Context(), uint(horseID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -826,7 +790,7 @@ func (h *Handler) GetPregnancyStatus(c *gin.Context) {
 		return
 	}
 
-	status, err := h.pregnancyService.GetStatus(c.Request.Context(), uint(horseID))
+	status, err := h.PregnancyService.GetStatus(c.Request.Context(), uint(horseID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
@@ -836,56 +800,56 @@ func (h *Handler) GetPregnancyStatus(c *gin.Context) {
 }
 
 // GetHorseService returns the horse service
-func (h *Handler) GetHorseService() service.HorseService {
-    return h.horseService
+func (h *Handlers) GetHorseService() service.HorseService {
+    return h.HorseService
 }
 
 // GetUserService returns the user service
-func (h *Handler) GetUserService() service.UserService {
-    return h.userService
+func (h *Handlers) GetUserService() service.UserService {
+    return h.UserService
 }
 
 // GetPregnancyService returns the pregnancy service
-func (h *Handler) GetPregnancyService() pregnancy.Service {
-    return h.pregnancyService
+func (h *Handlers) GetPregnancyService() service.PregnancyService {
+    return h.PregnancyService
 }
 
 // GetHealthService returns the health service
-func (h *Handler) GetHealthService() health.Service {
-    return h.healthService
+func (h *Handlers) GetHealthService() health.Service {
+    return h.HealthService
 }
 
 // GetBreedingService returns the breeding service
-func (h *Handler) GetBreedingService() service.BreedingService {
-    return h.breedingService
+func (h *Handlers) GetBreedingService() service.BreedingService {
+    return h.BreedingService
 }
 
 // GetChecklistService returns the checklist service
-func (h *Handler) GetChecklistService() checklist.Service {
-    return h.checklistService
+func (h *Handlers) GetChecklistService() checklist.Service {
+    return h.ChecklistService
 }
 
 // GetPrivacyService returns the privacy service
-func (h *Handler) GetPrivacyService() privacy.Service {
-    return h.privacyService
+func (h *Handlers) GetPrivacyService() privacy.Service {
+    return h.PrivacyService
 }
 
 // GetVitalsService returns the vitals service
-func (h *Handler) GetVitalsService() vitals.Service {
-    return h.vitalsService
+func (h *Handlers) GetVitalsService() vitals.Service {
+    return h.VitalsService
 }
 
 // GetNotificationService returns the notification service
-func (h *Handler) GetNotificationService() notification.Service {
-    return h.notificationService
+func (h *Handlers) GetNotificationService() notification.Service {
+    return h.NotificationService
 }
 
 // GetWeatherService returns the weather service
-func (h *Handler) GetWeatherService() weather.Service {
-    return h.weatherService
+func (h *Handlers) GetWeatherService() weather.Service {
+    return h.WeatherService
 }
 
 // GetWebSocketHandler returns the websocket handler
-func (h *Handler) GetWebSocketHandler() *websocket.Hub {
-    return h.websocketHandler
+func (h *Handlers) GetWebSocketHandler() *websocket.Hub {
+    return h.WebSocketHub
 }

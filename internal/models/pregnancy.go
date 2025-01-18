@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/polyfant/hulta_pregnancy_app/internal/validation"
 	"gorm.io/gorm"
 )
 
@@ -23,6 +24,7 @@ const (
 	PregnancyStageLate    PregnancyStage = "LATE_GESTATION"
 	PregnancyStageOverdue PregnancyStage = "OVERDUE"
 	PregnancyStageHighRisk PregnancyStage = "HIGH_RISK"
+	PregnancyStageUnknown PregnancyStage = "UNKNOWN"
 )
 
 // PregnancyStatus represents the status of a pregnancy
@@ -51,8 +53,8 @@ type Pregnancy struct {
 	HorseID        uint           `json:"horseID"`
 	StartDate      time.Time      `json:"startDate"`
 	EndDate        *time.Time     `json:"endDate,omitempty"`
+	ConceptionDate *time.Time     `json:"conceptionDate"`
 	Status         string         `json:"status"`
-	ConceptionDate *time.Time     `json:"conceptionDate,omitempty"`
 	Notes          string         `json:"notes,omitempty"`
 	CreatedAt      time.Time      `json:"createdAt"`
 	UpdatedAt      time.Time      `json:"updatedAt"`
@@ -60,11 +62,11 @@ type Pregnancy struct {
 
 type PregnancyEvent struct {
 	ID           uint      `json:"id"`
-	PregnancyID  uint      `json:"pregnancy_id"`
+	PregnancyID  uint      `json:"pregnancy_id" validate:"required"`
 	UserID       string    `json:"user_id"`
-	Type         string    `json:"type"`
-	Description  string    `json:"description"`
-	Date         time.Time `json:"date"`
+	Type         string    `json:"type" validate:"required"`
+	Description  string    `json:"description" validate:"required"`
+	Date         time.Time `json:"date" validate:"required"`
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
@@ -137,15 +139,16 @@ func (p *Pregnancy) ExpectedDueDate() time.Time {
 }
 
 func (e *PregnancyEvent) Validate() error {
-	if e.PregnancyID == 0 {
-		return fmt.Errorf("pregnancy ID is required")
+	// Use the generic struct validation
+	if err := validator.New().Struct(e); err != nil {
+		return err
 	}
-	if e.Description == "" {
-		return fmt.Errorf("description is required")
+
+	// Additional custom validations
+	if e.Date.After(time.Now()) {
+		return fmt.Errorf("event date cannot be in the future")
 	}
-	if e.Date.IsZero() {
-		return fmt.Errorf("date is required")
-	}
+
 	return nil
 }
 

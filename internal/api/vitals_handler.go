@@ -1,11 +1,12 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/polyfant/hulta_pregnancy_app/internal/validation"
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service/vitals"
 )
@@ -167,18 +168,28 @@ func (h *VitalsHandler) HandleGetTrends(c *gin.Context) {
 // Helper functions
 
 func (h *VitalsHandler) validateVitalSigns(vitals *models.VitalSigns) bool {
-	// Temperature validation using defined ranges
-	if vitals.Temperature < models.MinSafeTemperature || vitals.Temperature > models.MaxSafeTemperature {
+	// Use the generic struct validation
+	if err := validator.New().Struct(vitals); err != nil {
 		return false
 	}
 
-	// Heart rate validation using defined ranges
-	if vitals.HeartRate < models.MinSafeHeartRate || vitals.HeartRate > models.MaxSafeHeartRate {
+	// Additional custom validations
+	if vitals.HorseID == 0 {
 		return false
 	}
 
-	// Respiration validation using defined ranges
-	if vitals.Respiration < models.MinSafeRespiration || vitals.Respiration > models.MaxSafeRespiration {
+	// Temperature validation
+	if vitals.Temperature < 35.0 || vitals.Temperature > 42.0 {
+		return false
+	}
+
+	// Heart rate validation (typical range for horses)
+	if vitals.HeartRate < 20 || vitals.HeartRate > 80 {
+		return false
+	}
+
+	// Respiratory rate validation
+	if vitals.RespiratoryRate < 8 || vitals.RespiratoryRate > 40 {
 		return false
 	}
 

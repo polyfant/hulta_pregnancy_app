@@ -65,5 +65,5 @@ func RegisterRoutes(router *gin.Engine, handlers *Handlers) {
 	}
 
 	// WebSocket endpoint
-	router.GET("/ws", gin.WrapF(handlers.WebSocketHandler.ServeHTTP))
+	router.GET("/ws", gin.WrapF(handlers.WebSocketHub.ServeHTTP))
 }

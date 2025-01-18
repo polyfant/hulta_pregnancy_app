@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
@@ -58,4 +59,19 @@ func (s *UserServiceImpl) GetProfile(ctx context.Context, userID string) (*model
 
 func (s *UserServiceImpl) UpdateProfile(ctx context.Context, user *models.User) error {
 	return s.repo.Update(ctx, user)
+}
+
+func (s *UserServiceImpl) UpdateLastLogin(ctx context.Context, userID string) error {
+	user, err := s.repo.GetByID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("failed to get user: %w", err)
+	}
+
+	now := time.Now()
+	user.LastLogin = &now
+	if err := s.repo.Update(ctx, user); err != nil {
+		return fmt.Errorf("failed to update last login: %w", err)
+	}
+
+	return nil
 }

@@ -14,6 +14,7 @@ type VitalSigns struct {
 	Temperature float64   `json:"temperature"`
 	HeartRate   uint      `json:"heart_rate"`
 	Respiration uint      `json:"respiration"`
+	Hydration   float64   `json:"hydration"`
 	RecordedAt  time.Time `json:"recorded_at"`
 }
 
@@ -41,6 +42,8 @@ type VitalSignsTrend struct {
 	StartTime  time.Time `json:"start_time"`
 	EndTime    time.Time `json:"end_time"`
 	CreatedAt  time.Time `json:"created_at"`
+	DataPoints int       `json:"data_points"`
+	Average    float64   `json:"average"`
 }
 
 // VitalSignsPrediction represents ML predictions for vital signs
