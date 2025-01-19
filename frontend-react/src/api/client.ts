@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { useAuth0 } from '@auth0/auth0-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/v1`;
 
 export const createApiClient = () => {
     const { getAccessTokenSilently } = useAuth0();
@@ -12,11 +12,21 @@ export const createApiClient = () => {
 
     client.interceptors.request.use(async (config) => {
         try {
+            console.log('Getting access token...');
             const token = await getAccessTokenSilently();
-            config.headers.Authorization = `Bearer ${token}`;
+            console.log('Token received:', token ? 'Token present' : 'No token');
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
+                console.log('Authorization header set');
+            }
         } catch (error) {
             console.error('Error getting access token:', error);
         }
+        console.log('Request config:', {
+            method: config.method,
+            url: config.url,
+            hasAuthHeader: !!config.headers.Authorization
+        });
         return config;
     });
 

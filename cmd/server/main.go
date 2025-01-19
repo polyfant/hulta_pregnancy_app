@@ -39,6 +39,11 @@ func run() error {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 
+	// Run database migrations
+	if err := database.RunMigrations(db.DB); err != nil {
+		return fmt.Errorf("failed to run database migrations: %w", err)
+	}
+
 	sqlDB, err := db.DB.DB()
 	if err != nil {
 		return fmt.Errorf("error getting underlying *sql.DB: %w", err)

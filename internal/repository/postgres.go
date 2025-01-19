@@ -2,9 +2,11 @@ package repository
 
 import (
 	"context"
-	"github.com/polyfant/hulta_pregnancy_app/internal/models"
-	"gorm.io/gorm"
 	"time"
+
+	"github.com/polyfant/hulta_pregnancy_app/internal/models"
+	"github.com/shopspring/decimal"
+	"gorm.io/gorm"
 )
 
 type PostgresHorseRepository struct {
@@ -27,6 +29,10 @@ type PostgresBreedingRepository struct {
 	db *gorm.DB
 }
 
+type PostgresExpenseRepository struct {
+	db *gorm.DB
+}
+
 func NewHorseRepository(db *gorm.DB) HorseRepository {
 	return &PostgresHorseRepository{db: db}
 }
@@ -45,6 +51,10 @@ func NewHealthRepository(db *gorm.DB) HealthRepository {
 
 func NewBreedingRepository(db *gorm.DB) BreedingRepository {
 	return &PostgresBreedingRepository{db: db}
+}
+
+func NewExpenseRepository(db *gorm.DB) ExpenseRepository {
+	return &PostgresExpenseRepository{db: db}
 }
 
 func (r *PostgresHorseRepository) Create(ctx context.Context, horse *models.Horse) error {
@@ -300,7 +310,7 @@ func (r *PostgresPregnancyRepository) GetCurrentPregnancy(ctx context.Context, h
 func (r *PostgresHorseRepository) ListByUser(ctx context.Context, userID string) ([]models.Horse, error) {
     var horses []models.Horse
     err := r.db.WithContext(ctx).
-        Where("owner_id = ?", userID).
+        Where("user_id = ?", userID).
         Find(&horses).Error
     return horses, err
 }
@@ -409,4 +419,38 @@ func (r *PostgresBreedingRepository) UpdateRecord(ctx context.Context, record *m
 
 func (r *PostgresBreedingRepository) DeleteRecord(ctx context.Context, id uint) error {
     return r.db.WithContext(ctx).Delete(&models.BreedingRecord{}, id).Error
+}
+
+func (r *PostgresExpenseRepository) Create(ctx context.Context, expense *models.Expense) error {
+    return r.db.WithContext(ctx).Create(expense).Error
+}
+
+func (r *PostgresExpenseRepository) Update(ctx context.Context, expense *models.Expense) error {
+    return r.db.WithContext(ctx).Save(expense).Error
+}
+
+func (r *PostgresExpenseRepository) GetByHorseID(ctx context.Context, horseID uint) ([]models.Expense, error) {
+    var expenses []models.Expense
+    err := r.db.WithContext(ctx).
+        Where("horse_id = ?", horseID).
+        Find(&expenses).Error
+    return expenses, err
+}
+
+func (r *PostgresExpenseRepository) GetTotalExpensesByUser(ctx context.Context, userID string) (decimal.Decimal, error) {
+    var total decimal.Decimal
+    err := r.db.WithContext(ctx).
+        Model(&models.Expense{}).
+        Select("COALESCE(SUM(amount), 0)").
+        Where("user_id = ?", userID).
+        Scan(&total).Error
+    return total, err
+}
+
+func (r *PostgresExpenseRepository) GetExpensesByType(ctx context.Context, userID string, expenseType string) ([]models.Expense, error) {
+    var expenses []models.Expense
+    err := r.db.WithContext(ctx).
+        Where("user_id = ? AND expense_type = ?", userID, expenseType).
+        Find(&expenses).Error
+    return expenses, err
 }

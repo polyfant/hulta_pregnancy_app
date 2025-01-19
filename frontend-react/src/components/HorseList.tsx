@@ -22,6 +22,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useApiClient } from '../api/client';
 
 interface Horse {
 	id: string;
@@ -35,22 +36,14 @@ interface Horse {
 
 const HorseList = () => {
 	const [searchQuery, setSearchQuery] = useState('');
+	const apiClient = useApiClient();
 
 	const { data, isLoading, error } = useQuery<Horse[]>({
 		queryKey: ['horses'],
 		queryFn: async () => {
 			console.log('Fetching horses...');
 			try {
-				const response = await fetch('/api/horses');
-				console.log('API Response:', response);
-
-				if (!response.ok) {
-					const errorData = await response.text();
-					console.error('API Error:', errorData);
-					throw new Error(`Failed to fetch horses: ${errorData}`);
-				}
-
-				const data = await response.json();
+				const data = await apiClient.get<Horse[]>('/horses');
 				console.log('Horses data:', data);
 				return data;
 			} catch (error) {

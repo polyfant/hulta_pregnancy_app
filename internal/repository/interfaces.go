@@ -22,6 +22,7 @@ type HorseRepository interface {
 
 type ExpenseRepository interface {
 	Create(ctx context.Context, expense *models.Expense) error
+	Update(ctx context.Context, expense *models.Expense) error
 	GetByHorseID(ctx context.Context, horseID uint) ([]models.Expense, error)
 	GetTotalExpensesByUser(ctx context.Context, userID string) (decimal.Decimal, error)
 	GetExpensesByType(ctx context.Context, userID string, expenseType string) ([]models.Expense, error)

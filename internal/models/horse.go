@@ -14,18 +14,24 @@ type Horse struct {
 	ID             uint       `json:"id" gorm:"primaryKey"`
 	UserID         string     `json:"user_id"`
 	Name           string     `json:"name"`
-	Breed           string    `gorm:"type:varchar(100)"`
+	Breed          string     `gorm:"type:varchar(100)"`
 	Gender         Gender     `json:"gender"`
 	BirthDate      time.Time  `json:"birth_date"`
 	Weight         float64
 	Height         float64
-	Color          string    `gorm:"size:100"`
-	IsPregnant     bool      `gorm:"default:false"`
+	Color          string     `gorm:"size:100"`
+	IsPregnant     bool       `gorm:"default:false"`
 	ConceptionDate *time.Time
 	MotherId       *uint
 	FatherId       *uint
 	ExternalMother string
 	ExternalFather string
+	
+	// Owner information
+	OwnerName    string `json:"owner_name" gorm:"type:varchar(100)"`
+	OwnerContact string `json:"owner_contact" gorm:"type:varchar(100)"`
+	OwnerEmail   string `json:"owner_email" gorm:"type:varchar(100)"`
+	OwnerPhone   string `json:"owner_phone" gorm:"type:varchar(20)"`
 	
 	LastVetCheck   *time.Time
 	LastHeatDate   *time.Time

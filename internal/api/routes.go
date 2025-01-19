@@ -41,38 +41,38 @@ func SetupRouter(router *gin.Engine, h *Handler) *gin.Engine {
 	protected.Use(auth)
 	{
 		// User routes
-		protected.GET("/user/profile", RequireRoles("user"), h.GetUserProfile)
-		protected.PUT("/user/profile", RequireRoles("user"), h.UpdateUserProfile)
+		protected.GET("/user/profile", h.GetUserProfile)
+		protected.PUT("/user/profile", h.UpdateUserProfile)
 
 		// Horse routes
-		protected.GET("/horses", RequireRoles("user"), h.ListHorses)
-		protected.POST("/horses", RequireRoles("user"), h.AddHorse)
-		protected.GET("/horses/:id", RequireRoles("user"), h.GetHorse)
-		protected.PUT("/horses/:id", RequireRoles("user"), h.UpdateHorse)
-		protected.DELETE("/horses/:id", RequireRoles("user"), h.DeleteHorse)
+		protected.GET("/horses", h.ListHorses)
+		protected.POST("/horses", h.AddHorse)
+		protected.GET("/horses/:id", h.GetHorse)
+		protected.PUT("/horses/:id", h.UpdateHorse)
+		protected.DELETE("/horses/:id", h.DeleteHorse)
 
 		// Health routes
-		protected.GET("/horses/:id/health", RequireRoles("user"), h.GetHealthRecords)
-		protected.POST("/horses/:id/health", RequireRoles("user"), h.AddHealthRecord)
-		protected.PUT("/horses/:id/health/:recordId", RequireRoles("user"), h.UpdateHealthRecord)
-		protected.DELETE("/horses/:id/health/:recordId", RequireRoles("user"), h.DeleteHealthRecord)
+		protected.GET("/horses/:id/health", h.GetHealthRecords)
+		protected.POST("/horses/:id/health", h.AddHealthRecord)
+		protected.PUT("/horses/:id/health/:recordId", h.UpdateHealthRecord)
+		protected.DELETE("/horses/:id/health/:recordId", h.DeleteHealthRecord)
 
 		// Pregnancy routes
-		protected.GET("/horses/:id/pregnancy", RequireRoles("user"), h.GetPregnancy)
-		protected.POST("/horses/:id/pregnancy/start", RequireRoles("user"), h.StartPregnancyTracking)
-		protected.GET("/horses/:id/pregnancy/status", RequireRoles("user"), h.GetPregnancyStatus)
-		protected.GET("/horses/:id/pregnancy/events", RequireRoles("user"), h.GetPregnancyEvents)
-		protected.POST("/horses/:id/pregnancy/events", RequireRoles("user"), h.AddPregnancyEvent)
-		protected.GET("/horses/:id/pregnancy/guidelines", RequireRoles("user"), h.GetPregnancyGuidelines)
+		protected.GET("/horses/:id/pregnancy", h.GetPregnancy)
+		protected.POST("/horses/:id/pregnancy/start", h.StartPregnancyTracking)
+		protected.GET("/horses/:id/pregnancy/status", h.GetPregnancyStatus)
+		protected.GET("/horses/:id/pregnancy/events", h.GetPregnancyEvents)
+		protected.POST("/horses/:id/pregnancy/events", h.AddPregnancyEvent)
+		protected.GET("/horses/:id/pregnancy/guidelines", h.GetPregnancyGuidelines)
 
 		// Breeding routes
-		protected.GET("/horses/:id/breeding", RequireRoles("user"), h.GetBreedingRecords)
-		protected.POST("/horses/:id/breeding", RequireRoles("user"), h.AddBreedingRecord)
-		protected.PUT("/horses/:id/breeding/:recordId", RequireRoles("user"), h.UpdateBreedingRecord)
-		protected.DELETE("/horses/:id/breeding/:recordId", RequireRoles("user"), h.DeleteBreedingRecord)
+		protected.GET("/horses/:id/breeding", h.GetBreedingRecords)
+		protected.POST("/horses/:id/breeding", h.AddBreedingRecord)
+		protected.PUT("/horses/:id/breeding/:recordId", h.UpdateBreedingRecord)
+		protected.DELETE("/horses/:id/breeding/:recordId", h.DeleteBreedingRecord)
 
 		// Dashboard route
-		protected.GET("/dashboard", RequireRoles("user"), h.GetDashboardStats)
+		protected.GET("/dashboard", h.GetDashboardStats)
 	}
 
 	return router

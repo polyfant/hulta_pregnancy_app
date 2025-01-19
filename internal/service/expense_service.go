@@ -24,6 +24,33 @@ func NewExpenseService(
 	}
 }
 
+func (s *ExpenseService) CreateExpense(ctx context.Context, expense *models.Expense) error {
+	if expense.Amount <= 0 {
+		return models.ErrInvalidAmount
+	}
+
+	return s.expenseRepo.Create(ctx, expense)
+}
+
+func (s *ExpenseService) UpdateExpense(ctx context.Context, expense *models.Expense) error {
+	if expense.Amount <= 0 {
+		return models.ErrInvalidAmount
+	}
+
+	// Validate expense type
+	switch expense.ExpenseType {
+	case models.ExpenseTypeFeed, models.ExpenseTypeVeterinary, models.ExpenseTypeFarrier,
+		models.ExpenseTypeEquipment, models.ExpenseTypeTraining, models.ExpenseTypeCompetition,
+		models.ExpenseTypeTransport, models.ExpenseTypeInsurance, models.ExpenseTypeBoarding,
+		models.ExpenseTypeOther:
+		// Valid type
+	default:
+		return models.ErrInvalidExpenseType
+	}
+
+	return s.expenseRepo.Update(ctx, expense)
+}
+
 func (s *ExpenseService) RecordExpense(ctx context.Context, expense *models.Expense) error {
 	// Validate expense data
 	if err := s.validateExpense(expense); err != nil {
@@ -59,14 +86,34 @@ func (s *ExpenseService) GetExpensesByType(ctx context.Context, userID, expenseT
 }
 
 func (s *ExpenseService) CreateRecurringExpense(ctx context.Context, recurringExpense *models.RecurringExpense) error {
-	// Validate recurring expense
-	if err := s.validateRecurringExpense(recurringExpense); err != nil {
-		return err
+	if recurringExpense.Amount <= 0 {
+		return models.ErrInvalidAmount
 	}
 
-	// Set initial timestamps
-	recurringExpense.CreatedAt = time.Now()
-	recurringExpense.UpdatedAt = time.Now()
+	// Validate expense type
+	switch recurringExpense.ExpenseType {
+	case models.ExpenseTypeFeed, models.ExpenseTypeVeterinary, models.ExpenseTypeFarrier,
+		models.ExpenseTypeEquipment, models.ExpenseTypeTraining, models.ExpenseTypeCompetition,
+		models.ExpenseTypeTransport, models.ExpenseTypeInsurance, models.ExpenseTypeBoarding,
+		models.ExpenseTypeOther:
+		// Valid type
+	default:
+		return models.ErrInvalidExpenseType
+	}
+
+	// Calculate next due date based on frequency
+	switch recurringExpense.Frequency {
+	case models.FrequencyDaily:
+		recurringExpense.NextDueDate = recurringExpense.StartDate.AddDate(0, 0, 1)
+	case models.FrequencyWeekly:
+		recurringExpense.NextDueDate = recurringExpense.StartDate.AddDate(0, 0, 7)
+	case models.FrequencyMonthly:
+		recurringExpense.NextDueDate = recurringExpense.StartDate.AddDate(0, 1, 0)
+	case models.FrequencyYearly:
+		recurringExpense.NextDueDate = recurringExpense.StartDate.AddDate(1, 0, 0)
+	default:
+		return models.ErrInvalidFrequency
+	}
 
 	return s.recurringExpenseRepo.Create(ctx, recurringExpense)
 }
@@ -89,7 +136,7 @@ func (s *ExpenseService) ProcessDueRecurringExpenses(ctx context.Context) error 
 			Amount:      recurringExpense.Amount,
 			Description: recurringExpense.Description,
 			Date:        time.Now(),
-			Type:        recurringExpense.Frequency, // Use frequency as type
+			ExpenseType: recurringExpense.ExpenseType,
 		}
 
 		// Record the expense
@@ -107,32 +154,23 @@ func (s *ExpenseService) ProcessDueRecurringExpenses(ctx context.Context) error 
 
 func (s *ExpenseService) validateExpense(expense *models.Expense) error {
 	if expense.Amount < 0 {
-		return fmt.Errorf("expense amount must be non-negative")
+		return models.ErrInvalidAmount
 	}
-	if expense.Type == "" {
-		return fmt.Errorf("expense type is required")
-	}
-	if expense.Category == "" {
-		return fmt.Errorf("expense category is required")
-	}
-	if expense.Date.IsZero() {
-		return fmt.Errorf("expense date is required")
+	if expense.ExpenseType == "" {
+		return models.ErrInvalidExpenseType
 	}
 	return nil
 }
 
 func (s *ExpenseService) validateRecurringExpense(recurringExpense *models.RecurringExpense) error {
 	if recurringExpense.Amount < 0 {
-		return fmt.Errorf("recurring expense amount must be non-negative")
+		return models.ErrInvalidAmount
 	}
-	if recurringExpense.Type == "" {
-		return fmt.Errorf("recurring expense type is required")
-	}
-	if recurringExpense.Category == "" {
-		return fmt.Errorf("recurring expense category is required")
+	if recurringExpense.ExpenseType == "" {
+		return models.ErrInvalidExpenseType
 	}
 	if recurringExpense.Frequency == "" {
-		return fmt.Errorf("recurring expense frequency is required")
+		return models.ErrInvalidFrequency
 	}
 	if recurringExpense.StartDate.IsZero() {
 		return fmt.Errorf("recurring expense start date is required")
