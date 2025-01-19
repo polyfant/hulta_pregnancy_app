@@ -1,6 +1,7 @@
 package config
 
 import (
+    "fmt"
     "log"
     "os"
     "strconv"
@@ -45,19 +46,26 @@ func Load() (*Config, error) {
         port = 5432
     }
 
+    // Load Auth0 configuration
+    domain := getEnv("AUTH0_DOMAIN", "")
+    issuer := getEnv("AUTH0_ISSUER", "")
+    if issuer == "" && domain != "" {
+        issuer = fmt.Sprintf("https://%s/", domain)
+    }
+
     return &Config{
         Database: DatabaseConfig{
             Host:     getEnv("DB_HOST", "localhost"),
             Port:     port,
-            User:     getEnv("DB_USER", "postgres"),
-            Password: getEnv("DB_PASSWORD", "postgres"),
-            DBName:   getEnv("DB_NAME", "horse_tracking"),
+            User:     getEnv("DB_USER", ""),
+            Password: getEnv("DB_PASSWORD", ""),
+            DBName:   getEnv("DB_NAME", ""),
         },
         Auth0: Auth0Config{
-            Domain:    getEnv("AUTH0_DOMAIN", ""),
-            Audience:  getEnv("AUTH0_AUDIENCE", ""),
-            Issuer:    getEnv("AUTH0_ISSUER", ""),
-            Algorithms: []string{getEnv("AUTH0_ALGORITHM", "")},
+            Domain:    domain,
+            Audience: getEnv("AUTH0_AUDIENCE", ""),
+            Issuer:   issuer,
+            Algorithms: []string{"RS256"},
         },
     }, nil
 }

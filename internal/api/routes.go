@@ -16,6 +16,9 @@ func setupCORS() cors.Config {
 }
 
 func SetupRouter(router *gin.Engine, h *Handler) *gin.Engine {
+	// Set trusted proxies
+	router.SetTrustedProxies([]string{"127.0.0.1"})
+
 	// CORS middleware
 	router.Use(cors.New(setupCORS()))
 

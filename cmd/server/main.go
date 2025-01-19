@@ -12,6 +12,7 @@ import (
 	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service/breeding"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -21,6 +22,11 @@ func main() {
 }
 
 func run() error {
+	// Set Gin to release mode in production
+	if os.Getenv("GIN_MODE") != "debug" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
@@ -67,6 +73,7 @@ func run() error {
 		Cache:           cache,
 		HorseRepo:       horseRepo,
 		BreedingRepo:    breedingRepo,
+		Auth0:           cfg.Auth0,
 	})
 
 	// Start server
