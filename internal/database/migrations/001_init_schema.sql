@@ -1,101 +1,91 @@
 -- +goose Up
--- Create users table (core table, no dependencies)
+-- Create expense type enum if not exists
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'expense_type') THEN
+        CREATE TYPE expense_type AS ENUM (
+            'feed',
+            'veterinary',
+            'farrier',
+            'equipment',
+            'training',
+            'competition',
+            'transport',
+            'insurance',
+            'boarding',
+            'other'
+        );
+    END IF;
+END$$;
+
+-- Create tables if they don't exist
 CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY,
+    id VARCHAR(255) PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
-    first_name VARCHAR(100),
-    last_name VARCHAR(100),
-    profile_picture_url TEXT,
-    role VARCHAR(50) DEFAULT 'standard',
-    last_login TIMESTAMP,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    name VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create horses table (depends on users)
 CREATE TABLE IF NOT EXISTS horses (
     id SERIAL PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    breed VARCHAR(100),
-    birth_date DATE,
-    conception_date DATE,
-    mother_id INTEGER REFERENCES horses(id) ON DELETE SET NULL,
-    father_id INTEGER REFERENCES horses(id) ON DELETE SET NULL,
-    is_pregnant BOOLEAN DEFAULT FALSE,
-    owner_name VARCHAR(100),
-    owner_contact VARCHAR(100),
-    owner_email VARCHAR(100),
-    owner_phone VARCHAR(20),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_horses_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    user_id VARCHAR(255) REFERENCES users(id),
+    name VARCHAR(255) NOT NULL,
+    breed VARCHAR(255),
+    date_of_birth DATE,
+    gender VARCHAR(50),
+    color VARCHAR(100),
+    height DECIMAL(5,2),
+    weight DECIMAL(6,2),
+    registration_number VARCHAR(100),
+    microchip_number VARCHAR(100),
+    passport_number VARCHAR(100),
+    insurance_number VARCHAR(100),
+    insurance_company VARCHAR(255),
+    insurance_expiry DATE,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create expense type enum
-CREATE TYPE expense_type AS ENUM (
-    'feed',
-    'veterinary',
-    'farrier',
-    'equipment',
-    'training',
-    'competition',
-    'transport',
-    'insurance',
-    'boarding',
-    'other'
-);
-
--- Create expenses table (depends on users and horses)
 CREATE TABLE IF NOT EXISTS expenses (
     id SERIAL PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    horse_id INTEGER,
-    amount DECIMAL(10,2) NOT NULL CHECK (amount >= 0),
-    description TEXT,
+    horse_id INTEGER REFERENCES horses(id),
+    type expense_type NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
     date DATE NOT NULL,
-    expense_type expense_type DEFAULT 'other',
-    payment_method VARCHAR(50),
-    receipt_url TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_expenses_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    CONSTRAINT fk_expenses_horse FOREIGN KEY (horse_id) REFERENCES horses(id) ON DELETE SET NULL
+    description TEXT,
+    receipt_url VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create recurring expenses table (depends on users and horses)
 CREATE TABLE IF NOT EXISTS recurring_expenses (
     id SERIAL PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    horse_id INTEGER,
-    amount DECIMAL(10,2) NOT NULL CHECK (amount >= 0),
-    description TEXT,
-    frequency VARCHAR(50) NOT NULL,
+    horse_id INTEGER REFERENCES horses(id),
+    type expense_type NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    frequency VARCHAR(50) NOT NULL, -- monthly, yearly, etc.
     start_date DATE NOT NULL,
     end_date DATE,
-    next_due_date DATE NOT NULL,
-    expense_type expense_type DEFAULT 'other',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_recurring_expenses_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    CONSTRAINT fk_recurring_expenses_horse FOREIGN KEY (horse_id) REFERENCES horses(id) ON DELETE SET NULL
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Add core indexes
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_role ON users(role);
-CREATE INDEX idx_horses_user_id ON horses(user_id);
-CREATE INDEX idx_horses_name ON horses(name);
-CREATE INDEX idx_horses_owner_name ON horses(owner_name);
-CREATE INDEX idx_expenses_user_id ON expenses(user_id);
-CREATE INDEX idx_expenses_horse_id ON expenses(horse_id);
-CREATE INDEX idx_expenses_date ON expenses(date);
-CREATE INDEX idx_expenses_expense_type ON expenses(expense_type);
-CREATE INDEX idx_recurring_expenses_user_id ON recurring_expenses(user_id);
-CREATE INDEX idx_recurring_expenses_horse_id ON recurring_expenses(horse_id);
-CREATE INDEX idx_recurring_expenses_next_due_date ON recurring_expenses(next_due_date);
-CREATE INDEX idx_recurring_expenses_expense_type ON recurring_expenses(expense_type);
+-- Create indexes if they don't exist
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relname = 'idx_horses_user_id') THEN
+        CREATE INDEX idx_horses_user_id ON horses(user_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relname = 'idx_expenses_horse_id') THEN
+        CREATE INDEX idx_expenses_horse_id ON expenses(horse_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relname = 'idx_recurring_expenses_horse_id') THEN
+        CREATE INDEX idx_recurring_expenses_horse_id ON recurring_expenses(horse_id);
+    END IF;
+END$$;
 
 -- +goose Down
 DROP TABLE IF EXISTS recurring_expenses;

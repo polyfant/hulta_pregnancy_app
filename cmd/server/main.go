@@ -39,16 +39,17 @@ func run() error {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	// Run database migrations
-	if err := database.RunMigrations(db.DB); err != nil {
-		return fmt.Errorf("failed to run database migrations: %w", err)
-	}
-
+	// Get the underlying *sql.DB for migrations
 	sqlDB, err := db.DB.DB()
 	if err != nil {
 		return fmt.Errorf("error getting underlying *sql.DB: %w", err)
 	}
 	defer sqlDB.Close()
+
+	// Run database migrations
+	if err := database.RunMigrations(sqlDB); err != nil {
+		return fmt.Errorf("failed to run database migrations: %w", err)
+	}
 
 	// Initialize repositories
 	horseRepo := repository.NewHorseRepository(db.DB)
