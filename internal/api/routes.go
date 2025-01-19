@@ -3,52 +3,93 @@ package api
 import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/polyfant/hulta_pregnancy_app/internal/middleware"
+	"net/http"
 )
 
-// SetupRouter sets up the routing for our API
-func SetupRouter(router *gin.Engine, h *Handler) {
-	// Add CORS middleware
+func setupCORS() cors.Config {
 	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"*"}
-	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	config.AllowOrigins = []string{"http://localhost:3000"}
 	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
-	router.Use(cors.New(config))
+	config.AllowCredentials = true
+	return config
+}
 
-	// Create API group
-	api := router.Group("/api")
+func SetupRouter(router *gin.Engine, h *Handler) *gin.Engine {
+	// CORS middleware
+	router.Use(cors.New(setupCORS()))
+
+	// Create Auth0 middleware
+	auth := middleware.AuthMiddleware(middleware.Auth0Config{
+		Domain:   h.config.Auth0.Domain,
+		Audience: h.config.Auth0.Audience,
+		Issuer:   h.config.Auth0.Issuer,
+	})
+
+	// Public routes
+	public := router.Group("/api/v1")
 	{
+		public.GET("/health", HealthCheck)
+		public.GET("/version", Version)
+	}
+
+	// Protected routes
+	protected := router.Group("/api/v1")
+	protected.Use(auth)
+	{
+		// User routes
+		protected.GET("/user/profile", RequireRoles("user"), h.GetUserProfile)
+		protected.PUT("/user/profile", RequireRoles("user"), h.UpdateUserProfile)
+
 		// Horse routes
-		api.GET("/horses", h.ListHorses)
-		api.POST("/horses", h.AddHorse)
-		api.GET("/horses/:id", h.GetHorse)
-		api.PUT("/horses/:id", h.UpdateHorse)
-		api.DELETE("/horses/:id", h.DeleteHorse)
+		protected.GET("/horses", RequireRoles("user"), h.ListHorses)
+		protected.POST("/horses", RequireRoles("user"), h.AddHorse)
+		protected.GET("/horses/:id", RequireRoles("user"), h.GetHorse)
+		protected.PUT("/horses/:id", RequireRoles("user"), h.UpdateHorse)
+		protected.DELETE("/horses/:id", RequireRoles("user"), h.DeleteHorse)
 
 		// Health routes
-		api.GET("/horses/:id/health", h.GetHealthRecords)
-		api.POST("/horses/:id/health", h.AddHealthRecord)
-		api.PUT("/horses/:id/health/:recordId", h.UpdateHealthRecord)
-		api.DELETE("/horses/:id/health/:recordId", h.DeleteHealthRecord)
+		protected.GET("/horses/:id/health", RequireRoles("user"), h.GetHealthRecords)
+		protected.POST("/horses/:id/health", RequireRoles("user"), h.AddHealthRecord)
+		protected.PUT("/horses/:id/health/:recordId", RequireRoles("user"), h.UpdateHealthRecord)
+		protected.DELETE("/horses/:id/health/:recordId", RequireRoles("user"), h.DeleteHealthRecord)
 
 		// Pregnancy routes
-		api.GET("/horses/:id/pregnancy", h.GetPregnancy)
-		api.POST("/horses/:id/pregnancy/start", h.StartPregnancyTracking)
-		api.GET("/horses/:id/pregnancy/status", h.GetPregnancyStatus)
-		api.GET("/horses/:id/pregnancy/events", h.GetPregnancyEvents)
-		api.POST("/horses/:id/pregnancy/events", h.AddPregnancyEvent)
-		api.GET("/horses/:id/pregnancy/guidelines", h.GetPregnancyGuidelines)
+		protected.GET("/horses/:id/pregnancy", RequireRoles("user"), h.GetPregnancy)
+		protected.POST("/horses/:id/pregnancy/start", RequireRoles("user"), h.StartPregnancyTracking)
+		protected.GET("/horses/:id/pregnancy/status", RequireRoles("user"), h.GetPregnancyStatus)
+		protected.GET("/horses/:id/pregnancy/events", RequireRoles("user"), h.GetPregnancyEvents)
+		protected.POST("/horses/:id/pregnancy/events", RequireRoles("user"), h.AddPregnancyEvent)
+		protected.GET("/horses/:id/pregnancy/guidelines", RequireRoles("user"), h.GetPregnancyGuidelines)
 
 		// Breeding routes
-		api.GET("/horses/:id/breeding", h.GetBreedingRecords)
-		api.POST("/horses/:id/breeding", h.AddBreedingRecord)
-		api.PUT("/horses/:id/breeding/:recordId", h.UpdateBreedingRecord)
-		api.DELETE("/horses/:id/breeding/:recordId", h.DeleteBreedingRecord)
-
-		// User routes
-		api.GET("/user/profile", h.GetUserProfile)
-		api.PUT("/user/profile", h.UpdateUserProfile)
+		protected.GET("/horses/:id/breeding", RequireRoles("user"), h.GetBreedingRecords)
+		protected.POST("/horses/:id/breeding", RequireRoles("user"), h.AddBreedingRecord)
+		protected.PUT("/horses/:id/breeding/:recordId", RequireRoles("user"), h.UpdateBreedingRecord)
+		protected.DELETE("/horses/:id/breeding/:recordId", RequireRoles("user"), h.DeleteBreedingRecord)
 
 		// Dashboard route
-		api.GET("/dashboard", h.GetDashboardStats)
+		protected.GET("/dashboard", RequireRoles("user"), h.GetDashboardStats)
 	}
+
+	return router
+}
+
+// RequireRoles middleware wrapper for gin
+func RequireRoles(roles ...string) gin.HandlerFunc {
+	return middleware.RequireRoles(roles...)
+}
+
+// HealthCheck handles GET /health
+func HealthCheck(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"status": "healthy",
+	})
+}
+
+// Version handles GET /version
+func Version(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"version": "1.0.0", // You can make this dynamic by using build flags or environment variables
+	})
 }

@@ -25,3 +25,9 @@ backup:
 features:
   enable_caching: true
   strict_mode: false
+
+auth0:
+  domain: "your-tenant.auth0.com"
+  audience: "https://api.hulta-pregnancy.com"
+  issuer: "https://your-tenant.auth0.com/"
+  algorithms: ["RS256"]

@@ -9,6 +9,7 @@ import (
 
 type Config struct {
     Database DatabaseConfig
+    Auth0    Auth0Config    `yaml:"auth0"`
 }
 
 type DatabaseConfig struct {
@@ -17,6 +18,14 @@ type DatabaseConfig struct {
     User     string `json:"user"`
     Password string `json:"password"`
     DBName   string `json:"dbname"`
+}
+
+// Auth0Config holds Auth0-specific configuration
+type Auth0Config struct {
+    Domain    string `yaml:"domain"`
+    Audience  string `yaml:"audience"`
+    Issuer    string `yaml:"issuer"`
+    Algorithms []string `yaml:"algorithms"`
 }
 
 func Load() (*Config, error) {
@@ -43,6 +52,12 @@ func Load() (*Config, error) {
             User:     getEnv("DB_USER", "postgres"),
             Password: getEnv("DB_PASSWORD", "postgres"),
             DBName:   getEnv("DB_NAME", "horse_tracking"),
+        },
+        Auth0: Auth0Config{
+            Domain:    getEnv("AUTH0_DOMAIN", ""),
+            Audience:  getEnv("AUTH0_AUDIENCE", ""),
+            Issuer:    getEnv("AUTH0_ISSUER", ""),
+            Algorithms: []string{getEnv("AUTH0_ALGORITHM", "")},
         },
     }, nil
 }

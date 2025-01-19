@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/polyfant/hulta_pregnancy_app/internal/api/types"
 	"github.com/polyfant/hulta_pregnancy_app/internal/cache"
+	"github.com/polyfant/hulta_pregnancy_app/internal/config"
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service"
@@ -24,6 +25,7 @@ type Handler struct {
 	db               *gorm.DB
 	horseRepo        repository.HorseRepository
 	breedingRepo     repository.BreedingRepository
+	config           HandlerConfig
 }
 
 // HandlerConfig defines the configuration for creating a new handler
@@ -37,6 +39,7 @@ type HandlerConfig struct {
 	Cache            cache.Cache
 	HorseRepo        repository.HorseRepository
 	BreedingRepo     repository.BreedingRepository
+	Auth0            config.Auth0Config
 }
 
 // NewHandler creates a new handler instance
@@ -51,13 +54,14 @@ func NewHandler(config HandlerConfig) *Handler {
 		db:               config.Database,
 		horseRepo:        config.HorseRepo,
 		breedingRepo:     config.BreedingRepo,
+		config:           config,
 	}
 }
 
 // Start starts the HTTP server
 func (h *Handler) Start(port string) error {
 	router := gin.Default()
-	SetupRouter(router, h)
+	router = SetupRouter(router, h)
 	return router.Run(":" + port)
 }
 
