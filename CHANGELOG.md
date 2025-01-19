@@ -42,6 +42,14 @@
 -   Fixed database configuration structure
 -   Fixed repository constructor implementations
 
+## [0.3.1] - 2025-01-19
+
+### Fixed
+- Fixed database migration handling using goose 🔧
+- Standardized API paths to use /api/v1 prefix consistently
+- Updated frontend API client to use consistent versioned endpoints
+- Fixed AddHorse component to use proper API client with auth headers
+
 ## [0.3.0] - 2025-01-15
 
 ### Added
