@@ -96,7 +96,7 @@ func AuthMiddleware(config Auth0Config) gin.HandlerFunc {
 			// Set user info in context
 			if claims != nil && claims.RegisteredClaims.Subject != "" {
 				log.Printf("Setting user_id in context: %s", claims.RegisteredClaims.Subject)
-				c.Set("user_id", claims.RegisteredClaims.Subject)
+				c.Set(fmt.Sprintf("user_id_%d", UserIDKey), claims.RegisteredClaims.Subject)
 			} else {
 				log.Printf("No subject claim found in token")
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "No subject claim in token"})
@@ -106,7 +106,7 @@ func AuthMiddleware(config Auth0Config) gin.HandlerFunc {
 				customClaims, ok := claims.CustomClaims.(*CustomClaims)
 				if ok {
 					log.Printf("Setting user_roles in context: %+v", customClaims.Roles)
-					c.Set(string(UserRolesKey), customClaims.Roles)
+					c.Set(fmt.Sprintf("user_roles_%d", UserRolesKey), customClaims.Roles)
 				}
 			}
 		}
@@ -128,7 +128,7 @@ func AuthMiddleware(config Auth0Config) gin.HandlerFunc {
 func RequireRoles(roles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// For now, just check if user is authenticated
-		_, exists := c.Get(string(UserIDKey))
+		_, exists := c.Get(fmt.Sprintf("user_id_%d", UserIDKey))
 		if !exists {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
 			c.Abort()

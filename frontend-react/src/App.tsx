@@ -3,6 +3,7 @@ import { Notifications } from '@mantine/notifications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Auth0Provider } from '@auth0/auth0-react';
 import AppContent from './components/AppContent';
+import ErrorBoundary from './components/ErrorBoundary';
 import { theme } from './theme';
 
 const queryClient = new QueryClient();
@@ -20,7 +21,9 @@ export default function App() {
 			<QueryClientProvider client={queryClient}>
 				<MantineProvider theme={theme}>
 					<Notifications />
-					<AppContent />
+					<ErrorBoundary>
+						<AppContent />
+					</ErrorBoundary>
 				</MantineProvider>
 			</QueryClientProvider>
 		</Auth0Provider>

@@ -22,6 +22,13 @@ func SetupRouter(router *gin.Engine, h *Handler) *gin.Engine {
 	// CORS middleware
 	router.Use(cors.New(setupCORS()))
 
+	// Rate limiting middleware
+	rateLimitConfig := middleware.RateLimitConfig{
+		RequestsPerSecond: 10, // 10 requests per second
+		BurstLimit:        30, // Allow bursts up to 30 requests
+	}
+	router.Use(middleware.RateLimitMiddleware(rateLimitConfig))
+
 	// Create Auth0 middleware
 	auth := middleware.AuthMiddleware(middleware.Auth0Config{
 		Domain:   h.config.Auth0.Domain,
