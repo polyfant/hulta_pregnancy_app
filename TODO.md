@@ -34,12 +34,12 @@ Last Updated: 2025-01-19
     -   [x] User authentication flow
     -   [x] API endpoint protection
     -   [x] Frontend token handling
-    -   [ ] User roles and permissions (Pending)
-    -   [ ] Role-based access control
+    -   [x] User roles and permissions
+    -   [x] Role-based access control
 -   [x] Mobile-First UI/UX 
     -   [x] Touch-friendly interface (Using Mantine UI)
     -   [x] Bottom navigation
-    -   [ ] Offline capability
+    -   [x] Offline capability
     -   [x] Swipe gestures (Mantine components)
 
 ## Immediate Next Steps (Week of Jan 20-26, 2025)
@@ -147,10 +147,10 @@ Last Updated: 2025-01-19
   - [ ] Optimize image loading strategy
   - [ ] Minimize CSS and JS bundles
 - [ ] State Management
-  - [ ] Implement efficient caching strategy
-  - [ ] Optimize React Query configurations
-  - [ ] Add stale-while-revalidate patterns
-  - [ ] Smart invalidation rules
+  - [x] Implement efficient caching strategy 🚀
+  - [x] Optimize React Query configurations 🧠
+  - [x] Add stale-while-revalidate patterns 🔄
+  - [x] Smart invalidation rules 🎯
 
 ### Backend Performance
 - [ ] Database Optimization
@@ -183,6 +183,31 @@ Last Updated: 2025-01-19
 - [x] Implement proper database migrations (2025-01-19)
 - [ ] Set up CI/CD pipeline
 - [ ] Set up monitoring and alerting
+
+## Authentication and Authorization
+
+### Current Status
+- [x] Implemented Auth0 integration
+- [x] Simplified role-based access control
+- [x] Added middleware for role validation
+
+### Roles
+- `user`: Default role for standard users
+- `admin`: Full system access
+- `owner`: Farm owner permissions
+- `farm_manager`: Extended management capabilities
+
+### Pending Tasks
+- [ ] Implement more granular role-based permissions
+- [ ] Add role assignment logic in user registration
+- [ ] Create admin dashboard with role management
+- [ ] Implement role-based feature flags
+
+### Authentication Flow
+1. User authenticates via Auth0
+2. JWT token generated with role claims
+3. Middleware validates token and role
+4. Route access controlled by middleware
 
 ## Documentation Needs
 

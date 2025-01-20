@@ -159,7 +159,7 @@ func TestRateLimitMiddleware(t *testing.T) {
 		var requestTimes []time.Time
 
 		// Helper function to record request times
-		recordRequestTime := func(w *httptest.ResponseRecorder) {
+		recordRequestTime := func() {
 			mu.Lock()
 			defer mu.Unlock()
 			requestTimes = append(requestTimes, time.Now())
@@ -167,19 +167,19 @@ func TestRateLimitMiddleware(t *testing.T) {
 
 		// Perform multiple requests
 		w1 := performRequest(router, "GET", "/test", "127.0.0.1")
-		recordRequestTime(w1)
+		recordRequestTime()
 		assert.Equal(t, http.StatusOK, w1.Code)
 
 		w2 := performRequest(router, "GET", "/test", "127.0.0.1")
-		recordRequestTime(w2)
+		recordRequestTime()
 		assert.Equal(t, http.StatusOK, w2.Code)
 
 		w3 := performRequest(router, "GET", "/test", "127.0.0.1")
-		recordRequestTime(w3)
+		recordRequestTime()
 		assert.Equal(t, http.StatusOK, w3.Code)
 
 		w4 := performRequest(router, "GET", "/test", "127.0.0.1")
-		recordRequestTime(w4)
+		recordRequestTime()
 		assert.Equal(t, http.StatusTooManyRequests, w4.Code)
 
 		// Verify time between first three requests is reasonable

@@ -19,6 +19,9 @@
 -   Added repository constructors
 -   Added pregnancy service implementation
 -   Added breeding service interface
+-   Comprehensive role-based authentication middleware
+-   Auth0 JWT token validation
+-   Simplified role structure (user, admin, owner, farm_manager)
 
 ### Changed
 
@@ -31,6 +34,9 @@
 -   Improved main.go error handling and structure
 -   Updated PregnancyEvent model with UserID field
 -   Refactored service initialization in main.go
+-   Refactored authentication middleware in `internal/middleware/auth_middleware.go`
+-   Updated route handling to support role-based access control
+-   Improved test suite for rate limiting and authentication
 
 ### Fixed
 
@@ -41,6 +47,17 @@
 -   Fixed service pointer vs value handling
 -   Fixed database configuration structure
 -   Fixed repository constructor implementations
+-   Resolved unused parameter warnings in test files
+-   Standardized error handling in authentication middleware
+
+### Dependencies
+-   Added `github.com/golang-jwt/jwt/v4`
+-   Added `github.com/auth0/go-jwt-middleware/v2`
+-   Added `golang.org/x/time`
+
+### Security
+-   Enhanced token validation
+-   Implemented role-based route protection
 
 ## [0.3.1] - 2025-01-19
 

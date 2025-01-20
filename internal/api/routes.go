@@ -87,7 +87,7 @@ func SetupRouter(router *gin.Engine, h *Handler) *gin.Engine {
 
 // RequireRoles middleware wrapper for gin
 func RequireRoles(roles ...string) gin.HandlerFunc {
-	return middleware.RequireRoles(roles...)
+	return middleware.RoleMiddleware(roles...)
 }
 
 // HealthCheck handles GET /health
