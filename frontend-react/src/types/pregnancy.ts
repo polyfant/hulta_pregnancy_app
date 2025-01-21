@@ -1,18 +1,37 @@
+export type PregnancyStage = 'Early' | 'Mid' | 'Late' | 'Pre-foaling';
+
 export interface PregnancyStatus {
-  isPregnant: boolean;
-  conceptionDate: string;
-  currentStage: 'EARLY' | 'MIDDLE' | 'LATE' | 'NEARTERM' | 'FOALING';
-  daysInPregnancy: number;
-  expectedDueDate: string;
-  lastEvent?: PregnancyEvent;
+  horseId: number;
+  currentDay: number;
+  totalDays: number;
+  stage: PregnancyStage;
+  dueDate: string;
+  lastCheckup?: string;
+  nextCheckup?: string;
+  notes?: string;
 }
 
 export interface PregnancyEvent {
-  id: number;
+  id: string;
+  horseId: number;
   date: string;
-  eventType: string;
+  type: 'checkup' | 'milestone' | 'note';
+  title: string;
   description: string;
-  notes?: string;
+}
+
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  completed: boolean;
+  createdAt: string;
+  completedAt?: string;
+}
+
+export interface PregnancyChecklist {
+  id: string;
+  horseId: number;
+  items: ChecklistItem[];
 }
 
 export interface PregnancyGuideline {

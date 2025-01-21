@@ -1,7 +1,7 @@
 # Current Priorities
 
 ## High Priority (MVP Target: Mid-February 2025)
-Last Updated: 2025-01-19
+Last Updated: 2025-01-21
 
 -   [ ] Complete core ML features
     -   [ ] Pregnancy stage calculation 
@@ -41,6 +41,19 @@ Last Updated: 2025-01-19
     -   [x] Bottom navigation
     -   [x] Offline capability
     -   [x] Swipe gestures (Mantine components)
+-   [ ] Connect All Frontend Components to Backend (No More Mocking) 🔥
+    -   [ ] Pregnancy Tracking Components
+        - [ ] StageVisualization - Real-time stage data
+        - [ ] Timeline - Actual pregnancy events
+        - [ ] PrefoalingChecklist - Persistent checklist items
+        - [ ] CalendarView - Real calendar events
+    -   [ ] Dashboard Components
+        - [ ] HorseStatusDashboard - Live horse data
+        - [ ] Statistics - Real-time calculations
+    -   [ ] Form Components
+        - [ ] Add proper form validation
+        - [ ] Implement optimistic updates
+        - [ ] Add error handling
 
 ## Immediate Next Steps (Week of Jan 20-26, 2025)
 
@@ -49,7 +62,7 @@ Last Updated: 2025-01-19
    - [x] Implement error boundaries 🦍
    - [x] Add form validation (horseValidation.ts implemented)
    - [x] Improve mobile responsiveness (Using Mantine UI)
-
+   - [ ] Connect all components to backend (Priority) 🔥
 2. Backend Enhancements
    - [x] Add request logging middleware (auth_middleware.go)
    - [x] Implement rate limiting 🚀

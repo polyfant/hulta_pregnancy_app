@@ -12,34 +12,39 @@ export const createApiClient = () => {
 
     client.interceptors.request.use(async (config) => {
         try {
-            console.log('Getting access token...');
             const token = await getAccessTokenSilently();
-            console.log('Token received:', token ? 'Token present' : 'No token');
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
-                console.log('Authorization header set');
             }
         } catch (error) {
             console.error('Error getting access token:', error);
         }
-        console.log('Request config:', {
-            method: config.method,
-            url: config.url,
-            hasAuthHeader: !!config.headers.Authorization
-        });
         return config;
     });
 
-    return client;
+    return {
+        get: async <T>(url: string): Promise<T> => {
+            const response = await client.get<T>(url);
+            return response.data;
+        },
+        post: async <T>(url: string, data: unknown): Promise<T> => {
+            const response = await client.post<T>(url, data);
+            return response.data;
+        },
+        put: async <T>(url: string, data: unknown): Promise<T> => {
+            const response = await client.put<T>(url, data);
+            return response.data;
+        },
+        patch: async <T>(url: string, data: unknown): Promise<T> => {
+            const response = await client.patch<T>(url, data);
+            return response.data;
+        },
+        delete: async (url: string): Promise<void> => {
+            await client.delete(url);
+        },
+    };
 };
 
 export const useApiClient = () => {
-    const client = createApiClient();
-    
-    return {
-        get: <T>(url: string) => client.get<T>(url).then(res => res.data),
-        post: <T>(url: string, data: any) => client.post<T>(url, data).then(res => res.data),
-        put: <T>(url: string, data: any) => client.put<T>(url, data).then(res => res.data),
-        delete: (url: string) => client.delete(url).then(res => res.data),
-    };
+    return createApiClient();
 };
