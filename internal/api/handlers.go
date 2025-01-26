@@ -21,11 +21,14 @@ type Handler struct {
 	pregnancyService service.PregnancyService
 	healthService    service.HealthService
 	breedingService  service.BreedingService
+	growthService    service.GrowthService
 	cache            cache.Cache
 	db               *gorm.DB
 	horseRepo        repository.HorseRepository
 	breedingRepo     repository.BreedingRepository
+	growthRepo       repository.GrowthRepository
 	config           HandlerConfig
+	growthHandler    *GrowthHandler
 }
 
 // HandlerConfig defines the configuration for creating a new handler
@@ -36,25 +39,33 @@ type HandlerConfig struct {
 	PregnancyService service.PregnancyService
 	HealthService    service.HealthService
 	BreedingService  service.BreedingService
+	GrowthService    service.GrowthService
 	Cache            cache.Cache
 	HorseRepo        repository.HorseRepository
 	BreedingRepo     repository.BreedingRepository
+	GrowthRepo       repository.GrowthRepository
 	Auth0            config.Auth0Config
 }
 
 // NewHandler creates a new handler instance
 func NewHandler(config HandlerConfig) *Handler {
+	// Create growth handler
+	growthHandler := NewGrowthHandler(config.GrowthService)
+
 	return &Handler{
 		horseService:     config.HorseService,
 		userService:      config.UserService,
 		pregnancyService: config.PregnancyService,
 		healthService:    config.HealthService,
 		breedingService:  config.BreedingService,
+		growthService:    config.GrowthService,
 		cache:            config.Cache,
 		db:               config.Database,
 		horseRepo:        config.HorseRepo,
 		breedingRepo:     config.BreedingRepo,
+		growthRepo:       config.GrowthRepo,
 		config:           config,
+		growthHandler:    growthHandler,
 	}
 }
 
@@ -802,4 +813,9 @@ func (h *Handler) GetHealthService() service.HealthService {
 // GetBreedingService returns the breeding service
 func (h *Handler) GetBreedingService() service.BreedingService {
     return h.breedingService
+}
+
+// GetGrowthService returns the growth service
+func (h *Handler) GetGrowthService() service.GrowthService {
+    return h.growthService
 }

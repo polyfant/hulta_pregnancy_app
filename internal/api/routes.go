@@ -78,6 +78,11 @@ func SetupRouter(router *gin.Engine, h *Handler) *gin.Engine {
 		protected.PUT("/horses/:id/breeding/:recordId", h.UpdateBreedingRecord)
 		protected.DELETE("/horses/:id/breeding/:recordId", h.DeleteBreedingRecord)
 
+		// Growth routes
+		protected.POST("/horses/:id/growth", h.growthHandler.RecordGrowthMeasurement)
+		protected.GET("/horses/:id/growth", h.growthHandler.GetFoalGrowthData)
+		protected.GET("/horses/:id/growth/analysis", h.growthHandler.AnalyzeGrowthTrends)
+
 		// Dashboard route
 		protected.GET("/dashboard", h.GetDashboardStats)
 	}

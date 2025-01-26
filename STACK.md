@@ -10,6 +10,19 @@
 -   Chart.js & Nivo for visualizations
 -   Day.js for date handling
 
+## Backend
+
+-   Go 1.23.4+ for high-performance API
+-   Gin Web Framework for routing
+-   GORM for database operations
+-   PostgreSQL for data persistence
+-   Redis for caching and rate limiting
+-   Auth0 for authentication & authorization
+-   Swagger for API documentation
+-   Zap for structured logging
+-   Docker for containerization
+-   GitHub Actions for CI/CD
+
 ## ML & Analytics
 
 -   TensorFlow.js for on-device ML
@@ -22,3 +35,7 @@
 -   LocalStorage for offline-first data
 -   Privacy-focused architecture
 -   Granular data controls
+-   Rate limiting middleware
+-   CORS protection
+-   SSL/TLS encryption
+-   Secure headers middleware
