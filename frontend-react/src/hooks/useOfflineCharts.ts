@@ -24,9 +24,21 @@ const fetchFoalGrowthData: QueryFunction<FoalGrowthData, ['foal-growth', number]
   try {
     // Try online first
     const response = await fetch(`/api/foals/${foalId}/growth-data`);
-    const data: FoalGrowthData = await response.json();
+    const sqlData: Array<{
+      weight: number;
+      height: number;
+      measurementDate: string;
+    }> = await response.json();
 
-    // Cache the data locally
+    // Transform SQL data to IndexedDB schema
+    const data: FoalGrowthData = {
+      foalId,
+      weightData: sqlData.map(item => item.weight),
+      heightData: sqlData.map(item => item.height),
+      timestamp: Date.now()
+    };
+
+    // Cache the transformed data locally
     const db = await openDB<DBSchema>('foal-growth-cache', 1, {
       upgrade(database) {
         if (!database.objectStoreNames.contains(STORE_NAME)) {
@@ -60,15 +72,23 @@ const fetchFoalGrowthData: QueryFunction<FoalGrowthData, ['foal-growth', number]
     if (cachedData) {
       const actualData: FoalGrowthData = 'value' in cachedData ? cachedData.value : cachedData;
       
+      // Transform cached data to match the expected format
+      const transformedData: FoalGrowthData = {
+        foalId,
+        weightData: actualData.weightData,
+        heightData: actualData.heightData,
+        timestamp: actualData.timestamp,
+      };
+
       // If cached data exists but we're online, try to sync
       if (navigator.onLine) {
         try {
-          await syncService.syncMeasurement(actualData);
+          await syncService.syncMeasurement(transformedData);
         } catch (syncError) {
           console.warn('Background sync failed', syncError);
         }
       }
-      return actualData;
+      return transformedData;
     }
 
     throw error;
