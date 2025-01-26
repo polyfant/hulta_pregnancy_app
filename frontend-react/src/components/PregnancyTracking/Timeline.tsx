@@ -1,6 +1,8 @@
-import { Timeline as MantineTimeline, Text, Card, Stack, ThemeIcon } from '@mantine/core';
+import { Timeline as MantineTimeline, Text, Card, Stack, ThemeIcon, Skeleton } from '@mantine/core';
 import { Horse, Baby, FirstAid, Calendar } from '@phosphor-icons/react';
 import { FC } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useHorsesApi } from '../../api/horses';
 
 interface TimelineEvent {
   id: string;
@@ -11,49 +13,49 @@ interface TimelineEvent {
   color: string;
 }
 
-export const PregnancyTimeline: FC = () => {
-  const events: TimelineEvent[] = [
-    {
-      id: '1',
-      title: 'Early Stage',
-      description: 'Critical development period. Regular check-ups essential.',
-      date: 'Days 1-100',
-      icon: <Horse size={16} weight="fill" />,
-      color: 'blue'
-    },
-    {
-      id: '2',
-      title: 'Mid Stage',
-      description: 'Steady growth phase. Monitor nutrition carefully.',
-      date: 'Days 101-240',
-      icon: <FirstAid size={16} weight="fill" />,
-      color: 'cyan'
-    },
-    {
-      id: '3',
-      title: 'Late Stage',
-      description: 'Rapid foal development. Prepare for pre-foaling.',
-      date: 'Days 241-320',
-      icon: <Calendar size={16} weight="fill" />,
-      color: 'teal'
-    },
-    {
-      id: '4',
-      title: 'Pre-foaling',
-      description: 'Final preparations. Monitor closely for signs.',
-      date: 'Days 321-340',
-      icon: <Baby size={16} weight="fill" />,
-      color: 'brand'
-    }
-  ];
+interface PregnancyTimelineProps {
+  horseId: number;
+}
+
+export const PregnancyTimeline: FC<PregnancyTimelineProps> = ({ horseId }) => {
+  const api = useHorsesApi();
+  const { data: events, isLoading, error } = useQuery<TimelineEvent[]>({
+    queryKey: ['pregnancyEvents', horseId],
+    queryFn: () => api.getPregnancyEvents(horseId),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+  });
+
+  if (isLoading) {
+    return (
+      <Card shadow="sm" padding="lg" radius="md">
+        <Stack gap="lg">
+          <Skeleton height={30} width="60%" />
+          <Stack gap="md">
+            {[1, 2, 3, 4].map((item) => (
+              <Skeleton key={item} height={80} />
+            ))}
+          </Stack>
+        </Stack>
+      </Card>
+    );
+  }
+
+  if (error || !events || events.length === 0) {
+    return (
+      <Card shadow="sm" padding="lg" radius="md">
+        <Text c="red">No pregnancy events found</Text>
+      </Card>
+    );
+  }
 
   return (
     <Card shadow="sm" padding="lg" radius="md">
       <Stack gap="lg">
         <Text fw={700} size="xl">Pregnancy Timeline</Text>
         
-        <MantineTimeline active={1} bulletSize={24} lineWidth={2}>
-          {events.map((event) => (
+        <MantineTimeline active={events.length} bulletSize={24} lineWidth={2}>
+          {events.map((event, index) => (
             <MantineTimeline.Item
               key={event.id}
               bullet={
