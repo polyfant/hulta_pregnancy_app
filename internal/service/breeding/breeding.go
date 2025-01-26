@@ -1,184 +1,43 @@
 package breeding
 
 import (
+	"context"
 	"fmt"
-	"sort"
-	"strings"
-	"time"
 
-	"github.com/polyfant/horse_tracking/internal/models"
-	"github.com/polyfant/horse_tracking/internal/logger"
+	"github.com/polyfant/hulta_pregnancy_app/internal/models"
+	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
+	"github.com/polyfant/hulta_pregnancy_app/internal/service"
 )
 
-// Pregnancy stage thresholds in days
-const (
-	EarlyPregnancyDays = 113
-	MidPregnancyDays   = 226
-	LatePregnancyDays  = 310
-	OverdueDays        = 365
-)
-
-// Service handles breeding-related operations
-type Service struct {
-	db models.DataStore
+type BreedingService struct {
+	repo repository.BreedingRepository
 }
 
-// NewService creates a new breeding service instance
-func NewService(db models.DataStore) *Service {
-	return &Service{db: db}
+var _ service.BreedingService = (*BreedingService)(nil)
+
+func NewBreedingService(repo repository.BreedingRepository) service.BreedingService {
+	return &BreedingService{repo: repo}
 }
 
-// CalculatePregnancySuccessRate calculates the success rate of pregnancies
-func (s *Service) CalculatePregnancySuccessRate(horses []models.Horse) float64 {
-	if len(horses) == 0 {
-		return 0.0
+func (s *BreedingService) CreateRecord(ctx context.Context, record *models.BreedingRecord) error {
+	if err := s.repo.CreateRecord(ctx, record); err != nil {
+		return fmt.Errorf("failed to create breeding record: %w", err)
 	}
-
-	var pregnantCount, successfulBirths int
-	for _, horse := range horses {
-		if horse.ConceptionDate != nil {
-			pregnantCount++
-			events, err := s.db.GetPregnancyEvents(horse.ID)
-			if err != nil {
-				logger.Error(err, "Failed to get pregnancy events", map[string]interface{}{
-					"horseID": horse.ID,
-				})
-				continue
-			}
-
-			for _, event := range events {
-				if strings.EqualFold(event.Type, models.EventFoaling) && event.Description == "SUCCESSFUL" {
-					successfulBirths++
-					break
-				}
-			}
-		}
-	}
-
-	if pregnantCount == 0 {
-		return 0.0
-	}
-	return float64(successfulBirths) / float64(pregnantCount) * 100
+	return nil
 }
 
-// GetUpcomingMilestones returns a list of upcoming pregnancy milestones
-func (s *Service) GetUpcomingMilestones(horse models.Horse) []string {
-	if horse.ConceptionDate == nil {
-		return nil
+func (s *BreedingService) GetRecords(ctx context.Context, horseID uint) ([]models.BreedingRecord, error) {
+	records, err := s.repo.GetRecords(ctx, horseID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get breeding records: %w", err)
 	}
-
-	daysPregnant := int(time.Since(*horse.ConceptionDate).Hours() / 24)
-	var milestones []string
-
-	// Define milestones with their days and descriptions
-	milestoneDefs := []struct {
-		days int
-		desc string
-	}{
-		{14, "First ultrasound check"},
-		{30, "Second ultrasound check"},
-		{45, "Gender determination possible"},
-		{60, "Fetal movement check"},
-		{90, "Vaccination review"},
-		{EarlyPregnancyDays, "End of early pregnancy stage"},
-		{MidPregnancyDays, "End of mid pregnancy stage"},
-		{LatePregnancyDays, "Prepare for foaling"},
-	}
-
-	for _, m := range milestoneDefs {
-		if daysPregnant <= m.days {
-			daysUntil := m.days - daysPregnant
-			milestones = append(milestones, fmt.Sprintf("%s (in %d days)", m.desc, daysUntil))
-		}
-	}
-
-	return milestones
+	return records, nil
 }
 
-// GetPregnancyStage determines the current stage of pregnancy
-func (s *Service) GetPregnancyStage(horse models.Horse) models.PregnancyStage {
-	if horse.ConceptionDate == nil {
-		return ""
-	}
-
-	daysPregnant := int(time.Since(*horse.ConceptionDate).Hours() / 24)
-
-	switch {
-	case daysPregnant <= EarlyPregnancyDays:
-		return models.EarlyGestation
-	case daysPregnant <= MidPregnancyDays:
-		return models.MidGestation
-	case daysPregnant <= LatePregnancyDays:
-		return models.LateGestation
-	case daysPregnant <= OverdueDays:
-		return models.PreFoaling
-	default:
-		return models.Foaling
-	}
+func (s *BreedingService) UpdateRecord(ctx context.Context, record *models.BreedingRecord) error {
+	return s.repo.UpdateRecord(ctx, record)
 }
 
-// GetHighBreedingCosts returns a list of high breeding costs
-func (s *Service) GetHighBreedingCosts(horses []models.Horse, threshold float64, startDate, endDate time.Time) []struct {
-	HorseName   string
-	Description string
-	Amount      float64
-} {
-	var highCosts []struct {
-		HorseName   string
-		Description string
-		Amount      float64
-	}
-
-	for _, horse := range horses {
-		costs, err := s.db.GetBreedingCosts(horse.ID)
-		if err != nil {
-			logger.Error(err, "Failed to get breeding costs", map[string]interface{}{
-				"horseID": horse.ID,
-			})
-			continue
-		}
-
-		for _, cost := range costs {
-			if cost.Amount >= threshold && cost.Date.After(startDate) && cost.Date.Before(endDate) {
-				highCosts = append(highCosts, struct {
-					HorseName   string
-					Description string
-					Amount      float64
-				}{
-					HorseName:   horse.Name,
-					Description: cost.Description,
-					Amount:      cost.Amount,
-				})
-			}
-		}
-	}
-
-	sortByAmount(highCosts)
-	return highCosts
-}
-
-// GetPregnantHorses returns a list of currently pregnant horses
-func (s *Service) GetPregnantHorses(horses []models.Horse) []models.Horse {
-	var pregnantHorses []models.Horse
-	for _, horse := range horses {
-		if horse.IsPregnant && horse.ConceptionDate != nil {
-			pregnantHorses = append(pregnantHorses, horse)
-		}
-	}
-	return pregnantHorses
-}
-
-// Helper functions
-func containsIgnoreCase(s, substr string) bool {
-	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
-}
-
-func sortByAmount(costs []struct {
-	HorseName   string
-	Description string
-	Amount      float64
-}) {
-	sort.Slice(costs, func(i, j int) bool {
-		return costs[i].Amount > costs[j].Amount
-	})
+func (s *BreedingService) DeleteRecord(ctx context.Context, id uint) error {
+	return s.repo.DeleteRecord(ctx, id)
 }

@@ -1,0 +1,33 @@
+database:
+  host: localhost
+  port: 5432
+  user: horsetracker
+  password: securepassword
+  dbname: horse_tracking_db
+
+server:
+  host: 0.0.0.0
+  port: 8080
+
+logging:
+  level: info
+  file_path: ./logs
+
+cache:
+  default_expiration: 10m
+
+backup:
+  enabled: true
+  directory: ./database_backups
+  interval: 24h
+  max_backups: 30
+
+features:
+  enable_caching: true
+  strict_mode: false
+
+auth0:
+  domain: "your-tenant.auth0.com"
+  audience: "https://api.hulta-pregnancy.com"
+  issuer: "https://your-tenant.auth0.com/"
+  algorithms: ["RS256"]

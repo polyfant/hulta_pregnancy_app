@@ -1,0 +1,27 @@
+                   List of relations
+ Schema |         Name          | Type  |    Owner     
+--------+-----------------------+-------+--------------
+ public | backup_history        | table | horsetracker
+ public | breeding_costs        | table | horsetracker
+ public | breeding_records      | table | horsetracker
+ public | consent_logs          | table | horsetracker
+ public | expenses              | table | horsetracker
+ public | feed_inventory        | table | horsetracker
+ public | feed_logs             | table | horsetracker
+ public | feed_requirements     | table | horsetracker
+ public | feed_types            | table | horsetracker
+ public | goose_db_version      | table | horsetracker
+ public | health_records        | table | horsetracker
+ public | horses                | table | horsetracker
+ public | locations             | table | horsetracker
+ public | pre_foaling_checklist | table | horsetracker
+ public | pregnancies           | table | horsetracker
+ public | pregnancy_events      | table | horsetracker
+ public | privacy_preferences   | table | horsetracker
+ public | recurring_expenses    | table | horsetracker
+ public | schema_versions       | table | horsetracker
+ public | users                 | table | horsetracker
+ public | weather_data          | table | horsetracker
+ public | weather_impacts       | table | horsetracker
+(22 rows)
+

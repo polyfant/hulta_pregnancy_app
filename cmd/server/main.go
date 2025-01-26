@@ -1,31 +1,93 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/polyfant/horse_tracking/internal/api"
-	"github.com/polyfant/horse_tracking/internal/database"
+	"fmt"
 	"log"
+	"os"
+
+	"github.com/polyfant/hulta_pregnancy_app/internal/api"
+	"github.com/polyfant/hulta_pregnancy_app/internal/cache"
+	"github.com/polyfant/hulta_pregnancy_app/internal/config"
+	"github.com/polyfant/hulta_pregnancy_app/internal/database"
+	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
+	"github.com/polyfant/hulta_pregnancy_app/internal/service"
+	"github.com/polyfant/hulta_pregnancy_app/internal/service/breeding"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatalf("Application failed: %v", err)
+	}
+}
+
+func run() error {
 	// Set Gin to release mode in production
-	gin.SetMode(gin.ReleaseMode)
+	if os.Getenv("GIN_MODE") != "debug" {
+		gin.SetMode(gin.ReleaseMode)
+	}
 
-	// Initialize SQLite store
-	db, err := database.NewSQLiteStore("horse_tracking.db")
+	// Load configuration
+	cfg, err := config.Load()
 	if err != nil {
-		log.Fatal("Failed to initialize database:", err)
+		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// Initialize handler with dependencies
-	handler := api.NewHandler(db)
-
-	// Setup router with the handler and store
-	router := api.SetupRouter(handler, db)
-
-	// Start server - listen on all interfaces
-	log.Println("Starting server on 0.0.0.0:8080")
-	if err := router.Run("0.0.0.0:8080"); err != nil {
-		log.Fatal("Failed to start server:", err)
+	// Initialize database
+	db, err := database.NewPostgresDB(cfg.Database)
+	if err != nil {
+		return fmt.Errorf("failed to connect to database: %w", err)
 	}
+
+	// Get the underlying *sql.DB for migrations
+	sqlDB, err := db.DB.DB()
+	if err != nil {
+		return fmt.Errorf("error getting underlying *sql.DB: %w", err)
+	}
+	defer sqlDB.Close()
+
+	// Run database migrations
+	if err := database.RunMigrations(sqlDB); err != nil {
+		return fmt.Errorf("failed to run database migrations: %w", err)
+	}
+
+	// Initialize repositories
+	horseRepo := repository.NewHorseRepository(db.DB)
+	userRepo := repository.NewUserRepository(db.DB)
+	pregnancyRepo := repository.NewPregnancyRepository(db.DB)
+	healthRepo := repository.NewHealthRepository(db.DB)
+	breedingRepo := repository.NewBreedingRepository(db.DB)
+
+	// Initialize cache
+	cache := cache.NewMemoryCache()
+
+	// Initialize services
+	userService := service.NewUserService(userRepo)
+	horseService := service.NewHorseService(horseRepo)
+	pregnancyService := service.NewPregnancyService(horseRepo, pregnancyRepo)
+	healthService := service.NewHealthService(healthRepo)
+	breedingService := breeding.NewBreedingService(breedingRepo)
+
+	// Initialize handler
+	handler := api.NewHandler(api.HandlerConfig{
+		Database:         db.DB,
+		UserService:      userService,
+		HorseService:     horseService,
+		PregnancyService: pregnancyService,
+		HealthService:    healthService,
+		BreedingService:  breedingService,
+		Cache:           cache,
+		HorseRepo:       horseRepo,
+		BreedingRepo:    breedingRepo,
+		Auth0:           cfg.Auth0,
+	})
+
+	// Start server
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Printf("Starting server on port %s", port)
+	return handler.Start(port)
 }

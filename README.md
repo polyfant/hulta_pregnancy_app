@@ -1,116 +1,105 @@
-# Horse Tracking Application
+# Horse Pregnancy Tracking Application
 
-A comprehensive web application for tracking horses, breeding, and health records. This application helps horse owners and breeders manage their horses' information, health records, breeding costs, and provides detailed pregnancy monitoring with stage-specific guidelines.
+## Overview
 
-## Project Status: Active Development
+A comprehensive horse pregnancy tracking system with advanced stage monitoring and due date prediction.
 
-This is a private, closed-source project under active development. All code, designs, and documentation are proprietary and confidential.
+## Key Features
 
-## Current Features
+### Pregnancy Tracking
 
-### Horse Management
-- Add new horses with details (name, breed, gender, birth date)
-- View all horses in a clean, sortable list
-- Track gender-specific information (stallions, mares, geldings)
-- Support for external parent references
-- Dark theme with excellent readability
+-   Accurate stage calculation (Early, Mid, Late, Overdue)
+-   Due date prediction with viable windows (320-370 days)
+-   Overdue monitoring and high-risk detection
+-   Progress tracking with detailed statistics
+-   Comprehensive pregnancy timeline
 
-### Pregnancy Monitoring
-- Track pregnancy stages (Early, Mid, Late, Due Soon)
-- Calculate and display pregnancy progress
-- Show stage-specific recommendations
-- Record conception date and father information
-- Support for both internal and external fathers
-- Timeline view of pregnancy events
-- Track vet checks and important milestones
-- Warning system for health concerns
+## Core Features
 
-### Breeding Management
-- Record breeding events
-- Track conception dates
-- Manage stallion information
-- Support for external stallion records
-- Validate breeding eligibility
+-   Horse pregnancy tracking and monitoring
+-   Pre-foaling checklist management
+-   Health record keeping
+-   Secure user authentication with Auth0
+-   Real-time pregnancy status dashboard
+-   Privacy-focused data management
+-   API versioning (v1)
 
-## Upcoming Features
-
-### Family Tree Management
-- Visual family tree representation
-- Track lineage and breeding history
-- Link horses to their parents
-- Support for external parent references
-
-### Health Tracking
-- Record and monitor health assessments
-- Track vaccination status
-- Manage health records and checkups
-- View comprehensive health summaries
-
-## Authentication
-- Integrated Auth0 for secure authentication
-- Configurable authentication parameters
-- Ongoing improvements to authentication flow
-
-## Recent Improvements
-- Refined icon management using Feather Icons
-- Enhanced TypeScript type definitions
-- Improved frontend component consistency
-
-## API Endpoints
-
-### Currently Implemented
-- `GET /api/horses` - List all horses
-- `POST /api/horses` - Create a new horse
-- `GET /api/horses/{id}` - Get details of a specific horse
-- `GET /api/horses/{id}/pregnancy/status` - Get pregnancy status and stage
-- `POST /api/horses/{id}/pregnancy/events` - Add pregnancy event
-
-### Planned Endpoints
-- `GET /api/horses/{id}/family-tree` - Get family tree data
-- `GET /api/horses/{id}/health` - Get health records
-- `POST /api/horses/{id}/health-records` - Add health record
-- `GET /api/horses/stallions` - List available stallions
-
-## Tech Stack
-
-### Backend
-- Go 1.21+
-- Gin web framework
-- SQLite3 database
-- Clean architecture
-
-### Frontend
-- React 18 with TypeScript
-- Mantine v7 UI framework
-- TanStack Query for data fetching
-- React Router v6
-- Day.js for date handling
-- Dark theme optimized for readability
-
-## Development Setup
+## Getting Started
 
 ### Prerequisites
-- Node.js 18+
-- Go 1.21+
-- Git
 
-### Getting Started
-1. Clone the repository
-2. Install frontend dependencies:
+-   Go 1.23.4+
+-   Node.js 18+
+-   PostgreSQL 13+
+-   Auth0 account
+
+### Environment Setup
+
+1. Copy `.env.example` to `.env` and configure:
+   ```env
+   DB_HOST=localhost
+   DB_PORT=5432
+   DB_USER=horsetracker
+   DB_NAME=horse_tracking_db
+   DB_PASSWORD=your_password
+   
+   AUTH0_DOMAIN=your-domain.auth0.com
+   AUTH0_AUDIENCE=your-api-identifier
+   ```
+
+2. Copy `frontend-react/env.template.txt` to `frontend-react/.env` and configure:
+   ```env
+   VITE_AUTH0_DOMAIN=your-domain.auth0.com
+   VITE_AUTH0_CLIENT_ID=your-client-id
+   VITE_AUTH0_AUDIENCE=your-api-identifier
+   VITE_API_URL=http://localhost:8080
+   ```
+
+### Quick Start
+
+1. Start PostgreSQL:
+   ```bash
+   # Using Docker
+   docker run -d --name postgres \
+     -e POSTGRES_USER=horsetracker \
+     -e POSTGRES_PASSWORD=your_password \
+     -e POSTGRES_DB=horse_tracking_db \
+     -p 5432:5432 \
+     postgres:13
+   ```
+
+2. Start the backend:
+   ```bash
+   go run cmd/server/main.go
+   ```
+
+3. Start the frontend:
    ```bash
    cd frontend-react
    npm install
-   ```
-3. Start the frontend development server:
-   ```bash
    npm run dev
    ```
-4. In a new terminal, start the backend server:
-   ```bash
-   cd ../backend
-   go run main.go
-   ```
 
-## Contributing
+4. Access the application:
+   - Frontend: http://localhost:5173
+   - API: http://localhost:8080/api/v1
 
-This is a private project. Please contact the project maintainers for contribution guidelines.
+## Latest Updates (2025-01-19)
+
+- ✨ Standardized API versioning with /api/v1 prefix
+- 🔧 Improved database migrations using goose
+- 🔒 Enhanced Auth0 integration
+- 🚀 Updated frontend API client
+
+For a complete list of changes, see [CHANGELOG.md](CHANGELOG.md)
+For development roadmap, see [TODO.md](TODO.md)
+
+## Documentation
+
+- [API Documentation](docs/api.md)
+- [Development Guide](docs/development.md)
+- [Deployment Guide](docs/deployment.md)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

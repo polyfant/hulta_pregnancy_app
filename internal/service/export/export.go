@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/polyfant/horse_tracking/internal/logger"
-	"github.com/polyfant/horse_tracking/internal/models"
+	"github.com/polyfant/hulta_pregnancy_app/internal/logger"
+	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 )
 
 type ExportService struct {
@@ -44,12 +44,12 @@ func (es *ExportService) ExportHorsesToCSV(horses []models.Horse) (string, error
 	// Write data
 	for _, horse := range horses {
 		motherID := ""
-		if horse.MotherID != nil {
-			motherID = strconv.FormatInt(*horse.MotherID, 10)
+		if horse.MotherId != nil {
+			motherID = strconv.FormatInt(int64(*horse.MotherId), 10)
 		}
 		fatherID := ""
-		if horse.FatherID != nil {
-			fatherID = strconv.FormatInt(*horse.FatherID, 10)
+		if horse.FatherId != nil {
+			fatherID = strconv.FormatInt(int64(*horse.FatherId), 10)
 		}
 		conceptionDate := ""
 		if horse.ConceptionDate != nil {
@@ -57,10 +57,10 @@ func (es *ExportService) ExportHorsesToCSV(horses []models.Horse) (string, error
 		}
 
 		record := []string{
-			strconv.FormatInt(horse.ID, 10),
+			strconv.FormatInt(int64(horse.ID), 10),
 			horse.Name,
 			horse.Breed,
-			horse.DateOfBirth.Format("2006-01-02"),
+			horse.BirthDate.Format("2006-01-02"),
 			conceptionDate,
 			motherID,
 			fatherID,
@@ -101,11 +101,11 @@ func (es *ExportService) ExportHealthRecordsToCSV(records []models.HealthRecord)
 	// Write data
 	for _, record := range records {
 		row := []string{
-			strconv.FormatInt(record.ID, 10),
-			strconv.FormatInt(record.HorseID, 10),
+			strconv.FormatInt(int64(record.ID), 10),
+			strconv.FormatInt(int64(record.HorseID), 10),
 			record.Date.Format("2006-01-02"),
 			record.Type,
-			record.Notes,
+			record.Description,
 		}
 
 		if err := writer.Write(row); err != nil {

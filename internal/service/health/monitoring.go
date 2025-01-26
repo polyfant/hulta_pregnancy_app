@@ -3,7 +3,7 @@ package health
 import (
 	"time"
 
-	"github.com/polyfant/horse_tracking/internal/models"
+	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 )
 
 // VitalSigns represents normal vital sign ranges for horses
@@ -225,7 +225,7 @@ func GetHealthAssessment(horse models.Horse) struct {
 
 	// Determine dental care schedule based on age
 	var dentalCare DentalCareSchedule
-	age := time.Since(horse.DateOfBirth).Hours() / (24 * 365)
+	age := time.Since(horse.BirthDate).Hours() / (24 * 365)
 	switch {
 	case age < 5:
 		dentalCare = DentalCareGuidelines[0]

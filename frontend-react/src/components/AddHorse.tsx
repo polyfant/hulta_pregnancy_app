@@ -15,6 +15,7 @@ import { Horse } from '@phosphor-icons/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useApiClient } from '../api/client';
 
 interface HorseInput {
 	name: string;
@@ -32,6 +33,7 @@ interface HorseInput {
 const AddHorse = () => {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+	const apiClient = useApiClient();
 
 	const [formData, setFormData] = useState<HorseInput>({
 		name: '',
@@ -52,9 +54,7 @@ const AddHorse = () => {
 	useEffect(() => {
 		const fetchStallions = async () => {
 			try {
-				const response = await fetch('/api/horses');
-				if (!response.ok) throw new Error('Failed to fetch horses');
-				const horses = await response.json();
+				const horses = await apiClient.get<any[]>('/horses');
 				const stallions = horses
 					.filter((horse: any) => horse.gender === 'STALLION')
 					.map((horse: any) => ({
@@ -67,21 +67,11 @@ const AddHorse = () => {
 			}
 		};
 		fetchStallions();
-	}, []);
+	}, [apiClient]);
 
 	const mutation = useMutation({
 		mutationFn: async (data: HorseInput) => {
-			const response = await fetch('/api/horses', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify(data),
-			});
-			if (!response.ok) {
-				throw new Error('Failed to add horse');
-			}
-			return response.json();
+			return apiClient.post<any>('/horses', data);
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['horses'] });
@@ -95,14 +85,14 @@ const AddHorse = () => {
 		onError: (error) => {
 			notifications.show({
 				title: 'Error',
-				message: error.message,
+				message: error instanceof Error ? error.message : 'Failed to add horse',
 				color: 'red',
 			});
 		},
 	});
 
-	const handleSubmit = (e: React.FormEvent) => {
-		e.preventDefault();
+	const handleSubmit = (event: React.FormEvent) => {
+		event.preventDefault();
 		mutation.mutate(formData);
 	};
 

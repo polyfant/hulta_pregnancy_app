@@ -13,9 +13,10 @@ root.render(
 		domain='dev-r083cwkcv0pgz20x.eu.auth0.com'
 		clientId='OBmEol1z4U49r3YI3priDdGbvF5i4O7d'
 		authorizationParams={{
-			redirect_uri: 'http://localhost:3000',
+			redirect_uri: window.location.origin,
 			scope: 'openid profile email',
 			response_type: 'code',
+			audience: 'https://api.hulta-pregnancy.app'
 		}}
 		cacheLocation='localstorage'
 		useRefreshTokens={true}

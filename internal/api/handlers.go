@@ -1,421 +1,821 @@
 package api
 
 import (
-	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/polyfant/horse_tracking/internal/database"
-	"github.com/polyfant/horse_tracking/internal/models"
-	"github.com/polyfant/horse_tracking/internal/service/pregnancy"
-	"log"
 	"net/http"
 	"strconv"
-	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/polyfant/hulta_pregnancy_app/internal/api/types"
+	"github.com/polyfant/hulta_pregnancy_app/internal/cache"
+	"github.com/polyfant/hulta_pregnancy_app/internal/config"
+	"github.com/polyfant/hulta_pregnancy_app/internal/models"
+	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
+	"github.com/polyfant/hulta_pregnancy_app/internal/service"
+	"gorm.io/gorm"
 )
 
 // Handler handles HTTP requests
 type Handler struct {
-	db              *database.SQLiteStore
-	pregnancyService *pregnancy.Service
+	horseService     service.HorseService
+	userService      service.UserService
+	pregnancyService service.PregnancyService
+	healthService    service.HealthService
+	breedingService  service.BreedingService
+	growthService    service.GrowthService
+	cache            cache.Cache
+	db               *gorm.DB
+	horseRepo        repository.HorseRepository
+	breedingRepo     repository.BreedingRepository
+	growthRepo       repository.GrowthRepository
+	config           HandlerConfig
+	growthHandler    *GrowthHandler
 }
 
-// NewHandler creates a new Handler instance
-func NewHandler(db *database.SQLiteStore) *Handler {
+// HandlerConfig defines the configuration for creating a new handler
+type HandlerConfig struct {
+	Database         *gorm.DB
+	UserService      service.UserService
+	HorseService     service.HorseService
+	PregnancyService service.PregnancyService
+	HealthService    service.HealthService
+	BreedingService  service.BreedingService
+	GrowthService    service.GrowthService
+	Cache            cache.Cache
+	HorseRepo        repository.HorseRepository
+	BreedingRepo     repository.BreedingRepository
+	GrowthRepo       repository.GrowthRepository
+	Auth0            config.Auth0Config
+}
+
+// NewHandler creates a new handler instance
+func NewHandler(config HandlerConfig) *Handler {
+	// Create growth handler
+	growthHandler := NewGrowthHandler(config.GrowthService)
+
 	return &Handler{
-		db:              db,
-		pregnancyService: pregnancy.NewService(db),
+		horseService:     config.HorseService,
+		userService:      config.UserService,
+		pregnancyService: config.PregnancyService,
+		healthService:    config.HealthService,
+		breedingService:  config.BreedingService,
+		growthService:    config.GrowthService,
+		cache:            config.Cache,
+		db:               config.Database,
+		horseRepo:        config.HorseRepo,
+		breedingRepo:     config.BreedingRepo,
+		growthRepo:       config.GrowthRepo,
+		config:           config,
+		growthHandler:    growthHandler,
 	}
 }
 
-// ErrorResponse represents an error response
-type ErrorResponse struct {
-	Error string `json:"error"`
+// Start starts the HTTP server
+func (h *Handler) Start(port string) error {
+	router := gin.Default()
+	router = SetupRouter(router, h)
+	return router.Run(":" + port)
 }
 
+// ListHorses handles GET /horses
 func (h *Handler) ListHorses(c *gin.Context) {
-	horses, err := h.db.GetAllHorses()
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
+		return
+	}
+
+	horses, err := h.horseService.ListByUserID(c.Request.Context(), userID)
 	if err != nil {
-		log.Printf("Error fetching horses: %v", err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("Failed to fetch horses: %v", err)})
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, horses)
 }
 
-func (h *Handler) GetHorse(c *gin.Context) {
-	id := c.Param("id")
-	horseID, err := strconv.ParseInt(id, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
-		return
-	}
-
-	horse, err := h.db.GetHorse(horseID)
-	if err != nil {
-		log.Printf("Error getting horse %d: %v", horseID, err)
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: fmt.Sprintf("Horse not found: %v", err)})
-		return
-	}
-	c.JSON(http.StatusOK, horse)
-}
-
+// AddHorse handles POST /horses
 func (h *Handler) AddHorse(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
+		return
+	}
+
 	var horse models.Horse
 	if err := c.ShouldBindJSON(&horse); err != nil {
-		log.Printf("Error binding JSON: %v", err)
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("Invalid horse data: %v", err)})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: err.Error()})
 		return
 	}
-
-	err := h.db.AddHorse(&horse)
-	if err != nil {
-		log.Printf("Error adding horse: %v", err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("Failed to add horse: %v", err)})
+	
+	horse.UserID = userID
+	if err := h.horseService.Create(c.Request.Context(), &horse); err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
+	
 	c.JSON(http.StatusCreated, horse)
 }
 
-func (h *Handler) DeleteHorse(c *gin.Context) {
-	id := c.Param("id")
-	horseID, err := strconv.ParseInt(id, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
+// GetHorse handles GET /horses/:id
+func (h *Handler) GetHorse(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
 		return
 	}
 
-	err = h.db.DeleteHorse(horseID)
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		log.Printf("Error deleting horse %d: %v", horseID, err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("Failed to delete horse: %v", err)})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
+		return
+	}
+
+	horse, err := h.horseService.GetByID(c.Request.Context(), uint(id))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	if horse.UserID != userID {
+		c.JSON(http.StatusForbidden, types.ErrorResponse{Error: "Access denied"})
+		return
+	}
+
+	c.JSON(http.StatusOK, horse)
+}
+
+// UpdateHorse handles PUT /horses/:id
+func (h *Handler) UpdateHorse(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
+		return
+	}
+
+	var horse models.Horse
+	if err := c.ShouldBindJSON(&horse); err != nil {
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	// Verify ownership
+	existingHorse, err := h.horseService.GetByID(c.Request.Context(), horse.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+	if existingHorse.UserID != userID {
+		c.JSON(http.StatusForbidden, types.ErrorResponse{Error: "Access denied"})
+		return
+	}
+
+	if err := h.horseService.Update(c.Request.Context(), &horse); err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, horse)
+}
+
+// DeleteHorse handles DELETE /horses/:id
+func (h *Handler) DeleteHorse(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
+		return
+	}
+
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
+		return
+	}
+
+	// Verify ownership
+	horse, err := h.horseService.GetByID(c.Request.Context(), uint(id))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+	if horse.UserID != userID {
+		c.JSON(http.StatusForbidden, types.ErrorResponse{Error: "Access denied"})
+		return
+	}
+
+	if err := h.horseService.Delete(c.Request.Context(), uint(id)); err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 
 	c.Status(http.StatusNoContent)
 }
 
-func (h *Handler) GetHealthAssessment(c *gin.Context) {
-	id := c.Param("id")
-	horseID, err := strconv.ParseInt(id, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
+// GetHealthRecords handles GET /horses/:id/health
+func (h *Handler) GetHealthRecords(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
 		return
 	}
 
-	records, err := h.db.GetHealthRecords(horseID)
+	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		log.Printf("Error getting health records for horse %d: %v", horseID, err)
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: fmt.Sprintf("Health records not found: %v", err)})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
+
+	// Verify horse ownership
+	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+	if horse.UserID != userID {
+		c.JSON(http.StatusForbidden, types.ErrorResponse{Error: "Access denied"})
+		return
+	}
+
+	records, err := h.healthService.GetRecords(c.Request.Context(), uint(horseID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+
 	c.JSON(http.StatusOK, records)
 }
 
+// AddHealthRecord handles POST /horses/:id/health
 func (h *Handler) AddHealthRecord(c *gin.Context) {
-	id := c.Param("id")
-	horseID, err := strconv.ParseInt(id, 10, 64)
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
+		return
+	}
+
+	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
+		return
+	}
+
+	// Verify horse ownership
+	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+	if horse.UserID != userID {
+		c.JSON(http.StatusForbidden, types.ErrorResponse{Error: "Access denied"})
 		return
 	}
 
 	var record models.HealthRecord
 	if err := c.ShouldBindJSON(&record); err != nil {
-		log.Printf("Error binding JSON: %v", err)
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("Invalid health record data: %v", err)})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	record.HorseID = horseID
-	record.Date = time.Now()
+	record.HorseID = uint(horseID)
+	record.UserID = userID
 
-	err = h.db.AddHealthRecord(&record)
-	if err != nil {
-		log.Printf("Error adding health record for horse %d: %v", horseID, err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("Failed to add health record: %v", err)})
+	if err := h.healthService.CreateRecord(c.Request.Context(), &record); err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
+
 	c.JSON(http.StatusCreated, record)
 }
 
-func (h *Handler) GetPregnancyGuidelines(c *gin.Context) {
-	horseID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+// UpdateHealthRecord handles PUT /horses/:id/health/:recordId
+func (h *Handler) UpdateHealthRecord(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
+		return
+	}
+
+	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		log.Printf("Invalid horse ID: %v", err)
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
-	horse, err := h.db.GetHorse(horseID)
+	// Verify horse ownership
+	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
 	if err != nil {
-		log.Printf("Error fetching horse: %v", err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to fetch horse details"})
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+	if horse.UserID != userID {
+		c.JSON(http.StatusForbidden, types.ErrorResponse{Error: "Access denied"})
 		return
 	}
 
-	// If stage is provided in query params, use GetPregnancyGuidelinesByStage
-	stageStr := c.Query("stage")
-	if stageStr != "" {
-		stage := models.PregnancyStage(stageStr)
-		guidelines, err := h.pregnancyService.GetPregnancyGuidelinesByStage(stage)
-		if err != nil {
-			log.Printf("Error getting pregnancy guidelines by stage: %v", err)
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, guidelines)
+	var record models.HealthRecord
+	if err := c.ShouldBindJSON(&record); err != nil {
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	// Otherwise, get guidelines based on horse's pregnancy status
-	stage := h.pregnancyService.GetPregnancyStage(horse)
-	guidelines, err := h.pregnancyService.GetPregnancyGuidelinesByStage(stage)
-	if err != nil {
-		log.Printf("Error getting pregnancy guidelines for horse: %v", err)
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+	record.HorseID = uint(horseID)
+	record.UserID = userID
+
+	if err := h.healthService.UpdateRecord(c.Request.Context(), &record); err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, guidelines)
+	c.JSON(http.StatusOK, record)
 }
 
-func (h *Handler) GetBreedingCosts(c *gin.Context) {
-	id := c.Param("id")
-	horseID, err := strconv.ParseInt(id, 10, 64)
+// DeleteHealthRecord handles DELETE /horses/:id/health/:recordId
+func (h *Handler) DeleteHealthRecord(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
+		return
+	}
+
+	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
 		return
 	}
 
-	costs, err := h.db.GetBreedingCosts(horseID)
+	// Verify horse ownership
+	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
 	if err != nil {
-		log.Printf("Error getting breeding costs for horse %d: %v", horseID, err)
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: fmt.Sprintf("Breeding costs not found: %v", err)})
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, costs)
-}
+	if horse.UserID != userID {
+		c.JSON(http.StatusForbidden, types.ErrorResponse{Error: "Access denied"})
+		return
+	}
 
-func (h *Handler) AddBreedingCost(c *gin.Context) {
-	id := c.Param("id")
-	horseID, err := strconv.ParseInt(id, 10, 64)
+	recordID, err := strconv.ParseUint(c.Param("recordId"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid record ID"})
 		return
 	}
 
-	var cost models.BreedingCost
-	if err := c.ShouldBindJSON(&cost); err != nil {
-		log.Printf("Error binding JSON: %v", err)
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("Invalid breeding cost data: %v", err)})
-		return
-	}
-
-	cost.HorseID = horseID
-	cost.Date = time.Now()
-
-	err = h.db.AddBreedingCost(&cost)
-	if err != nil {
-		log.Printf("Error adding breeding cost for horse %d: %v", horseID, err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("Failed to add breeding cost: %v", err)})
-		return
-	}
-	c.JSON(http.StatusCreated, cost)
-}
-
-func (h *Handler) GetHorseOffspring(c *gin.Context) {
-	id := c.Param("id")
-	horseID, err := strconv.ParseInt(id, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
-		return
-	}
-
-	offspring, err := h.db.GetOffspring(horseID)
-	if err != nil {
-		log.Printf("Error getting offspring for horse %d: %v", horseID, err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("Failed to get offspring: %v", err)})
-		return
-	}
-
-	c.JSON(http.StatusOK, offspring)
-}
-
-func (h *Handler) GetDashboardStats(c *gin.Context) {
-	stats, err := h.db.GetDashboardStats()
-	if err != nil {
-		log.Printf("Error getting dashboard stats: %v", err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("Failed to get dashboard stats: %v", err)})
-		return
-	}
-	c.JSON(http.StatusOK, stats)
-}
-
-func (h *Handler) GetHorseFamilyTree(c *gin.Context) {
-	id := c.Param("id")
-	horseID, err := strconv.ParseInt(id, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
-		return
-	}
-
-	tree, err := h.db.GetFamilyTree(horseID)
-	if err != nil {
-		log.Printf("Error getting family tree for horse %d: %v", horseID, err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("Failed to get family tree: %v", err)})
-		return
-	}
-
-	c.JSON(http.StatusOK, tree)
-}
-
-// PregnancyProgress represents the pregnancy progress response
-type PregnancyProgress struct {
-	DueDate       time.Time `json:"dueDate"`
-	Progress      float64   `json:"progress"`
-	DaysRemaining int       `json:"daysRemaining"`
-	Stage         string    `json:"stage"`
-}
-
-// GetPregnancyProgress returns the due date and progress for a pregnant horse
-func (h *Handler) GetPregnancyProgress(c *gin.Context) {
-	horseID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
-		return
-	}
-
-	horse, err := h.db.GetHorse(horseID)
-	if err != nil {
-		log.Printf("Error fetching horse: %v", err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to fetch horse details"})
-		return
-	}
-
-	if !horse.IsPregnant || horse.ConceptionDate == nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Horse is not pregnant"})
-		return
-	}
-
-	// Get custom gestation days if provided, otherwise use default
-	gestationDays := c.Query("gestationDays")
-	customDays := pregnancy.DefaultGestationDays
-	if gestationDays != "" {
-		if days, err := strconv.Atoi(gestationDays); err == nil && days > 0 {
-			customDays = days
-		}
-	}
-
-	dueDate := pregnancy.CalculateDueDate(*horse.ConceptionDate, customDays)
-	progress, daysRemaining := pregnancy.CalculateGestationProgress(*horse.ConceptionDate, customDays)
-	stage := h.pregnancyService.GetPregnancyStage(horse)
-
-	response := PregnancyProgress{
-		DueDate:       dueDate,
-		Progress:      progress,
-		DaysRemaining: daysRemaining,
-		Stage:         string(stage),
-	}
-
-	c.JSON(http.StatusOK, response)
-}
-
-// GetPreFoalingChecklist returns the pre-foaling checklist for a horse
-func (h *Handler) GetPreFoalingChecklist(c *gin.Context) {
-	horseID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
-		return
-	}
-
-	items, err := h.db.GetPreFoalingChecklist(horseID)
-	if err != nil {
-		log.Printf("Error fetching pre-foaling checklist: %v", err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to fetch checklist"})
-		return
-	}
-
-	// If no items exist yet, return the default checklist
-	if len(items) == 0 {
-		defaultItems := make([]models.PreFoalingChecklistItem, len(models.DefaultPreFoalingChecklist))
-		dueDate := time.Now().AddDate(0, 0, 7) // Default due date is 1 week from now
-		
-		for i, desc := range models.DefaultPreFoalingChecklist {
-			defaultItems[i] = models.PreFoalingChecklistItem{
-				HorseID:     horseID,
-				Description: desc,
-				IsCompleted: false,
-				DueDate:     dueDate,
-				Priority:    "MEDIUM",
-			}
-		}
-		c.JSON(http.StatusOK, defaultItems)
-		return
-	}
-
-	c.JSON(http.StatusOK, items)
-}
-
-// AddPreFoalingChecklistItem adds a new item to the checklist
-func (h *Handler) AddPreFoalingChecklistItem(c *gin.Context) {
-	horseID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid horse ID"})
-		return
-	}
-
-	var item models.PreFoalingChecklistItem
-	if err := c.ShouldBindJSON(&item); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	item.HorseID = horseID
-	if err := h.db.AddPreFoalingChecklistItem(&item); err != nil {
-		log.Printf("Error adding pre-foaling checklist item: %v", err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to add checklist item"})
-		return
-	}
-
-	c.JSON(http.StatusCreated, item)
-}
-
-// UpdatePreFoalingChecklistItem updates an existing checklist item
-func (h *Handler) UpdatePreFoalingChecklistItem(c *gin.Context) {
-	itemID, err := strconv.ParseInt(c.Param("itemId"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid item ID"})
-		return
-	}
-
-	var item models.PreFoalingChecklistItem
-	if err := c.ShouldBindJSON(&item); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	item.ID = itemID
-	if err := h.db.UpdatePreFoalingChecklistItem(&item); err != nil {
-		log.Printf("Error updating pre-foaling checklist item: %v", err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to update checklist item"})
-		return
-	}
-
-	c.JSON(http.StatusOK, item)
-}
-
-// DeletePreFoalingChecklistItem deletes a checklist item
-func (h *Handler) DeletePreFoalingChecklistItem(c *gin.Context) {
-	itemID, err := strconv.ParseInt(c.Param("itemId"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid item ID"})
-		return
-	}
-
-	if err := h.db.DeletePreFoalingChecklistItem(itemID); err != nil {
-		log.Printf("Error deleting pre-foaling checklist item: %v", err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to delete checklist item"})
+	if err := h.healthService.DeleteRecord(c.Request.Context(), uint(recordID)); err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+// GetUserProfile handles GET /user/profile
+func (h *Handler) GetUserProfile(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
+		return
+	}
+
+	profile, err := h.userService.GetProfile(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, profile)
+}
+
+// UpdateUserProfile handles PUT /user/profile
+func (h *Handler) UpdateUserProfile(c *gin.Context) {
+	var user models.User
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	if err := h.userService.UpdateProfile(c.Request.Context(), &user); err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
+}
+
+// GetDashboardStats handles GET /dashboard
+func (h *Handler) GetDashboardStats(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
+		return
+	}
+
+	stats, err := h.userService.GetDashboardStats(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, stats)
+}
+
+// GetPregnancyGuidelines handles GET /horses/:id/pregnancy/guidelines
+func (h *Handler) GetPregnancyGuidelines(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
+		return
+	}
+
+	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
+		return
+	}
+
+	// Verify horse ownership
+	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+	if horse.UserID != userID {
+		c.JSON(http.StatusForbidden, types.ErrorResponse{Error: "Access denied"})
+		return
+	}
+
+	stage := models.PregnancyStage(c.Query("stage"))
+	guidelines, err := h.pregnancyService.GetGuidelines(c.Request.Context(), stage)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, guidelines)
+}
+
+// StartPregnancyTracking handles POST /horses/:id/pregnancy/start
+func (h *Handler) StartPregnancyTracking(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
+		return
+	}
+
+	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
+		return
+	}
+
+	// Verify horse ownership
+	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+	if horse.UserID != userID {
+		c.JSON(http.StatusForbidden, types.ErrorResponse{Error: "Access denied"})
+		return
+	}
+
+	var start models.PregnancyStart
+	if err := c.ShouldBindJSON(&start); err != nil {
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	if err := h.pregnancyService.StartTracking(c.Request.Context(), uint(horseID), start); err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.Status(http.StatusCreated)
+}
+
+// GetPregnancyEvents handles GET /horses/:id/pregnancy/events
+func (h *Handler) GetPregnancyEvents(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
+		return
+	}
+
+	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
+		return
+	}
+
+	// Verify horse ownership
+	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+	if horse.UserID != userID {
+		c.JSON(http.StatusForbidden, types.ErrorResponse{Error: "Access denied"})
+		return
+	}
+
+	events, err := h.pregnancyService.GetPregnancyEvents(c.Request.Context(), uint(horseID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, events)
+}
+
+// AddPregnancyEvent handles POST /horses/:id/pregnancy/events
+func (h *Handler) AddPregnancyEvent(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
+		return
+	}
+
+	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
+		return
+	}
+
+	// Verify horse ownership
+	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+	if horse.UserID != userID {
+		c.JSON(http.StatusForbidden, types.ErrorResponse{Error: "Access denied"})
+		return
+	}
+
+	var event models.PregnancyEvent
+	if err := c.ShouldBindJSON(&event); err != nil {
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	event.PregnancyID = uint(horseID)
+	event.UserID = userID
+
+	if err := h.pregnancyService.AddPregnancyEvent(c.Request.Context(), &event); err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, event)
+}
+
+// GetBreedingRecords handles GET /horses/:id/breeding
+func (h *Handler) GetBreedingRecords(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
+		return
+	}
+
+	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
+		return
+	}
+
+	// Verify horse ownership
+	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+	if horse.UserID != userID {
+		c.JSON(http.StatusForbidden, types.ErrorResponse{Error: "Access denied"})
+		return
+	}
+
+	records, err := h.breedingService.GetRecords(c.Request.Context(), uint(horseID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, records)
+}
+
+// AddBreedingRecord handles POST /horses/:id/breeding
+func (h *Handler) AddBreedingRecord(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
+		return
+	}
+
+	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
+		return
+	}
+
+	// Verify horse ownership
+	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+	if horse.UserID != userID {
+		c.JSON(http.StatusForbidden, types.ErrorResponse{Error: "Access denied"})
+		return
+	}
+
+	var record models.BreedingRecord
+	if err := c.ShouldBindJSON(&record); err != nil {
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	record.HorseID = uint(horseID)
+	record.UserID = userID
+
+	if err := h.breedingService.CreateRecord(c.Request.Context(), &record); err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, record)
+}
+
+// UpdateBreedingRecord handles PUT /horses/:id/breeding/:recordId
+func (h *Handler) UpdateBreedingRecord(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
+		return
+	}
+
+	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
+		return
+	}
+
+	// Verify horse ownership
+	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+	if horse.UserID != userID {
+		c.JSON(http.StatusForbidden, types.ErrorResponse{Error: "Access denied"})
+		return
+	}
+
+	var record models.BreedingRecord
+	if err := c.ShouldBindJSON(&record); err != nil {
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	record.HorseID = uint(horseID)
+	record.UserID = userID
+
+	if err := h.breedingService.UpdateRecord(c.Request.Context(), &record); err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, record)
+}
+
+// DeleteBreedingRecord handles DELETE /horses/:id/breeding/:recordId
+func (h *Handler) DeleteBreedingRecord(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
+		return
+	}
+
+	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
+		return
+	}
+
+	// Verify horse ownership
+	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+	if horse.UserID != userID {
+		c.JSON(http.StatusForbidden, types.ErrorResponse{Error: "Access denied"})
+		return
+	}
+
+	recordID, err := strconv.ParseUint(c.Param("recordId"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid record ID"})
+		return
+	}
+
+	if err := h.breedingService.DeleteRecord(c.Request.Context(), uint(recordID)); err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+// GetPregnancy handles GET /horses/:id/pregnancy
+func (h *Handler) GetPregnancy(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
+		return
+	}
+
+	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
+		return
+	}
+
+	// Verify horse ownership
+	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+	if horse.UserID != userID {
+		c.JSON(http.StatusForbidden, types.ErrorResponse{Error: "Access denied"})
+		return
+	}
+
+	pregnancy, err := h.pregnancyService.GetPregnancy(c.Request.Context(), uint(horseID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, pregnancy)
+}
+
+// GetPregnancyStatus handles GET /horses/:id/pregnancy/status
+func (h *Handler) GetPregnancyStatus(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
+		return
+	}
+
+	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID"})
+		return
+	}
+
+	// Verify horse ownership
+	horse, err := h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+	if horse.UserID != userID {
+		c.JSON(http.StatusForbidden, types.ErrorResponse{Error: "Access denied"})
+		return
+	}
+
+	status, err := h.pregnancyService.GetStatus(c.Request.Context(), uint(horseID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, status)
+}
+
+// GetHorseService returns the horse service
+func (h *Handler) GetHorseService() service.HorseService {
+    return h.horseService
+}
+
+// GetUserService returns the user service
+func (h *Handler) GetUserService() service.UserService {
+    return h.userService
+}
+
+// GetPregnancyService returns the pregnancy service
+func (h *Handler) GetPregnancyService() service.PregnancyService {
+    return h.pregnancyService
+}
+
+// GetHealthService returns the health service
+func (h *Handler) GetHealthService() service.HealthService {
+    return h.healthService
+}
+
+// GetBreedingService returns the breeding service
+func (h *Handler) GetBreedingService() service.BreedingService {
+    return h.breedingService
+}
+
+// GetGrowthService returns the growth service
+func (h *Handler) GetGrowthService() service.GrowthService {
+    return h.growthService
 }

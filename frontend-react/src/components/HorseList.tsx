@@ -24,6 +24,7 @@ import {
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useApiClient } from '../api/client';
 
 interface Horse {
 	id: string;
@@ -37,18 +38,29 @@ interface Horse {
 
 const HorseList = () => {
 	const [searchQuery, setSearchQuery] = useState('');
+	const apiClient = useApiClient();
 
 	// Main horses query
 	const { data: horses = [], isLoading, error } = useQuery<Horse[]>({
 		queryKey: ['horses'],
 		queryFn: async () => {
-			const response = await fetch('/api/horses');
-			if (!response.ok) {
-				throw new Error('Failed to fetch horses');
+			console.log('Fetching horses...');
+			try {
+				const data = await apiClient.get<Horse[]>('/horses');
+				console.log('Horses data:', data);
+				return data;
+			} catch (error) {
+				console.error('Error fetching horses:', error);
+				throw error;
 			}
-			return response.json();
 		},
+		retry: 1,
+		staleTime: 30000,
+		refetchOnWindowFocus: false,
 	});
+
+	// Ensure data is never null
+	const horses = data || [];
 
 	// Filter horses based on search query
 	const filteredHorses = horses.filter(

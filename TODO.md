@@ -1,167 +1,255 @@
-# Production Readiness TODO
+# Current Priorities
 
-## Critical Path to Production 🚀
+## High Priority (MVP Target: Mid-February 2025)
+Last Updated: 2025-01-21
 
-### Frontend Validation & Error Handling
-- [ ] Add form validation to HorseForm
-  - [ ] Name validation (required, max length)
-  - [ ] Date validation (not future dates)
-  - [ ] Weight validation (reasonable ranges)
-  - [ ] Parent validation (circular references)
-- [ ] Add form validation to PregnancyTracking
-  - [ ] Date validation for events
-  - [ ] Pre-foaling signs validation
-- [ ] Implement global error boundary
-- [ ] Add loading states for all async operations
-- [ ] Implement retry logic for failed API calls
+-   [ ] Complete core ML features
+    -   [ ] Pregnancy stage calculation 
+        - [ ] Basic stage tracking (Early/Mid/Late/Pre-foaling)
+        - [ ] Mobile-friendly stage visualization
+        - [ ] Weather impact foundation
+    -   [ ] Due date tracking 
+        - [ ] Base calculation (340 days)
+        - [ ] Mobile calendar view
+        - [ ] Adjustable windows
+    -   [ ] Pre-foaling checklist
+        - [ ] Season-specific items
+        - [ ] Mobile-friendly checkboxes
+    -   [ ] Health monitoring during pregnancy
+        - [ ] Vital signs tracking
+        - [ ] Mobile-optimized data entry
+-   [x] Implement privacy controls
+    -   [x] Stage change alerts
+    -   [x] Pre-foaling notifications
+    -   [x] Health check reminders
+    -   [x] Privacy change logging (Added 2025-01-15)
+    -   [x] Data retention management
+    -   [x] Automated cleanup
+    -   [x] Transaction handling
+-   [ ] Add notification system
+    -   [ ] Pregnancy timeline view
+    -   [ ] Horse status dashboard
+    -   [ ] Easy data entry forms
+-   [x] Finalize Auth0 integration (2025-01-19)
+    -   [x] User authentication flow
+    -   [x] API endpoint protection
+    -   [x] Frontend token handling
+    -   [x] User roles and permissions
+    -   [x] Role-based access control
+-   [x] Mobile-First UI/UX 
+    -   [x] Touch-friendly interface (Using Mantine UI)
+    -   [x] Bottom navigation
+    -   [x] Offline capability
+    -   [x] Swipe gestures (Mantine components)
+-   [ ] Connect All Frontend Components to Backend (No More Mocking) 🔥
+    -   [x] Pregnancy Tracking Components
+        - [x] StageVisualization - Real-time stage data
+        - [x] Timeline - Actual pregnancy events
+        - [x] PrefoalingChecklist - Persistent checklist items
+        - [x] CalendarView - Real calendar events
+    -   [x] Dashboard Components
+        - [x] HorseStatusDashboard - Live horse data
+        - [x] Statistics - Real-time calculations
+    -   [x] Form Components
+        - [x] Add proper form validation
+        - [x] Implement optimistic updates
+        - [x] Add error handling
+-   [ ] Frontend Data Synchronization 🔄
+    -   [x] Identified IndexedDB and SQL schema mismatch
+    -   [ ] Create comprehensive data transformation layer
+    -   [ ] Implement robust offline-to-online data sync
+    -   [ ] Add comprehensive sync logging
+    -   [ ] Create sync error recovery mechanisms
 
-### Testing Infrastructure
-- [ ] Set up Jest and React Testing Library
-- [ ] Unit Tests
-  - [ ] Horse management components
-  - [ ] Pregnancy tracking components
-  - [ ] Form validation logic
-  - [ ] Date handling utilities
-- [ ] Integration Tests
-  - [ ] Horse registration flow
-  - [ ] Pregnancy tracking workflow
-  - [ ] Family tree updates
-- [ ] E2E Tests (Cypress/Playwright)
+## Immediate Next Steps (Week of Jan 20-26, 2025)
 
-### Performance Optimization
-- [x] Implement React Query caching strategies
-- [ ] Add pagination to horse list
-- [x] Lazy load components
-  - [x] Family tree visualization
-  - [x] Pregnancy timeline
-- [ ] Image optimization
-- [ ] Bundle size optimization
+1. Frontend Improvements
+   - [x] Add loading states (Using React Query)
+   - [x] Implement error boundaries 🦍
+   - [x] Add form validation (horseValidation.ts implemented)
+   - [x] Improve mobile responsiveness (Using Mantine UI)
+   - [x] Connect all components to backend (Priority) 🔥
+2. Backend Enhancements
+   - [x] Add request logging middleware (auth_middleware.go)
+   - [x] Implement rate limiting 🚀
+   - [ ] Add API documentation using Swagger
+   - [x] Set up automated backups (backup.go)
 
-### User Experience Enhancements
-- [x] Add loading skeletons
-- [x] Implement toast notifications system
-- [ ] Mobile responsiveness
-  - [x] Horse list view
-  - [x] Basic layout
-  - [ ] Family tree optimization
-  - [ ] Form layouts
-- [ ] Dark theme implementation
-  - [x] Basic theme setup
-  - [ ] Consistent styling across all components
-  - [ ] Fix hover states
-  - [ ] Fix contrast issues
+3. Testing & Quality
+   - [ ] Add integration tests for API endpoints
+   - [ ] Set up E2E testing with Cypress
+   - [x] Implement rate limiting tests 🚀
+   - [ ] Add API response time monitoring
+   - [ ] Add error tracking (e.g., Sentry)
 
-### Backend Stability
-- [x] Implement structured logging
-  - [x] Request logging
-  - [x] Error logging
-  - [x] Performance metrics
-- [x] Add rate limiting
-  - [x] Global limits
-  - [x] Endpoint-specific limits
-- [x] Improve error handling
-  - [x] Standardize error responses
-  - [x] Add error codes
-  - [x] Implement proper HTTP status codes
-- [x] Add request validation
-  - [x] Input sanitization
-  - [x] Schema validation
-- [x] Add health check endpoints
-- [x] Implement proper CORS configuration
+## Medium Priority (Q2 2025)
 
-### Database Optimization
-- [x] Add database indexes
-- [x] Implement query optimization
-- [x] Add database migrations system
-- [x] Set up backup strategy
-- [x] Add data validation at DB level
+- [ ] Complete breeding cost tracking
+- [ ] Add nutrition tracking
+- [ ] Implement expense tracking
+- [ ] Add breeding statistics
+- [ ] Enhance dashboard visualizations
 
-### Documentation
-- [ ] API documentation
-- [ ] Component documentation
-- [ ] Deployment documentation
-- [ ] Database schema documentation
+## Specialized Horse Breeding Features (Q3-Q4 2025)
 
-### DevOps
+### Horse-Specific Timeline 🐎
+- [ ] Mare's cycle visualization
+  - [ ] Heat cycle tracking
+  - [ ] Optimal breeding time calculator
+  - [ ] Cycle history and patterns
+- [ ] Accurate gestation tracking (340 days)
+  - [ ] Trimester-based milestones
+  - [ ] Expected foaling date range
+  - [ ] Development stages visualization
+- [ ] Season-aware breeding recommendations
+  - [ ] Seasonal fertility patterns
+  - [ ] Climate impact analysis
+  - [ ] Breeding season planning
+
+### Multi-Horse Management 🏡
+- [ ] Herd Overview Dashboard
+  - [ ] Status at a glance
+  - [ ] Group management
+  - [ ] Health alerts
+- [ ] Advanced Breeding Management
+  - [ ] Breeding pairs tracking
+  - [ ] Genetic compatibility checks
+  - [ ] Success rate analytics
+- [ ] Family Tree Visualization
+  - [ ] Interactive pedigree charts
+  - [ ] Genetic trait tracking
+  - [ ] Inbreeding coefficient calculator
+- [ ] Stallion Management
+  - [ ] Breeding schedule
+  - [ ] Performance history
+  - [ ] Offspring tracking
+
+### Specialized Tools 🛠️
+- [ ] Weather Impact Analysis
+  - [ ] Local weather integration
+  - [ ] Temperature stress monitoring
+  - [ ] Exercise recommendations
+- [ ] Veterinary Care
+  - [ ] Appointment scheduling
+  - [ ] Vaccination tracking
+  - [ ] Health record timeline
+- [ ] Foaling Preparation
+  - [ ] Dynamic checklists
+  - [ ] Supply inventory
+  - [ ] Emergency contact info
+- [ ] Competition Integration
+  - [ ] Show schedule management
+  - [ ] Training milestone tracking
+  - [ ] Rest period calculations
+
+### Breed-Specific Features 📊
+- [ ] Breed Standards Database
+  - [ ] Growth charts by breed
+  - [ ] Expected gestation variations
+  - [ ] Common health considerations
+- [ ] Custom Health Monitoring
+  - [ ] Breed-specific vital ranges
+  - [ ] Known genetic issues
+  - [ ] Preventive care recommendations
+
+## Performance Optimizations 🚀
+
+### Frontend Speed Enhancements
+- [ ] Implement Smart Prefetching
+  - [ ] Add React Query prefetching on hover
+  - [ ] Preload next likely pages
+  - [ ] Prefetch critical images
+  - [ ] Cache prefetched data efficiently
+- [ ] Bundle Optimization
+  - [ ] Code splitting by route
+  - [ ] Lazy load non-critical components
+  - [ ] Optimize image loading strategy
+  - [ ] Minimize CSS and JS bundles
+- [ ] State Management
+  - [x] Implement efficient caching strategy 🚀
+  - [x] Optimize React Query configurations 🧠
+  - [x] Add stale-while-revalidate patterns 🔄
+  - [x] Smart invalidation rules 🎯
+
+### Backend Performance
+- [ ] Database Optimization
+  - [ ] Add proper indexes
+  - [ ] Query optimization
+  - [ ] Connection pooling
+  - [ ] Batch operations where possible
+- [ ] API Efficiency
+  - [ ] Implement GraphQL for flexible queries
+  - [ ] Add response compression
+  - [ ] Cache common queries
+  - [ ] Optimize payload sizes
+
+### Monitoring & Metrics
+- [ ] Add Performance Monitoring
+  - [ ] Frontend metrics collection
+  - [ ] API response time tracking
+  - [ ] Database query analysis
+  - [ ] Real user metrics (RUM)
+- [ ] Set Performance Budgets
+  - [ ] Maximum bundle size
+  - [ ] Time to interactive goals
+  - [ ] API response time limits
+  - [ ] Database query time limits
+
+## Technical Improvements
+
+- [x] Add more unit tests
+- [x] Standardize API versioning (2025-01-19)
+- [x] Implement proper database migrations (2025-01-19)
 - [ ] Set up CI/CD pipeline
-- [ ] Configure staging environment
-- [ ] Set up monitoring
-- [ ] Configure automated backups
-- [ ] Set up logging infrastructure
+- [ ] Set up monitoring and alerting
 
-### Security
-- [x] Security headers configuration
-- [x] Input validation and sanitization
-- [x] SQL injection prevention
-- [x] XSS prevention
-- [x] CSRF protection
-- [x] Rate limiting implementation
+## Authentication and Authorization
 
-## Nice to Have 🌟
+### Current Status
+- [x] Implemented Auth0 integration
+- [x] Simplified role-based access control
+- [x] Added middleware for role validation
 
-### Feature Enhancements
-- [ ] Bulk operations for horses
-- [ ] Advanced search/filtering
-- [ ] Export functionality
-- [ ] Reporting features
-- [ ] Data visualization improvements
+### Roles
+- `user`: Default role for standard users
+- `admin`: Full system access
+- `owner`: Farm owner permissions
+- `farm_manager`: Extended management capabilities
 
-### User Experience
-- [ ] Keyboard shortcuts
-- [ ] Drag and drop functionality
-- [ ] Theme customization
-- [ ] Accessibility improvements
-- [ ] Print-friendly views
+### Pending Tasks
+- [ ] Implement more granular role-based permissions
+- [ ] Add role assignment logic in user registration
+- [ ] Create admin dashboard with role management
+- [ ] Implement role-based feature flags
 
-### Infrastructure
-- [ ] CDN integration
-- [ ] Image optimization service
-- [ ] Search service integration
-- [ ] Analytics integration
+### Authentication Flow
+1. User authenticates via Auth0
+2. JWT token generated with role claims
+3. Middleware validates token and role
+4. Route access controlled by middleware
 
-## Future Considerations 🔮
+## Documentation Needs
 
-### Authentication & Authorization
-- [x] Basic Auth0 setup
-  - [x] Configure initial Auth0 config
-  - [x] Login/Logout flow
-  - [x] Add token management
-  - [x] Add error handling for authentication failures
-- [ ] Token refresh handling
-- [ ] Role-based access
-- [ ] Protected routes implementation
-- [ ] Plan SSO integration
-- [ ] Design role-based access control
-- [ ] Plan user management features
+- [ ] API Documentation
+- [ ] User Guide
+- [ ] Development Setup Guide
+- [ ] Deployment Guide
+- [ ] Contributing Guidelines
 
-### Mobile Support
-- [ ] Progressive Web App
-- [ ] Native app planning
-- [ ] Offline functionality
+## Completed 
 
-### Data Management
-- [ ] Data export features
-- [ ] Backup/restore functionality
-- [ ] Data retention policies
-- [ ] GDPR compliance features
-
-## Frontend Improvements
-- [x] Fix icon imports in PregnancyEvents
-- [x] Update TypeScript type definitions for Auth0 config
-  - [ ] Implement dark theme consistently
-  - [x] Standardize icon usage with Phosphor Icons
-  - [ ] Fix family tree styling issues
-  - [ ] Improve pregnancy tracking UI
-  - [ ] Add loading states for async operations
-
-## Notes 📝
-- Prioritize items marked as "Critical Path"
-- Review and update this list weekly
-- Add new items as they are identified
-- Move completed items to CHANGELOG.md
-
-### Icon System
-- [x] Standardize on Phosphor Icons
-- [x] Remove old icon libraries
-- [x] Update all components to use new icons
-- [x] Document icon usage guidelines
+- [x] Privacy dashboard implementation
+- [x] Data retention controls
+- [x] Transaction handling for privacy updates
+- [x] Comprehensive test coverage for privacy features
+- [x] Finalize Auth0 integration (2025-01-19)
+- [x] Standardize API versioning (2025-01-19)
+- [x] Implement proper database migrations (2025-01-19)
+- [x] Mobile-first UI with Mantine
+- [x] Form validation system
+- [x] Automated database backups
+- [x] Connect All Frontend Components to Backend (No More Mocking) 🔥
+- [x] Implement CalendarView with real events
+- [x] Complete Statistics component
+- [x] Add comprehensive form validation and error handling
+- [x] Enhance user experience with more interactive features

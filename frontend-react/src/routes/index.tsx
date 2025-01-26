@@ -1,6 +1,8 @@
 import { LoadingOverlay } from '@mantine/core';
 import { lazy, Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
+import { GrowthChartsTesting } from '../components/PregnancyTracking/GrowthChartsTesting';
+import { PregnancyOverview } from '../components/PregnancyTracking/PregnancyOverview';
 
 // Lazy load components
 const HorseList = lazy(() => import('../components/HorseList'));
@@ -31,6 +33,13 @@ const AppRoutes = () => {
 					element={<PregnancyTracking />}
 				/>
 				<Route path='/callback' element={<Callback />} />
+				<Route path='/pregnancies' element={<PregnancyOverview />} />
+				{process.env.NODE_ENV === 'development' && (
+					<Route
+						path='/testing/growth-charts'
+						element={<GrowthChartsTesting />}
+					/>
+				)}
 			</Routes>
 		</Suspense>
 	);
