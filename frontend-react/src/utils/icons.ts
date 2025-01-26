@@ -6,6 +6,8 @@ import {
 	CaretRight,
 	Check,
 	Clock,
+	GenderFemale,
+	GenderMale,
 	Heart,
 	Horse,
 	Info,
@@ -26,8 +28,8 @@ export {
 	CaretDown,
 	CaretRight,
 	Check,
-	Clock,
-	Heart,
+	Clock, GenderFemale as FiFemale,
+	GenderMale as FiMale, Heart,
 	Horse,
 	Info,
 	MagnifyingGlass,
@@ -36,5 +38,6 @@ export {
 	Trash,
 	User,
 	Warning,
-	X,
+	X
 };
+

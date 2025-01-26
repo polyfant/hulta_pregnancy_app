@@ -2,47 +2,106 @@
 
 ## Icon Library: Phosphor Icons
 
-We use Phosphor Icons (@phosphor-icons/react) as our primary icon library for its:
+We use Phosphor Icons (@phosphor-icons/react) as our primary icon library for:
 
--   Modern, consistent design
--   Tree-shakeable imports
--   Comprehensive icon set
--   TypeScript support
--   Active maintenance
+- Modern, consistent design
+- Tree-shakeable imports
+- Comprehensive icon set
+- TypeScript support
+- Active maintenance
 
 ## Implementation
 
-All icons are centralized in `src/utils/icons.ts` with consistent naming:
+All icons are centralized in `src/utils/icons.ts`:
 
 ```typescript
-import { Plus, Pencil } from '@phosphor-icons/react';
+import {
+	Activity,
+	Baby,
+	Calendar,
+	CaretDown,
+	CaretRight,
+	Check,
+	Clock,
+	GenderFemale,
+	GenderMale,
+	Heart,
+	Horse,
+	Info,
+	MagnifyingGlass,
+	Plus,
+	Syringe,
+	Trash,
+	Warning,
+	X
+} from '@phosphor-icons/react';
 
 export {
-	Plus as FiPlus, // For adding items
-	Pencil as FiEdit, // For editing items
-	// etc...
+	Activity,          // Health activity tracking
+	Baby,             // Pregnancy/foal related
+	Calendar,         // Date selection/events
+	CaretDown,        // Expandable sections
+	CaretRight,       // Navigation indicators
+	Check,            // Completion/success
+	Clock,            // Time-related
+	GenderFemale,     // Mare indicator
+	GenderMale,       // Stallion/Gelding indicator
+	Heart,            // Health status
+	Horse,            // General horse actions
+	Info,             // Information/help
+	MagnifyingGlass,  // Search functionality
+	Plus,            // Add new items
+	Syringe,         // Medical/vaccination
+	Trash,           // Delete actions
+	Warning,         // Alert/warning states
+	X               // Close/cancel actions
 };
 ```
 
-## Common Icons and Their Uses
+## Common Use Cases
 
--   `FiPlus` - Adding new items
--   `FiEdit` - Editing existing items
--   `FiTrash2` - Deleting items
--   `FiSearch` - Search functionality
--   `FiPets` (Horse) - Horse-related actions
--   `FiBaby` - Pregnancy tracking
--   `FiHeart` - Health tracking
--   `FiCalendar` - Date-related actions
--   `FiMale`/`FiFemale` - Gender indicators
+### Horse Management
+- `Horse` - Horse profile/details
+- `GenderFemale`/`GenderMale` - Gender indicators
+- `Plus` - Add new horse
+- `Trash` - Delete horse
 
-## Usage in Components
+### Health Tracking
+- `Activity` - Health records
+- `Heart` - Health status
+- `Syringe` - Vaccinations
+
+### Pregnancy Monitoring
+- `Baby` - Pregnancy tracking
+- `Calendar` - Due dates
+- `Clock` - Timing/schedules
+
+### UI Elements
+- `CaretDown`/`CaretRight` - Expandable sections
+- `Check`/`X` - Success/cancel actions
+- `Info` - Help tooltips
+- `MagnifyingGlass` - Search
+- `Warning` - Alert messages
+
+## Usage Example
 
 ```typescript
-import { FiPlus, FiEdit } from '@/utils/icons';
+import { GenderFemale, GenderMale, Horse } from '@phosphor-icons/react';
 
-function MyComponent() {
-	return <Button leftSection={<FiPlus size={16} />}>Add New</Button>;
+function HorseCard({ horse }) {
+	return (
+		<Card>
+			<Group>
+				<Horse size="1.2rem" />
+				<Text>{horse.name}</Text>
+				{horse.gender === 'MARE' ? (
+					<GenderFemale size="1.2rem" color="var(--mantine-color-pink-6)" />
+				) : (
+					<GenderMale size="1.2rem" color="var(--mantine-color-blue-6)" />
+				)}
+			</Group>
+		</Card>
+	);
 }
 ```
 
@@ -50,16 +109,15 @@ function MyComponent() {
 
 All icons accept these common props:
 
--   `size`: number | string
--   `color`: string
--   `weight`: 'thin' | 'light' | 'regular' | 'bold' | 'fill'
--   `mirrored`: boolean
+- `size`: number | string
+- `color`: string
+- `weight`: 'thin' | 'light' | 'regular' | 'bold' | 'fill'
+- `mirrored`: boolean
 
-## Migration Note
+## Best Practices
 
-Previously using Feather Icons (react-icons/fi), migrated to Phosphor Icons for:
-
--   Better tree-shaking
--   More comprehensive icon set
--   Better TypeScript support
--   Active maintenance
+1. Always import icons from `@phosphor-icons/react`
+2. Use consistent sizes within similar contexts
+3. Use semantic colors from the theme
+4. Consider accessibility when using icons alone
+5. Add tooltips for icon-only buttons

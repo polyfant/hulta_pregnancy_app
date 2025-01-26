@@ -1,10 +1,11 @@
 import { useAuth0 } from '@auth0/auth0-react';
-import { AppShell, Button, Center, LoadingOverlay, Text } from '@mantine/core';
+import { AppShell, Button, Center, Group, LoadingOverlay, Text, Title } from '@mantine/core';
+import { Suspense } from 'react';
+import { Link } from 'react-router-dom';
 import AppRoutes from '../routes';
-import Navbar from './Navbar/Navbar';
 
 export default function AppContent() {
-	const { isLoading, isAuthenticated, error, loginWithRedirect } = useAuth0();
+	const { isLoading, isAuthenticated, error, loginWithRedirect, logout, user } = useAuth0();
 
 	console.log('Auth State:', { isLoading, isAuthenticated, error }); // Debug log
 
@@ -40,12 +41,49 @@ export default function AppContent() {
 	}
 
 	return (
-		<AppShell header={{ height: 60 }} padding='md'>
+		<AppShell
+			header={{ height: 60 }}
+			padding='md'
+			styles={(theme) => ({
+				main: {
+					backgroundColor: theme.colors.dark[8],
+				},
+				header: {
+					backgroundColor: theme.colors.dark[7],
+				}
+			})}
+		>
 			<AppShell.Header>
-				<Navbar />
+				<Group h="100%" px="md" justify="space-between">
+					<Title 
+						order={2} 
+						c="white" 
+						component={Link} 
+						to="/"
+						style={{ 
+							textDecoration: 'none',
+							cursor: 'pointer'
+						}}
+					>
+						Horse Tracker
+					</Title>
+					<Group>
+						<Text c="white">Welcome, {user?.name}</Text>
+						<Button 
+							variant="filled"
+							color="brown"
+							onClick={() => logout()}
+						>
+							Logout
+						</Button>
+					</Group>
+				</Group>
 			</AppShell.Header>
+
 			<AppShell.Main>
-				<AppRoutes />
+				<Suspense fallback={<LoadingOverlay visible />}>
+					<AppRoutes />
+				</Suspense>
 			</AppShell.Main>
 		</AppShell>
 	);
