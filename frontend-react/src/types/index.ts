@@ -43,8 +43,8 @@ export interface GrowthData {
     startDate: Date;
     expectedDeliveryDate: Date;
     currentStage: 'early' | 'mid' | 'late';
-    healthRisk?: 'low' | 'medium' | 'high';
-  }
+    healthRisk: 'low' | 'medium' | 'high';
+}
   
   export interface EnvironmentalFactors {
     temperature: number;
