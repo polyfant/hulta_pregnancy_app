@@ -21,7 +21,7 @@ import {
 	Plus,
 	Warning
 } from '@phosphor-icons/react';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApiClient } from '../api/client';
@@ -40,14 +40,12 @@ const HorseList = () => {
 	const [searchQuery, setSearchQuery] = useState('');
 	const apiClient = useApiClient();
 
-	// Main horses query
-	const { data: horses = [], isLoading, error } = useQuery<Horse[]>({
+	const { data, isLoading, error } = useQuery<Horse[]>({
 		queryKey: ['horses'],
 		queryFn: async () => {
 			console.log('Fetching horses...');
 			try {
 				const data = await apiClient.get<Horse[]>('/horses');
-				console.log('Horses data:', data);
 				return data;
 			} catch (error) {
 				console.error('Error fetching horses:', error);
@@ -71,31 +69,32 @@ const HorseList = () => {
 	);
 
 	// Fetch pregnancy status for all pregnant horses at once
-	const pregnancyQueries = useQueries({
-		queries: filteredHorses
-			.filter(horse => horse.isPregnant)
-			.map(horse => ({
-				queryKey: ['pregnancy', horse.id],
-				queryFn: async () => {
-					const response = await fetch(`/api/horses/${horse.id}/pregnancy`);
-					if (!response.ok) {
-						throw new Error('Failed to fetch pregnancy status');
-					}
-					return response.json();
-				},
-				enabled: horse.isPregnant
-			}))
+	const pregnancyQueries = useQuery({
+		queryKey: ['pregnancy'],
+		queryFn: async () => {
+			const pregnantHorses = filteredHorses.filter(horse => horse.isPregnant);
+			const promises = pregnantHorses.map(horse => 
+				fetch(`/api/horses/${horse.id}/pregnancy`)
+					.then(response => {
+						if (!response.ok) {
+							throw new Error('Failed to fetch pregnancy status');
+						}
+						return response.json();
+					})
+			);
+			return Promise.all(promises);
+		},
+		enabled: filteredHorses.some(horse => horse.isPregnant),
 	});
 
 	// Create a map of pregnancy statuses for easy lookup
-	const pregnancyStatusMap = Object.fromEntries(
-		pregnancyQueries
-			.map((query, index) => [
-				filteredHorses.filter(h => h.isPregnant)[index]?.id,
-				query.data
-			])
-			.filter(([id, data]) => id && data)
-	);
+	const pregnancyStatusMap = {};
+	if (pregnancyQueries.data) {
+		const pregnantHorses = filteredHorses.filter(horse => horse.isPregnant);
+		pregnantHorses.forEach((horse, index) => {
+			pregnancyStatusMap[horse.id] = pregnancyQueries.data[index];
+		});
+	}
 
 	if (error) {
 		return (
