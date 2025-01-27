@@ -1,3 +1,7 @@
+
+export * from './pregnancy';
+export * from './horse';
+
 export interface GrowthData {
     timestamp: number;
     weight: number;
@@ -40,10 +44,12 @@ export interface GrowthData {
   }
   
   export interface PregnancyStatus {
-    startDate: Date;
-    expectedDeliveryDate: Date;
-    currentStage: 'early' | 'mid' | 'late';
-    healthRisk: 'low' | 'medium' | 'high';
+    isPregnant: boolean
+    currentStage: 'EARLY' | 'MIDDLE' | 'LATE' | 'NEARTERM' | 'FOALING'
+    conceptionDate: string
+    expectedDueDate: string
+    daysInPregnancy: number
+    healthRisk: 'low' | 'medium' | 'high'  
 }
   
   export interface EnvironmentalFactors {
@@ -51,3 +57,19 @@ export interface GrowthData {
     humidity: number;
     airQuality?: number;
   }
+  export interface Horse {
+    id: string;
+    name: string;
+    breed: string;
+    dateOfBirth: string;
+    sex: 'mare' | 'stallion' | 'gelding';
+    color: string;
+    owner: {
+        id: string;
+        name: string;
+    };
+    // Optional fields
+    registrationNumber?: string;
+    microchipNumber?: string;
+    notes?: string;
+}

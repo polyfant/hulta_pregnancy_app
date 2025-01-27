@@ -1,14 +1,15 @@
-export type PregnancyStage = 'Early' | 'Mid' | 'Late' | 'Pre-foaling';
+export type PregnancyStage = 'EARLY' | 'MIDDLE' | 'LATE' | 'NEARTERM' | 'FOALING';
 
 export interface PregnancyStatus {
+  isPregnant: boolean;
+  currentStage: PregnancyStage;  // Already exists
+  currentDay: number;            // Added
+  totalDays: number;            // Added
+  dueDate: string;              // Changed from expectedDueDate
+  conceptionDate: string;
+  daysInPregnancy: number;
+  healthRisk: 'low' | 'medium' | 'high';
   horseId: number;
-  currentDay: number;
-  totalDays: number;
-  stage: PregnancyStage;
-  dueDate: string;
-  lastCheckup?: string;
-  nextCheckup?: string;
-  notes?: string;
 }
 
 export interface PregnancyEvent {

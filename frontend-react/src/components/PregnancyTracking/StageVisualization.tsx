@@ -3,24 +3,26 @@ import { Horse } from '@phosphor-icons/react';
 import { FC } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useHorsesApi } from '../../api/horses';
-import { PregnancyStatus } from '../../types/pregnancy';
+import { PregnancyStage, PregnancyStatus } from '../../types/pregnancy';
 
 interface StageVisualizationProps {
   horseId: number;
 }
 
-const stageColors = {
-  'Early': 'blue',
-  'Mid': 'cyan',
-  'Late': 'teal',
-  'Pre-foaling': 'brand'
+const stageColors: Record<PregnancyStage, string> = {
+  'EARLY': 'blue',
+  'MIDDLE': 'cyan',
+  'LATE': 'teal',
+  'NEARTERM': 'indigo',
+  'FOALING': 'brand'
 } as const;
 
-const stageDescriptions = {
-  'Early': 'First trimester - Critical development period',
-  'Mid': 'Second trimester - Steady growth phase',
-  'Late': 'Third trimester - Rapid foal development',
-  'Pre-foaling': 'Final preparation for birth'
+const stageDescriptions: Record<PregnancyStage, string> = {
+  'EARLY': 'First trimester - Critical development period',
+  'MIDDLE': 'Second trimester - Steady growth phase',
+  'LATE': 'Third trimester - Rapid foal development',
+  'NEARTERM': 'Final preparation phase',
+  'FOALING': 'Birth imminent'
 } as const;
 
 export const StageVisualization: FC<StageVisualizationProps> = ({ horseId }) => {
@@ -63,15 +65,15 @@ export const StageVisualization: FC<StageVisualizationProps> = ({ horseId }) => 
             <Text fw={700} size="xl">Pregnancy Progress</Text>
             <Text c="dimmed" size="sm">{status.currentDay} days completed</Text>
           </div>
-          <Tooltip label={stageDescriptions[status.stage]}>
-            <Badge 
-              size="lg" 
-              variant="filled" 
-              color={stageColors[status.stage]}
-              leftSection={<Horse size={16} weight="fill" />}
-            >
-              {status.stage}
-            </Badge>
+          <Tooltip label={stageDescriptions[status.currentStage]}>
+          <Badge 
+  size="lg" 
+  variant="filled" 
+  color={stageColors[status.currentStage]}
+  leftSection={<Horse size={16} weight="fill" />}
+>
+  {status.currentStage}
+</Badge>
           </Tooltip>
         </Group>
         
@@ -79,7 +81,7 @@ export const StageVisualization: FC<StageVisualizationProps> = ({ horseId }) => 
           <Progress 
             size="xl" 
             value={progress} 
-            color={stageColors[status.stage]}
+            color={stageColors[status.currentStage]}
             radius="xl"
             striped
             animated
