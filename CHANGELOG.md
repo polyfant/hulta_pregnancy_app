@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Fixed type error in StageVisualization component by correcting property access from `status.stage` to `status.currentStage`
+- Updated Tooltip and Progress components to use correct stage property
 
 ### Added
 

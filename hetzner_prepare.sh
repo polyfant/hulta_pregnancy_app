@@ -128,6 +128,35 @@ install_docker() {
     sudo usermod -aG docker $USER
 }
 
+# Node.js and npm installation via NVM
+install_nodejs() {
+    log "Installing Node Version Manager (NVM) and Node.js"
+    
+    # Install NVM
+    if [ ! -d "$HOME/.nvm" ]; then
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+        
+        # Source NVM for the current script
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+    fi
+
+    # Install latest LTS version of Node.js
+    nvm install --lts
+    nvm use --lts
+    
+    # Install global npm packages
+    npm install -g npm@latest
+    npm install -g yarn pnpm
+
+    # Verify installations
+    node --version
+    npm --version
+    
+    log "Node.js and npm installed successfully"
+}
+
 # Configure deployment environment
 configure_deployment() {
     log "Configuring deployment environment"
@@ -171,6 +200,7 @@ main() {
     configure_ssh
     configure_firewall
     install_docker
+    install_nodejs
     configure_deployment
     install_security_tools
 
