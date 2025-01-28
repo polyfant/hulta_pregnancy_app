@@ -1,71 +1,47 @@
-import React, { ErrorInfo, ReactNode } from 'react';
-import { Alert, Container, Stack, Text, Button } from '@mantine/core';
-import { IconAlertCircle } from '@tabler/icons-react';
+import { Alert } from '@mantine/core';
+import { Warning } from '@phosphor-icons/react';
+import { Component, ReactNode } from 'react';
 
 interface ErrorBoundaryProps {
-  children: ReactNode;
-  fallback?: (error: Error) => ReactNode;
+	children: ReactNode;
 }
 
 interface ErrorBoundaryState {
-  hasError: boolean;
-  error?: Error;
+	hasError: boolean;
+	error: Error | null;
 }
 
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false };
-  }
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+	constructor(props: ErrorBoundaryProps) {
+		super(props);
+		this.state = {
+			hasError: false,
+			error: null,
+		};
+	}
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error };
-  }
+	static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+		return {
+			hasError: true,
+			error,
+		};
+	}
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log the error to an error reporting service like Sentry
-    console.error('Uncaught error:', error, errorInfo);
-  }
+	override componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+		console.error('Error caught by boundary:', error, errorInfo);
+	}
 
-  handleReset = () => {
-    this.setState({ hasError: false, error: undefined });
-  }
+	override render(): ReactNode {
+		if (this.state.hasError) {
+			return (
+				<Alert icon={<Warning size='1rem' />} title='Error' color='red'>
+					{this.state.error?.message || 'Something went wrong'}
+				</Alert>
+			);
+		}
 
-  render() {
-    if (this.state.hasError) {
-      // Custom fallback UI or use provided fallback
-      const defaultFallback = (
-        <Container size="xs" my="xl">
-          <Alert 
-            icon={<IconAlertCircle size="1rem" />} 
-            title="Something went wrong" 
-            color="red" 
-            variant="filled"
-          >
-            <Stack>
-              <Text>An unexpected error occurred. Please try again.</Text>
-              <Text size="xs" color="dimmed">
-                Error Details: {this.state.error?.message}
-              </Text>
-              <Button 
-                color="white" 
-                variant="outline" 
-                onClick={this.handleReset}
-              >
-                Try Again
-              </Button>
-            </Stack>
-          </Alert>
-        </Container>
-      );
-
-      return this.props.fallback 
-        ? this.props.fallback(this.state.error!) 
-        : defaultFallback;
-    }
-
-    return this.props.children;
-  }
+		return this.props.children;
+	}
 }
 
 export default ErrorBoundary;

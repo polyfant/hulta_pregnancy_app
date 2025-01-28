@@ -44,6 +44,9 @@ export interface GrowthData {
   }
   
   export interface PregnancyStatus {
+    totalDays: ReactNode;
+    currentDay: ReactNode;
+    progress: number;
     isPregnant: boolean
     currentStage: 'EARLY' | 'MIDDLE' | 'LATE' | 'NEARTERM' | 'FOALING'
     conceptionDate: string

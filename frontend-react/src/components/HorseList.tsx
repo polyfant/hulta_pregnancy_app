@@ -11,7 +11,7 @@ import {
 	Stack,
 	Text,
 	TextInput,
-	Title
+	Title,
 } from '@mantine/core';
 import {
 	GenderFemale,
@@ -19,12 +19,13 @@ import {
 	Horse,
 	MagnifyingGlass,
 	Plus,
-	Warning
+	Warning,
 } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApiClient } from '../api/client';
+import { PregnancyStage } from '../types/pregnancy';
 
 interface Horse {
 	id: string;
@@ -36,7 +37,31 @@ interface Horse {
 	isPregnant?: boolean;
 }
 
-const HorseList = () => {
+interface PregnancyStatusMap {
+	[key: string]: {
+		currentStage: PregnancyStage;
+		daysRemaining: number;
+		progress: number;
+	};
+}
+
+interface PregnancyResponse {
+	currentStage: PregnancyStage;
+	daysRemaining: number;
+}
+
+const getStageColor = (stage: string) => {
+	const colors = {
+		EARLY: 'blue',
+		MIDDLE: 'cyan',
+		LATE: 'teal',
+		NEARTERM: 'indigo',
+		FOALING: 'grape',
+	};
+	return colors[stage as keyof typeof colors] || 'gray';
+};
+
+export function HorseList() {
 	const [searchQuery, setSearchQuery] = useState('');
 	const apiClient = useApiClient();
 
@@ -57,10 +82,8 @@ const HorseList = () => {
 		refetchOnWindowFocus: false,
 	});
 
-	// Ensure data is never null
 	const horses = data || [];
 
-	// Filter horses based on search query
 	const filteredHorses = horses.filter(
 		(horse) =>
 			horse.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -68,33 +91,74 @@ const HorseList = () => {
 				horse.breed.toLowerCase().includes(searchQuery.toLowerCase()))
 	);
 
-	// Fetch pregnancy status for all pregnant horses at once
-	const pregnancyQueries = useQuery({
+	const pregnancyQueries = useQuery<PregnancyResponse[]>({
 		queryKey: ['pregnancy'],
 		queryFn: async () => {
-			const pregnantHorses = filteredHorses.filter(horse => horse.isPregnant);
-			const promises = pregnantHorses.map(horse => 
-				fetch(`/api/horses/${horse.id}/pregnancy`)
-					.then(response => {
-						if (!response.ok) {
-							throw new Error('Failed to fetch pregnancy status');
-						}
-						return response.json();
-					})
+			const pregnantHorses = filteredHorses.filter(
+				(horse) => horse.isPregnant
+			);
+			const promises = pregnantHorses.map((horse) =>
+				fetch(`/api/horses/${horse.id}/pregnancy`).then((response) => {
+					if (!response.ok) {
+						throw new Error('Failed to fetch pregnancy status');
+					}
+					return response.json();
+				})
 			);
 			return Promise.all(promises);
 		},
-		enabled: filteredHorses.some(horse => horse.isPregnant),
+		enabled: filteredHorses.some((horse) => horse.isPregnant),
 	});
 
-	// Create a map of pregnancy statuses for easy lookup
-	const pregnancyStatusMap = {};
-	if (pregnancyQueries.data) {
-		const pregnantHorses = filteredHorses.filter(horse => horse.isPregnant);
-		pregnantHorses.forEach((horse, index) => {
-			pregnancyStatusMap[horse.id] = pregnancyQueries.data[index];
-		});
-	}
+	const pregnancyStatusMap = useMemo(() => {
+		const statusMap: PregnancyStatusMap = {};
+		if (pregnancyQueries.data) {
+			const pregnantHorses = filteredHorses.filter(
+				(horse) => horse.isPregnant
+			);
+			pregnantHorses.forEach((horse, index) => {
+				const status = pregnancyQueries.data[index];
+				if (status) {
+					statusMap[horse.id] = {
+						currentStage: status.currentStage,
+						daysRemaining: status.daysRemaining,
+						progress: Math.min(
+							Math.max(
+								((340 - status.daysRemaining) / 340) * 100,
+								0
+							),
+							100
+						),
+					};
+				}
+			});
+		}
+		return statusMap;
+	}, [pregnancyQueries.data, filteredHorses]);
+
+	const getPregnancyStatus = (horseId: string) => {
+		if (!hasPregnancyStatus(horseId)) return null;
+		return pregnancyStatusMap[horseId];
+	};
+
+	const _getStatusBadge = (horse: Horse) => {
+		if (!horse.isPregnant) return null;
+		const status = getPregnancyStatus(horse.id);
+		if (!status) return null;
+		return (
+			<Badge color={getStageColor(status.currentStage)}>
+				{status.daysRemaining} days to foaling
+			</Badge>
+		);
+	};
+
+	const hasPregnancyStatus = (horseId: string): boolean => {
+		return Boolean(
+			pregnancyStatusMap[horseId] &&
+				pregnancyStatusMap[horseId].currentStage &&
+				pregnancyStatusMap[horseId].daysRemaining
+		);
+	};
 
 	if (error) {
 		return (
@@ -107,7 +171,9 @@ const HorseList = () => {
 	return (
 		<Stack>
 			<Group justify='space-between' align='center'>
-				<Title order={2} c="white">Horses</Title>
+				<Title order={2} c='white'>
+					Horses
+				</Title>
 				<Button
 					component={Link}
 					to='/add-horse'
@@ -153,44 +219,58 @@ const HorseList = () => {
 							padding='lg'
 							radius='md'
 							withBorder
-							bg="dark.7"
+							bg='dark.7'
 						>
 							<Group justify='space-between' mb='xs'>
-								<Text fw={500} c="white">{horse.name}</Text>
+								<Text fw={500} c='white'>
+									{horse.name}
+								</Text>
 								<ActionIcon
 									variant='light'
-									color={horse.gender === 'STALLION' || horse.gender === 'GELDING' ? 'blue' : 'pink'}
+									color={
+										horse.gender === 'STALLION' ||
+										horse.gender === 'GELDING'
+											? 'blue'
+											: 'pink'
+									}
 									title={horse.gender}
 								>
-									{horse.gender === 'STALLION' || horse.gender === 'GELDING' ? (
-										<GenderMale color='blue' size='1.2rem' />
+									{horse.gender === 'STALLION' ||
+									horse.gender === 'GELDING' ? (
+										<GenderMale
+											color='blue'
+											size='1.2rem'
+										/>
 									) : (
-										<GenderFemale color='pink' size='1.2rem' />
+										<GenderFemale
+											color='pink'
+											size='1.2rem'
+										/>
 									)}
 								</ActionIcon>
 							</Group>
 
-							<Group gap='xs' mb="xs">
+							<Group gap='xs' mb='xs'>
 								{horse.breed && (
 									<Badge color='blue' variant='light'>
 										{horse.breed}
 									</Badge>
 								)}
-								{horse.isPregnant && (
-									<Badge color='grape' variant='light'>
-										Pregnant
-									</Badge>
-								)}
+								{horse.isPregnant && _getStatusBadge(horse)}
 							</Group>
 
-							{horse.isPregnant && pregnancyStatusMap[horse.id] && (
-								<Progress 
-									value={pregnancyStatusMap[horse.id].progress} 
-									color="grape" 
-									size="sm" 
-									mb="md"
-								/>
-							)}
+							{horse.isPregnant &&
+								hasPregnancyStatus(horse.id) && (
+									<Progress
+										value={
+											pregnancyStatusMap[horse.id]
+												?.progress ?? 0
+										}
+										color='grape'
+										size='sm'
+										mb='md'
+									/>
+								)}
 
 							<Button
 								component={Link}
@@ -209,6 +289,6 @@ const HorseList = () => {
 			</div>
 		</Stack>
 	);
-};
+}
 
 export default HorseList;
