@@ -3,11 +3,14 @@
 ## Frontend
 
 ### Core Technologies
--   React 18+ with TypeScript <--- we are removing this and going svelte for the future, need speed boost!--->
--   Vite for build tooling
--   TanStack Query for data fetching
--   Chart.js & Nivo for visualizations
--   Day.js for date handling
+-   React 18
+-   TypeScript
+-   Mantine UI
+-   React Query
+-   Vite
+-   Yarn
+-   MSW (Mock Service Worker)
+-   Vitest
 
 ### UI & Styling
 - **Component Library**: Mantine v7
@@ -66,3 +69,8 @@
 -   LocalStorage for offline-first data
 -   Privacy-focused architecture
 -   Granular data controls
+
+## Testing
+- Vitest
+- React Testing Library
+- MSW for API mocking

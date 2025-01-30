@@ -1,9 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+
 ### Fixed
-- Fixed type error in StageVisualization component by correcting property access from `status.stage` to `status.currentStage`
-- Updated Tooltip and Progress components to use correct stage property
+
+-   Fixed type error in StageVisualization component by correcting property access from `status.stage` to `status.currentStage`
+-   Updated Tooltip and Progress components to use correct stage property
 
 ### Added
 
@@ -25,6 +27,12 @@
 -   Comprehensive role-based authentication middleware
 -   Auth0 JWT token validation
 -   Simplified role structure (user, admin, owner, farm_manager)
+-   Yarn package manager integration
+-   Test environment setup with Vitest
+-   MSW for API mocking
+-   Basic component tests structure
+-   Mantine UI provider setup
+-   React Query integration
 
 ### Changed
 
@@ -55,43 +63,52 @@
 -   Resolved potential data synchronization issue in frontend offline charts
 -   Identified and prevented schema mismatch between IndexedDB and SQL data structures
 -   Implemented robust data transformation for offline chart caching
+-   Package dependencies
+-   Build configuration
+-   TypeScript configurations
 
 ### Dependencies
+
 -   Added `github.com/golang-jwt/jwt/v4`
 -   Added `github.com/auth0/go-jwt-middleware/v2`
 -   Added `golang.org/x/time`
 
 ### Security
+
 -   Enhanced token validation
 -   Implemented role-based route protection
 
 ## [0.3.1] - 2025-01-19
 
 ### Fixed
-- Fixed database migration handling using goose 🔧
-- Standardized API paths to use /api/v1 prefix consistently
-- Updated frontend API client to use consistent versioned endpoints
-- Fixed AddHorse component to use proper API client with auth headers
+
+-   Fixed database migration handling using goose 🔧
+-   Standardized API paths to use /api/v1 prefix consistently
+-   Updated frontend API client to use consistent versioned endpoints
+-   Fixed AddHorse component to use proper API client with auth headers
 
 ## [0.3.0] - 2025-01-15
 
 ### Added
-- Privacy change logging system 🔒
-- Data retention controls for weather and health data
-- Automated data cleanup based on retention settings
-- Transaction support for privacy preference updates
+
+-   Privacy change logging system 🔒
+-   Data retention controls for weather and health data
+-   Automated data cleanup based on retention settings
+-   Transaction support for privacy preference updates
 
 ### Changed
-- Updated privacy preferences to use upsert functionality
-- Improved test database setup and cleanup
-- Enhanced error handling in privacy repository
-- Optimized weather data retention period to 30 days
+
+-   Updated privacy preferences to use upsert functionality
+-   Improved test database setup and cleanup
+-   Enhanced error handling in privacy repository
+-   Optimized weather data retention period to 30 days
 
 ### Fixed
-- Fixed privacy change log table creation
-- Improved transaction rollback handling
-- Fixed weather data deletion test
-- Updated test assertions for better reliability
+
+-   Fixed privacy change log table creation
+-   Improved transaction rollback handling
+-   Fixed weather data deletion test
+-   Updated test assertions for better reliability
 
 ## [0.2.0] - 2025-01-01
 
