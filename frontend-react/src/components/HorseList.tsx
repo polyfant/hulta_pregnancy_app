@@ -1,6 +1,5 @@
 import {
 	ActionIcon,
-	Alert,
 	Badge,
 	Button,
 	Card,
@@ -8,6 +7,7 @@ import {
 	LoadingOverlay,
 	Progress,
 	SimpleGrid,
+	Skeleton,
 	Stack,
 	Text,
 	TextInput,
@@ -19,13 +19,14 @@ import {
 	Horse,
 	MagnifyingGlass,
 	Plus,
-	Warning,
 } from '@phosphor-icons/react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useApiClient } from '../api/client';
 import { PregnancyStage } from '../types/pregnancy';
+import { EmptyState } from './states/EmptyState';
+import { NetworkError } from './states/NetworkError';
 
 interface Horse {
 	id: string;
@@ -61,16 +62,30 @@ const getStageColor = (stage: string) => {
 	return colors[stage as keyof typeof colors] || 'gray';
 };
 
+const HorseCardSkeleton = () => (
+	<Card shadow='sm' padding='lg' radius='md' withBorder bg='dark.7'>
+		<Skeleton height={20} width='60%' mb='xs' />
+		<Group gap='xs' mb='xs'>
+			<Skeleton height={20} width={60} />
+			<Skeleton height={20} width={80} />
+		</Group>
+		<Skeleton height={8} width='100%' mb='xl' />
+		<Skeleton height={36} width='100%' />
+	</Card>
+);
+
 export function HorseList() {
 	const [searchQuery, setSearchQuery] = useState('');
 	const apiClient = useApiClient();
+	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 
-	const { data, isLoading, error } = useQuery<Horse[]>({
+	const { data, isLoading, error, refetch } = useQuery<Horse[]>({
 		queryKey: ['horses'],
 		queryFn: async () => {
 			console.log('Fetching horses...');
 			try {
-				const data = await apiClient.get<Horse[]>('/horses');
+				const data = await apiClient.get<Horse[]>('/api/horses');
 				return data;
 			} catch (error) {
 				console.error('Error fetching horses:', error);
@@ -162,9 +177,35 @@ export function HorseList() {
 
 	if (error) {
 		return (
-			<Alert icon={<Warning size='1rem' />} title='Error' color='red'>
-				Failed to load horses. Please try again later.
-			</Alert>
+			<NetworkError
+				message='Failed to load horses. Please try again.'
+				onRetry={() => refetch()}
+			/>
+		);
+	}
+
+	if (isLoading) {
+		return (
+			<SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing='md'>
+				{[...Array(6)].map((_, i) => (
+					<HorseCardSkeleton key={i} />
+				))}
+			</SimpleGrid>
+		);
+	}
+
+	if (!filteredHorses.length) {
+		return (
+			<EmptyState
+				title='No Horses Found'
+				message={
+					searchQuery
+						? 'No horses match your search criteria.'
+						: 'Start by adding your first horse!'
+				}
+				actionLabel='Add Horse'
+				onAction={() => navigate('/add-horse')}
+			/>
 		);
 	}
 

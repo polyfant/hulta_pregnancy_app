@@ -27,15 +27,9 @@ module.exports = {
 	rules: {},
 	overrides: [
 		{
-			files: ['src/**/*.{ts,tsx}'],
+			files: ['**/*.{ts,tsx}'],
 			parserOptions: {
-				project: './tsconfig.json',
-			},
-		},
-		{
-			files: ['vite.config.ts'],
-			parserOptions: {
-				project: './tsconfig.node.json',
+				project: './tsconfig.eslint.json',
 			},
 		},
 	],

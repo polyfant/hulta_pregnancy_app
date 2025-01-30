@@ -3,7 +3,7 @@
 ## Frontend
 
 ### Core Technologies
--   React 18+ with TypeScript
+-   React 18+ with TypeScript <--- we are removing this and going svelte for the future, need speed boost!--->
 -   Vite for build tooling
 -   TanStack Query for data fetching
 -   Chart.js & Nivo for visualizations

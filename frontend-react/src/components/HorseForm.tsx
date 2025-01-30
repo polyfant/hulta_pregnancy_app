@@ -16,6 +16,12 @@ import { Horse, CreateHorseInput } from '../types/horse';
 import { HorsePreviewCard } from './HorsePreviewCard';
 import { ParentChangeDialog } from './ParentChangeDialog';
 import dayjs from 'dayjs';
+import { useForm, zodResolver } from '@mantine/form';
+import { notifications } from '@mantine/notifications';
+import { useMutation } from '@tanstack/react-query';
+import { horseSchema, type HorseFormValues } from '../validation/horseSchema';
+import { Check, X } from '@phosphor-icons/react';
+import { LoadingProgress } from './LoadingProgress';
 
 interface HorseFormProps {
   onSubmit: (horse: CreateHorseInput) => void;
@@ -44,24 +50,26 @@ const validateParentSelection = (availableHorses: Horse[], horseId: number | und
 };
 
 export function HorseForm({ onSubmit, initialValues }: HorseFormProps) {
-  const [formData, setFormData] = useState<CreateHorseInput>({
-    name: '',
-    breed: '',
-    gender: 'MARE',
-    dateOfBirth: dayjs().format('YYYY-MM-DD'),
-    weight: undefined,
-    isPregnant: false,
-    conceptionDate: undefined,
-    motherId: undefined,
-    fatherId: undefined,
-    externalMother: '',
-    externalFather: '',
-    ...initialValues,
+  const form = useForm<HorseFormValues>({
+    validate: zodResolver(horseSchema),
+    initialValues: {
+      name: initialValues?.name || '',
+      breed: initialValues?.breed || '',
+      gender: initialValues?.gender || 'MARE',
+      dateOfBirth: initialValues?.dateOfBirth || dayjs().format('YYYY-MM-DD'),
+      weight: initialValues?.weight || undefined,
+      isPregnant: initialValues?.isPregnant || false,
+      conceptionDate: initialValues?.conceptionDate || undefined,
+      motherId: initialValues?.motherId || undefined,
+      fatherId: initialValues?.fatherId || undefined,
+      externalMother: initialValues?.externalMother || '',
+      externalFather: initialValues?.externalFather || '',
+    },
   });
 
   const [availableHorses, setAvailableHorses] = useState<Horse[]>([]);
-  const [useExternalMother, setUseExternalMother] = useState(!!formData.externalMother);
-  const [useExternalFather, setUseExternalFather] = useState(!!formData.externalFather);
+  const [useExternalMother, setUseExternalMother] = useState(!!form.values.externalMother);
+  const [useExternalFather, setUseExternalFather] = useState(!!form.values.externalFather);
 
   const [dialogState, setDialogState] = useState<{
     opened: boolean;
@@ -86,7 +94,32 @@ export function HorseForm({ onSubmit, initialValues }: HorseFormProps) {
     father?: string;
   }>({});
 
-  const [showPregnancyFields, setShowPregnancyFields] = useState(formData.gender === 'MARE');
+  const [showPregnancyFields, setShowPregnancyFields] = useState(form.values.gender === 'MARE');
+
+  const mutation = useMutation({
+    mutationFn: (values: HorseFormValues) => {
+      return apiClient.post('/api/horses', values);
+    },
+    onSuccess: () => {
+      notifications.show({
+        title: 'Success',
+        message: 'Horse added successfully',
+        color: 'green',
+        icon: <Check weight="bold" />,
+        autoClose: 3000,
+      });
+      navigate('/horses');
+    },
+    onError: (error) => {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to add horse. Please try again.',
+        color: 'red',
+        icon: <X weight="bold" />,
+        autoClose: 5000,
+      });
+    },
+  });
 
   useEffect(() => {
     const fetchHorses = async () => {
@@ -102,10 +135,9 @@ export function HorseForm({ onSubmit, initialValues }: HorseFormProps) {
     fetchHorses();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(formData);
-  };
+  const handleSubmit = form.onSubmit((values) => {
+    mutation.mutate(values);
+  });
 
   const handleMotherChange = (motherId: string | null) => {
     const newMotherId = motherId ? parseInt(motherId) : undefined;
@@ -117,7 +149,7 @@ export function HorseForm({ onSubmit, initialValues }: HorseFormProps) {
     }
 
     setValidationErrors(prev => ({ ...prev, mother: undefined }));
-    setFormData(prev => ({ ...prev, motherId: newMotherId }));
+    form.setFieldValue('motherId', newMotherId);
   };
 
   const handleFatherChange = (fatherId: string | null) => {
@@ -130,24 +162,24 @@ export function HorseForm({ onSubmit, initialValues }: HorseFormProps) {
     }
 
     setValidationErrors(prev => ({ ...prev, father: undefined }));
-    setFormData(prev => ({ ...prev, fatherId: newFatherId }));
+    form.setFieldValue('fatherId', newFatherId);
   };
 
   const handleExternalMotherChange = (value: string) => {
-    setFormData(prev => ({ ...prev, externalMother: value }));
+    form.setFieldValue('externalMother', value);
   };
 
   const handleExternalFatherChange = (value: string) => {
-    setFormData(prev => ({ ...prev, externalFather: value }));
-  };
-
-  const handleInputChange = (field: keyof CreateHorseInput, value: CreateHorseInput[keyof CreateHorseInput]) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    form.setFieldValue('externalFather', value);
   };
 
   return (
     <form onSubmit={handleSubmit}>
-      <Stack gap="xl">
+      <Stack spacing="md">
+        {mutation.isPending && (
+          <LoadingProgress message="Saving horse details..." />
+        )}
+
         <Text size="sm" c="dimmed" mb="md">
           Fields marked with an asterisk (*) are required
         </Text>
@@ -170,8 +202,7 @@ export function HorseForm({ onSubmit, initialValues }: HorseFormProps) {
               marginTop: '0.2rem',
             },
           })}
-          value={formData.name}
-          onChange={(e) => handleInputChange('name', e.target.value)}
+          {...form.getInputProps('name')}
         />
 
         <TextInput
@@ -192,8 +223,7 @@ export function HorseForm({ onSubmit, initialValues }: HorseFormProps) {
               marginTop: '0.2rem',
             },
           })}
-          value={formData.breed}
-          onChange={(e) => handleInputChange('breed', e.target.value)}
+          {...form.getInputProps('breed')}
         />
 
         <Select
@@ -214,18 +244,7 @@ export function HorseForm({ onSubmit, initialValues }: HorseFormProps) {
               marginTop: '0.2rem',
             },
           })}
-          value={formData.gender ?? undefined}
-          onChange={(value) => {
-            handleInputChange('gender', value);
-            setShowPregnancyFields(value === 'MARE');
-            if (value !== 'MARE') {
-              setFormData(prev => ({
-                ...prev,
-                isPregnant: false,
-                conceptionDate: undefined
-              }));
-            }
-          }}
+          {...form.getInputProps('gender')}
           data={[
             { value: 'MARE', label: 'Mare (Female)' },
             { value: 'STALLION', label: 'Stallion (Male)' },
@@ -252,8 +271,7 @@ export function HorseForm({ onSubmit, initialValues }: HorseFormProps) {
               marginTop: '0.2rem',
             },
           })}
-          value={dayjs(formData.dateOfBirth).toDate()}
-          onChange={(date) => handleInputChange('dateOfBirth', date ? dayjs(date).format('YYYY-MM-DD') : '')}
+          {...form.getInputProps('dateOfBirth')}
         />
 
         <NumberInput
@@ -271,8 +289,7 @@ export function HorseForm({ onSubmit, initialValues }: HorseFormProps) {
               marginTop: '0.2rem',
             },
           })}
-          value={formData.weight || ''}
-          onChange={(value) => handleInputChange('weight', value)}
+          {...form.getInputProps('weight')}
         />
 
         {showPregnancyFields && (
@@ -294,15 +311,9 @@ export function HorseForm({ onSubmit, initialValues }: HorseFormProps) {
                     width: '100%'
                   }
                 })}
-                checked={formData.isPregnant}
-                onChange={(event) => {
-                  handleInputChange('isPregnant', event.currentTarget.checked);
-                  if (!event.currentTarget.checked) {
-                    handleInputChange('conceptionDate', undefined);
-                  }
-                }}
+                {...form.getInputProps('isPregnant', { type: 'checkbox' })}
               />
-              {formData.isPregnant && (
+              {form.values.isPregnant && (
                 <DatePickerInput
                   label="Conception Date"
                   description="Select the date of conception"
@@ -316,8 +327,7 @@ export function HorseForm({ onSubmit, initialValues }: HorseFormProps) {
                       marginTop: '0.2rem',
                     },
                   })}
-                  value={formData.conceptionDate ? dayjs(formData.conceptionDate).toDate() : null}
-                  onChange={(date) => handleInputChange('conceptionDate', date ? dayjs(date).format('YYYY-MM-DD') : undefined)}
+                  {...form.getInputProps('conceptionDate')}
                 />
               )}
             </Stack>
@@ -341,22 +351,13 @@ export function HorseForm({ onSubmit, initialValues }: HorseFormProps) {
                   width: '100%'
                 }
               })}
-              checked={useExternalMother}
-              onChange={(e) => {
-                setUseExternalMother(e.currentTarget.checked);
-                if (e.currentTarget.checked) {
-                  handleInputChange('motherId', undefined);
-                } else {
-                  handleInputChange('externalMother', '');
-                }
-              }}
+              {...form.getInputProps('useExternalMother', { type: 'checkbox' })}
             />
 
-            {useExternalMother ? (
+            {form.values.useExternalMother ? (
               <TextInput
                 placeholder="Enter external mother's name"
-                value={formData.externalMother || ''}
-                onChange={(e) => handleInputChange('externalMother', e.target.value)}
+                {...form.getInputProps('externalMother')}
               />
             ) : (
               <Select
@@ -364,7 +365,7 @@ export function HorseForm({ onSubmit, initialValues }: HorseFormProps) {
                 data={availableHorses
                   .filter(h => h.gender === 'MARE')
                   .map(h => ({ value: h.id.toString(), label: h.name }))}
-                value={formData.motherId?.toString()}
+                {...form.getInputProps('motherId')}
                 onChange={handleMotherChange}
                 error={validationErrors.mother}
                 clearable
@@ -385,22 +386,13 @@ export function HorseForm({ onSubmit, initialValues }: HorseFormProps) {
                   width: '100%'
                 }
               })}
-              checked={useExternalFather}
-              onChange={(e) => {
-                setUseExternalFather(e.currentTarget.checked);
-                if (e.currentTarget.checked) {
-                  handleInputChange('fatherId', undefined);
-                } else {
-                  handleInputChange('externalFather', '');
-                }
-              }}
+              {...form.getInputProps('useExternalFather', { type: 'checkbox' })}
             />
 
-            {useExternalFather ? (
+            {form.values.useExternalFather ? (
               <TextInput
                 placeholder="Enter external father's name"
-                value={formData.externalFather || ''}
-                onChange={(e) => handleInputChange('externalFather', e.target.value)}
+                {...form.getInputProps('externalFather')}
               />
             ) : (
               <Select
@@ -408,7 +400,7 @@ export function HorseForm({ onSubmit, initialValues }: HorseFormProps) {
                 data={availableHorses
                   .filter(h => h.gender === 'STALLION')
                   .map(h => ({ value: h.id.toString(), label: h.name }))}
-                value={formData.fatherId?.toString()}
+                {...form.getInputProps('fatherId')}
                 onChange={handleFatherChange}
                 error={validationErrors.father}
                 clearable
@@ -418,14 +410,9 @@ export function HorseForm({ onSubmit, initialValues }: HorseFormProps) {
         </Box>
 
         <Button 
-          type="submit" 
-          size="lg"
-          variant="filled"
-          styles={(theme) => ({
-            root: {
-              marginTop: theme.spacing.xl,
-            },
-          })}
+          type="submit"
+          loading={mutation.isPending}
+          disabled={mutation.isPending}
         >
           {initialValues ? 'Update Horse' : 'Add Horse'}
         </Button>

@@ -8,9 +8,7 @@ declare global {
     }
 }
 
-const API_URL = import.meta.env.VITE_API_URL 
-    ? `${import.meta.env.VITE_API_URL}/api/v1`
-    : 'http://localhost:8080/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export interface ApiClient {
     get: <T>(url: string) => Promise<T>;
@@ -24,10 +22,11 @@ export const useApiClient = (): ApiClient => {
     const { getAccessTokenSilently } = useAuth0();
 
     const client: AxiosInstance = axios.create({
-        baseURL: API_URL,
+        baseURL: '/api',
         headers: {
             'Content-Type': 'application/json',
         },
+        withCredentials: true,
     });
 
     client.interceptors.request.use(async (config) => {

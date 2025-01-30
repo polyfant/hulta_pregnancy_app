@@ -1,20 +1,32 @@
-import { render as rtlRender } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { MantineProvider } from '@mantine/core';
+import { Notifications } from '@mantine/notifications';
 
-function render(ui: React.ReactElement, { queryClient = new QueryClient(), ...options } = {}) {
-  function Wrapper({ children }: { children: React.ReactNode }) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <MantineProvider>
-          {children}
-        </MantineProvider>
-      </QueryClientProvider>
+const queryClient = new QueryClient({
+    defaultOptions: {
+        queries: {
+            retry: false,
+        },
+    },
+});
+
+// Create a custom render function
+export function renderWithProviders(ui: React.ReactElement, { initialRoute = '/' } = {}) {
+    return render(
+        <QueryClientProvider client={queryClient}>
+            <MantineProvider>
+                <Notifications />
+                <MemoryRouter initialEntries={[initialRoute]}>
+                    <Routes>
+                        <Route path="*" element={ui} />
+                    </Routes>
+                </MemoryRouter>
+            </MantineProvider>
+        </QueryClientProvider>
     );
-  }
-  return rtlRender(ui, { wrapper: Wrapper, ...options });
 }
 
 // Re-export everything
 export * from '@testing-library/react';
-export { render };
