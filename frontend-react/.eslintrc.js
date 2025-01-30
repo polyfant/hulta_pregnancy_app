@@ -17,6 +17,7 @@ module.exports = {
 		},
 		ecmaVersion: 'latest',
 		sourceType: 'module',
+		project: './tsconfig.eslint.json',
 	},
 	plugins: ['@typescript-eslint', 'react', 'react-hooks'],
 	settings: {
@@ -30,6 +31,12 @@ module.exports = {
 			files: ['**/*.{ts,tsx}'],
 			parserOptions: {
 				project: './tsconfig.eslint.json',
+			},
+		},
+		{
+			files: ['vite.config.ts'],
+			parserOptions: {
+				project: './tsconfig.node.json',
 			},
 		},
 	],

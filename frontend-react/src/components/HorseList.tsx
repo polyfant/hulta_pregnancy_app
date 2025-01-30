@@ -27,6 +27,7 @@ import { useApiClient } from '../api/client';
 import { PregnancyStage } from '../types/pregnancy';
 import { EmptyState } from './states/EmptyState';
 import { NetworkError } from './states/NetworkError';
+import { vi } from 'vitest';
 
 interface Horse {
 	id: string;
@@ -73,6 +74,12 @@ const HorseCardSkeleton = () => (
 		<Skeleton height={36} width='100%' />
 	</Card>
 );
+
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => ({
+	...(await vi.importActual('react-router-dom')),
+	useNavigate: () => mockNavigate,
+}));
 
 export function HorseList() {
 	const [searchQuery, setSearchQuery] = useState('');

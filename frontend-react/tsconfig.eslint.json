@@ -1,18 +1,11 @@
 {
     "extends": "./tsconfig.json",
-    "compilerOptions": {
-        "noEmit": true
-    },
     "include": [
         "src/**/*.ts",
         "src/**/*.tsx",
-        "vite.config.ts",
-        ".eslintrc.js",
-        "*.config.js"
+        "vite.config.ts"
     ],
-    "exclude": [
-        "node_modules",
-        "build",
-        "dist"
-    ]
+    "compilerOptions": {
+        "noEmit": true
+    }
 }

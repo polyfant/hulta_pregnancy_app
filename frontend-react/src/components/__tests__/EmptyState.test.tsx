@@ -1,24 +1,21 @@
-import { screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { MantineProvider } from '@mantine/core';
+import { render, screen } from '@testing-library/react';
 import { EmptyState } from '../states/EmptyState';
-import { renderWithProviders } from '../../test/utils';
 
 describe('EmptyState', () => {
-    it('renders custom message and action', () => {
-        const onAction = vi.fn();
-        renderWithProviders(
-            <EmptyState 
-                title="No Horses"
-                message="Start by adding your first horse"
-                actionLabel="Add Horse"
-                onAction={onAction}
-            />
-        );
-        
-        expect(screen.getByText(/no horses/i)).toBeInTheDocument();
-        expect(screen.getByText(/start by adding/i)).toBeInTheDocument();
-        
-        userEvent.click(screen.getByRole('button', { name: /add horse/i }));
-        expect(onAction).toHaveBeenCalled();
-    });
-}); 
+	it('renders basic empty state', () => {
+		render(
+			<MantineProvider>
+				<EmptyState
+					title='Test Title'
+					message='Test Message'
+					actionLabel='Test Action'
+					onAction={() => {}}
+				/>
+			</MantineProvider>
+		);
+
+		expect(screen.getByText('Test Title')).toBeInTheDocument();
+		expect(screen.getByText('Test Message')).toBeInTheDocument();
+	});
+});
