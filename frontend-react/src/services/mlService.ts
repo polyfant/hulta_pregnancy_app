@@ -1,3 +1,4 @@
+
 export interface MLConfig {
     apiKey: string;
     endpoint: string;
@@ -21,11 +22,21 @@ export class MLService {
                 body: JSON.stringify(data)
             });
 
+            if (!response.ok) {
+                throw new Error(`ML Prediction failed: ${response.statusText}`);
+            }
+
             return await response.json();
         } catch (error) {
-            console.error('ML Service Error:', error);
+            console.error('🚨 ML Service Error:', error);
             throw error;
         }
+    }
+
+    // Optional: Add more ML-related methods
+    async initialize(modelType: string): Promise<void> {
+        console.log(`Initializing ML model: ${modelType}`);
+        // Placeholder for model initialization logic
     }
 }
 

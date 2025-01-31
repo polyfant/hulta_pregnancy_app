@@ -10,7 +10,7 @@ COPY frontend-react/package*.json ./
 # Install dependencies
 RUN npm ci
 
-# Copy source code
+# Copy entire frontend project
 COPY frontend-react/ .
 
 # Build the application
@@ -20,10 +20,10 @@ RUN npm run build
 FROM nginx:alpine
 
 # Copy build files to nginx
-COPY --from=builder /app/build /usr/share/nginx/html
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy custom nginx configuration if needed
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy custom nginx configuration
+COPY frontend-react/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose port
 EXPOSE 80

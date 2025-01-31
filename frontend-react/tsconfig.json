@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "ESNext",
     "moduleResolution": "node",
     "strict": true,
@@ -13,13 +17,32 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "types": [
-      "node", 
-      "jest", 
+      "node",
+      "jest",
       "@testing-library/jest-dom"
     ],
-    "noImplicitAny": false,  // Temporary, to reduce errors
-    "strictNullChecks": false  // Temporary, to reduce errors
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "exactOptionalPropertyTypes": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true
   },
-  "include": ["src"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "include": [
+    "src",
+    "vite.config.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
 }

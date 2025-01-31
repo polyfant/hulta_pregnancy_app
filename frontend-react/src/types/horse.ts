@@ -1,12 +1,14 @@
 export interface Horse {
-    id: number;
+    id: string;
     name: string;
-    breed: string;
+    breed?: string;
+    color?: string;
     gender: 'MARE' | 'STALLION' | 'GELDING';
+    birthDate?: string;
+    isPregnant?: boolean;
     dateOfBirth: string;
     weight?: number;
     age?: string;
-    isPregnant?: boolean;
     conceptionDate?: string;
     motherId?: number;
     fatherId?: number;

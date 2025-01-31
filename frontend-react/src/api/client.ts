@@ -1,13 +1,32 @@
-import axios from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import { useAuth0 } from '@auth0/auth0-react';
 
-const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/v1`;
+// Type for environment variables
+declare global {
+    interface ImportMetaEnv {
+        VITE_API_URL: string;
+    }
+}
 
-export const createApiClient = () => {
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
+export interface ApiClient {
+    get: <T>(url: string) => Promise<T>;
+    post: <T>(url: string, data: unknown) => Promise<T>;
+    put: <T>(url: string, data: unknown) => Promise<T>;
+    patch: <T>(url: string, data: unknown) => Promise<T>;
+    delete: (url: string) => Promise<void>;
+}
+
+export const useApiClient = (): ApiClient => {
     const { getAccessTokenSilently } = useAuth0();
 
-    const client = axios.create({
-        baseURL: API_URL,
+    const client: AxiosInstance = axios.create({
+        baseURL: '/api',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        withCredentials: true,
     });
 
     client.interceptors.request.use(async (config) => {
@@ -43,8 +62,4 @@ export const createApiClient = () => {
             await client.delete(url);
         },
     };
-};
-
-export const useApiClient = () => {
-    return createApiClient();
 };

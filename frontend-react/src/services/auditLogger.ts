@@ -1,32 +1,32 @@
-export interface MLConfig {
-    apiKey: string;
-    endpoint: string;
+export interface LogEntry {
+    category: string;
+    action: string;
+    details?: Record<string, any>;
+    timestamp: number;
 }
 
-export class MLService {
-    private config: MLConfig;
+export class AuditLogger {
+    private static logs: LogEntry[] = [];
 
-    constructor(config: MLConfig) {
-        this.config = config;
+    static log(category: string, action: string, details?: Record<string, any>): void {
+        const entry: LogEntry = {
+            category,
+            action,
+            details: details || {},
+            timestamp: Date.now()
+        };
+        
+        this.logs.push(entry);
+        console.log('Audit Log:', entry);
     }
 
-    async predict(data: any): Promise<any> {
-        try {
-            const response = await fetch(this.config.endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.config.apiKey}`
-                },
-                body: JSON.stringify(data)
-            });
+    static getLogs(): LogEntry[] {
+        return this.logs;
+    }
 
-            return await response.json();
-        } catch (error) {
-            console.error('ML Service Error:', error);
-            throw error;
-        }
+    static clearLogs(): void {
+        this.logs = [];
     }
 }
 
-export default MLService;
+export default AuditLogger;
