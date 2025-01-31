@@ -3,13 +3,13 @@ package models
 import "time"
 
 type User struct {
-	ID             string     `json:"id" db:"id"`
-	Email          string     `json:"email" db:"email"`
-	HashedPassword string     `json:"-" db:"hashed_password"`
-	LastSync       time.Time  `json:"last_sync" db:"last_sync"`
+	ID             string         `json:"id" db:"id"`
+    Email          string         `json:"email" db:"email"`
+    HashedPassword string         `json:"-" db:"hashed_password"` // Already properly hidden
+    LastLogin      *time.Time     `json:"last_login" db:"last_login"`
+	LastSync       time.Time      `json:"last_sync" db:"last_sync"`
 	CreatedAt      time.Time  `json:"created_at" db:"created_at"`
 	UpdatedAt      time.Time  `json:"updated_at" db:"updated_at"`
-	LastLogin      *time.Time `json:"last_login" db:"last_login"`
 	IsActive       bool       `json:"is_active" db:"is_active"`
 	WeatherSettings WeatherSettings `json:"weather_settings" gorm:"embedded"`
 }
