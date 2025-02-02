@@ -9,17 +9,18 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.1
 	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.6.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/joho/godotenv v1.5.1
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/pressly/goose/v3 v3.24.1
 	github.com/shopspring/decimal v1.4.0
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/zap v1.27.0
+	golang.org/x/crypto v0.31.0
 	golang.org/x/time v0.9.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gorm.io/driver/postgres v1.5.6
 	gorm.io/gorm v1.25.12
-	golang.org/x/crypto v0.31.0
 )
 
 require github.com/json-iterator/go v1.1.12 // indirect

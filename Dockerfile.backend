@@ -4,14 +4,16 @@ FROM golang:1.23.4-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# Copy go mod and sum files
+# Copy only necessary files for dependency management
 COPY go.mod go.sum ./
 
 # Download dependencies
 RUN go mod download
 
-# Copy the source code
-COPY . .
+# Copy only source code (excluding tests and mocks)
+COPY cmd/ ./cmd/
+COPY internal/ ./internal/
+COPY pkg/ ./pkg/
 
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/server/main.go
@@ -24,12 +26,12 @@ RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/
 
-# Copy the pre-built binary file from the previous stage
+# Copy only the binary and necessary configuration
 COPY --from=builder /app/main .
 COPY --from=builder /app/.env .
 
 # Expose port
 EXPOSE 8080
 
-# Command to run the executable
+# Run the binary
 CMD ["./main"]

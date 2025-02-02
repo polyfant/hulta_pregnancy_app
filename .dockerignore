@@ -1,0 +1,46 @@
+# Ignore test files
+*_test.go
+**/mocks.go
+
+# Ignore git and CI files
+.git
+.github
+.gitignore
+.gitlab-ci.yml
+.circleci
+
+# Ignore development and local files
+.env.local
+.env.development
+*.env
+
+# Ignore documentation and misc files
+README.md
+CONTRIBUTING.md
+LICENSE
+*.md
+
+# Ignore build and temporary files
+build/
+tmp/
+temp/
+*.tmp
+
+# Ignore IDE and editor files
+.vscode/
+.idea/
+*.swp
+*~
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore profiling and coverage files
+*.prof
+*.out
+coverage.txt
+
+# Ignore dependency and package manager files
+vendor/
+node_modules/
