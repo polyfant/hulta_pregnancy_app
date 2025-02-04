@@ -20,14 +20,14 @@ import {
 	MagnifyingGlass,
 	Plus,
 } from '@phosphor-icons/react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { vi } from 'vitest';
 import { useApiClient } from '../api/client';
 import { PregnancyStage } from '../types/pregnancy';
 import { EmptyState } from './states/EmptyState';
 import { NetworkError } from './states/NetworkError';
-import { vi } from 'vitest';
 
 interface Horse {
 	id: string;
@@ -85,7 +85,6 @@ export function HorseList() {
 	const [searchQuery, setSearchQuery] = useState('');
 	const apiClient = useApiClient();
 	const navigate = useNavigate();
-	const queryClient = useQueryClient();
 
 	const { data, isLoading, error, refetch } = useQuery<Horse[]>({
 		queryKey: ['horses'],
