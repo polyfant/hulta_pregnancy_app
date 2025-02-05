@@ -1,9 +1,12 @@
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
-import { defineConfig } from 'vite';
+import { defineConfig, PluginOption } from 'vite';
+
+// Explicitly type the plugins array
+const plugins: PluginOption[] = [react()];
 
 export default defineConfig({
-	plugins: [react()],
+	plugins: plugins,
 	resolve: {
 		alias: {
 			'@': path.resolve(__dirname, './src'),

@@ -9,20 +9,34 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.1
 	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.6.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/joho/godotenv v1.5.1
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/pressly/goose/v3 v3.24.1
 	github.com/shopspring/decimal v1.4.0
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/zap v1.27.0
+	golang.org/x/crypto v0.31.0
 	golang.org/x/time v0.9.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gorm.io/driver/postgres v1.5.6
 	gorm.io/gorm v1.25.12
-	golang.org/x/crypto v0.31.0
 )
 
-require github.com/json-iterator/go v1.1.12 // indirect
+require (
+	github.com/goml/gobrain v0.0.0-20201212123421-2e2d98ca8249 // indirect
+	github.com/gonum/blas v0.0.0-20181208220705-f22b278b28ac // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/gorilla/mux v1.8.1 // indirect
+	github.com/guptarohit/asciigraph v0.5.1 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/mattn/go-runewidth v0.0.7 // indirect
+	github.com/olekukonko/tablewriter v0.0.4 // indirect
+	github.com/rocketlaunchr/dataframe-go v0.0.0-20201007021539-67b046771f0b // indirect
+	github.com/sjwhitworth/golearn v0.0.0-20221228163002-74ae077eafb2 // indirect
+	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8 // indirect
+	gonum.org/v1/gonum v0.8.1 // indirect
+)
 
 require (
 	github.com/aymerick/douceur v0.2.0 // indirect

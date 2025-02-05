@@ -30,10 +30,16 @@
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noPropertyAccessFromIndexSignature": true,
-    "noUncheckedIndexedAccess": true
+    "noUncheckedIndexedAccess": true,
+    "baseUrl": "./src",
+    "paths": {
+      "*": [
+        "types/*"
+      ]
+    }
   },
   "include": [
-    "src",
+    "src/**/*",
     "vite.config.ts"
   ],
   "exclude": [

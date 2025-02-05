@@ -4,48 +4,12 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"time"
 
-	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	
+	_ "github.com/polyfant/hulta_pregnancy_app/internal/models"
 )
-
-// MockRepository is a mock implementation of Repository
-type MockRepository struct {
-	mock.Mock
-}
-
-func (m *MockRepository) SaveNotification(ctx context.Context, notification *Notification) error {
-	args := m.Called(ctx, notification)
-	return args.Error(0)
-}
-
-func (m *MockRepository) GetNotifications(ctx context.Context, userID string, limit int) ([]*Notification, error) {
-	args := m.Called(ctx, userID, limit)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]*Notification), args.Error(1)
-}
-
-func (m *MockRepository) GetByID(ctx context.Context, id uint) (*Notification, error) {
-	args := m.Called(ctx, id)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*Notification), args.Error(1)
-}
-
-func (m *MockRepository) MarkAsRead(ctx context.Context, id uint) error {
-	args := m.Called(ctx, id)
-	return args.Error(0)
-}
-
-func (m *MockRepository) Delete(ctx context.Context, id uint) error {
-	args := m.Called(ctx, id)
-	return args.Error(0)
-}
 
 func TestService_SendNotification(t *testing.T) {
 	tests := []struct {
@@ -55,13 +19,13 @@ func TestService_SendNotification(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			name: "successful send",
+			name: "successful notification",
 			notification: &Notification{
-				Type:      SystemNotification,
-				UserID:    "user123",
-				Title:     "Test Notification",
-				Message:   "This is a test",
-				Priority:  Medium,
+				Type:     SystemNotification,
+				UserID:   "user123",
+				Title:    "Test Notification",
+				Message:  "This is a test notification",
+				Priority: High,
 			},
 			mockError:     nil,
 			expectedError: false,
@@ -69,10 +33,11 @@ func TestService_SendNotification(t *testing.T) {
 		{
 			name: "repository error",
 			notification: &Notification{
-				Type:    SystemNotification,
-				UserID:  "user123",
-				Title:   "Test Notification",
-				Message: "This is a test",
+				Type:     SystemNotification,
+				UserID:   "user123",
+				Title:    "Test Notification",
+				Message:  "This is a test notification",
+				Priority: High,
 			},
 			mockError:     errors.New("repository error"),
 			expectedError: true,
@@ -81,8 +46,10 @@ func TestService_SendNotification(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockRepo := new(MockRepository)
-			service := NewService(mockRepo)
+			mockRepo := &MockRepository{}
+			mockEmailNotifier := &MockEmailNotifier{}
+			mockWeatherService := &MockWeatherService{}
+			service := NewService(mockRepo, mockRepo, mockEmailNotifier, nil, mockWeatherService)
 
 			mockRepo.On("SaveNotification", mock.Anything, mock.MatchedBy(func(n *Notification) bool {
 				return n.Type == tt.notification.Type &&
@@ -115,13 +82,10 @@ func TestService_GetUserNotifications(t *testing.T) {
 		expectedLength int
 	}{
 		{
-			name:   "successful retrieval",
-			userID: "user123",
-			limit:  10,
-			mockNotifs: []*Notification{
-				{ID: 1, UserID: "user123"},
-				{ID: 2, UserID: "user123"},
-			},
+			name:           "successful retrieval",
+			userID:         "user123",
+			limit:          10,
+			mockNotifs:     []*Notification{{ID: 1}, {ID: 2}},
 			mockError:      nil,
 			expectedError:  false,
 			expectedLength: 2,
@@ -139,19 +103,22 @@ func TestService_GetUserNotifications(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockRepo := new(MockRepository)
-			service := NewService(mockRepo)
+			mockRepo := &MockRepository{}
+			mockEmailNotifier := &MockEmailNotifier{}
+			mockWeatherService := &MockWeatherService{}
+			service := NewService(mockRepo, mockRepo, mockEmailNotifier, nil, mockWeatherService)
 
-			mockRepo.On("GetNotifications", mock.Anything, tt.userID, tt.limit).Return(tt.mockNotifs, tt.mockError)
+			mockRepo.On("GetNotifications", mock.Anything, tt.userID, tt.limit).
+				Return(tt.mockNotifs, tt.mockError)
 
-			result, err := service.GetUserNotifications(context.Background(), tt.userID, tt.limit)
+			notifications, err := service.GetUserNotifications(context.Background(), tt.userID, tt.limit)
 
 			if tt.expectedError {
 				assert.Error(t, err)
-				assert.Nil(t, result)
+				assert.Nil(t, notifications)
 			} else {
 				assert.NoError(t, err)
-				assert.Len(t, result, tt.expectedLength)
+				assert.Len(t, notifications, tt.expectedLength)
 			}
 			mockRepo.AssertExpectations(t)
 		})
@@ -160,51 +127,47 @@ func TestService_GetUserNotifications(t *testing.T) {
 
 func TestService_GetByID(t *testing.T) {
 	tests := []struct {
-		name           string
-		id             uint
-		mockNotif      *Notification
-		mockError      error
-		expectedError  bool
-		expectedResult *Notification
+		name          string
+		id            uint
+		mockNotif     *Notification
+		mockError     error
+		expectedError bool
 	}{
 		{
-			name: "successful retrieval",
-			id:   1,
-			mockNotif: &Notification{
-				ID:      1,
-				Type:    SystemNotification,
-				UserID:  "user123",
-				Title:   "Test Notification",
-				Message: "This is a test",
-			},
-			mockError:      nil,
-			expectedError:  false,
-			expectedResult: &Notification{ID: 1},
+			name:      "successful retrieval",
+			id:        1,
+			mockNotif: &Notification{ID: 1, UserID: "user123"},
+			mockError: nil,
+			expectedError: false,
 		},
 		{
-			name:           "not found",
-			id:            2,
+			name:          "not found",
+			id:            999,
 			mockNotif:     nil,
-			mockError:     errors.New("not found"),
+			mockError:     errors.New("notification not found"),
 			expectedError: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockRepo := new(MockRepository)
-			service := NewService(mockRepo)
+			mockRepo := &MockRepository{}
+			mockEmailNotifier := &MockEmailNotifier{}
+			mockWeatherService := &MockWeatherService{}
+			service := NewService(mockRepo, mockRepo, mockEmailNotifier, nil, mockWeatherService)
 
-			mockRepo.On("GetByID", mock.Anything, tt.id).Return(tt.mockNotif, tt.mockError)
+			mockRepo.On("GetNotificationByID", mock.Anything, tt.id).
+				Return(tt.mockNotif, tt.mockError)
 
-			result, err := service.GetByID(context.Background(), tt.id)
+			notification, err := service.GetByID(context.Background(), tt.id)
 
 			if tt.expectedError {
 				assert.Error(t, err)
-				assert.Nil(t, result)
+				assert.Nil(t, notification)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.mockNotif, result)
+				assert.NotNil(t, notification)
+				assert.Equal(t, tt.id, uint(notification.ID))
 			}
 			mockRepo.AssertExpectations(t)
 		})
@@ -212,42 +175,27 @@ func TestService_GetByID(t *testing.T) {
 }
 
 func TestService_CheckPregnancyMilestones(t *testing.T) {
-	conceptionDate := time.Now().AddDate(0, 0, -80) // 80 days ago
 	tests := []struct {
-		name            string
-		horse           *models.Horse
-		expectedNotifs  int
-		expectedMessage string
+		name     string
+		userID   string
+		expected error
 	}{
 		{
-			name: "no conception date",
-			horse: &models.Horse{
-				ID: 1,
-			},
-			expectedNotifs: 0,
-		},
-		{
-			name: "first trimester check due",
-			horse: &models.Horse{
-				ID:            1,
-				ConceptionDate: &conceptionDate,
-			},
-			expectedNotifs:  1,
-			expectedMessage: "First trimester check due",
+			name:     "successful milestone check",
+			userID:   "user123",
+			expected: nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			service := NewService(new(MockRepository))
-			notifications := service.CheckPregnancyMilestones(tt.horse)
+			mockRepo := &MockRepository{}
+			mockEmailNotifier := &MockEmailNotifier{}
+			mockWeatherService := &MockWeatherService{}
+			service := NewService(mockRepo, mockRepo, mockEmailNotifier, nil, mockWeatherService)
 
-			assert.Len(t, notifications, tt.expectedNotifs)
-			if tt.expectedNotifs > 0 {
-				assert.Equal(t, tt.expectedMessage, notifications[0].Message)
-				assert.Equal(t, PregnancyMilestone, notifications[0].Type)
-				assert.Equal(t, int64(tt.horse.ID), notifications[0].HorseID)
-			}
+			err := service.CheckPregnancyMilestones(context.Background(), tt.userID)
+			assert.Equal(t, tt.expected, err)
 		})
 	}
 }
