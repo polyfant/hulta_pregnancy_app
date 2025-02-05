@@ -174,25 +174,41 @@ install_nodejs() {
     
     # Install NVM if not already installed
     if [ ! -d "$HOME/.nvm" ]; then
-        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+        # Download and run the NVM installation script
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash || error_exit "Failed to install NVM"
+        
+        # Ensure NVM is loaded in current shell
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
     fi
     
-    # Load NVM properly
+    # Reload shell environment to ensure NVM is available
     export NVM_DIR="$HOME/.nvm"
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-
-    # Install LTS version with error handling
-    if ! command -v node &> /dev/null; then
+    
+    # Check if Node.js is already installed
+    if command -v node &> /dev/null; then
+        log "Node.js is already installed: $(node --version)"
+    else
+        # Install latest LTS version of Node.js
+        set +u  # Temporarily disable undefined variable checking
         nvm install --lts || error_exit "Failed to install Node.js"
         nvm use --lts || error_exit "Failed to use Node.js"
-    else
-        log "Node.js is already installed: $(node --version)"
+        set -u  # Re-enable undefined variable checking
     fi
     
-    # Verify installation
-    node --version || error_exit "Node.js installation verification failed"
-    npm --version || error_exit "npm installation verification failed"
+    # Verify installations
+    if ! command -v node &> /dev/null; then
+        error_exit "Node.js installation verification failed"
+    fi
+    
+    if ! command -v npm &> /dev/null; then
+        error_exit "npm installation verification failed"
+    fi
+    
+    # Show versions
+    log "Node.js version: $(node --version)"
+    log "npm version: $(npm --version)"
     
     log "✅ Node.js and npm installation verified"
 }
