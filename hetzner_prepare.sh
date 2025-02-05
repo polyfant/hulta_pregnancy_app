@@ -249,95 +249,32 @@ install_security_tools() {
 
 # Configure environment
 setup_environment() {
-    log "🌍 Setting up environment variables"
+    log "Setting up environment variables"
     
-    # Create the environment file if it doesn't exist
-    touch $ENV_FILE
-    chmod 600 $ENV_FILE
-    
-    # Function to get or generate a value with better error handling
-    get_or_generate_value() {
-        local key=$1
-        local default_value=${2:-""}  # Make default_value optional with empty string as fallback
-        local current_value=$(grep "^$key=" $ENV_FILE | cut -d '=' -f2 || echo "")
-        
-        if [ -n "$current_value" ]; then
-            echo "$current_value"
-        elif [ -n "$default_value" ]; then
-            echo "$default_value"
-        else
-            case $key in
-                POSTGRES_PASSWORD)
-                    echo "$(openssl rand -hex 16)"
-                    ;;
-                REDIS_PASSWORD)
-                    echo "$(openssl rand -hex 16)"
-                    ;;
-                *)
-                    error_exit "Missing required environment variable: $key"
-                    ;;
-            esac
-        fi
-    }
-
-    # Read or generate each value with explicit error handling
-    log "Reading/generating environment variables..."
-    
-    # Auth0 Configuration
-    VITE_AUTH0_DOMAIN=$(get_or_generate_value "VITE_AUTH0_DOMAIN" "dev-r083cwkcv0pgz20x.eu.auth0.com")
-    VITE_AUTH0_CLIENT_ID=$(get_or_generate_value "VITE_AUTH0_CLIENT_ID" "OBmEol1z4U49r3YI3priDdGbvF5i4O7d")
-    VITE_AUTH0_AUDIENCE=$(get_or_generate_value "VITE_AUTH0_AUDIENCE" "https://api.hulta-foaltracker.app")
-    
-    # API Configuration
-    VITE_API_URL=$(get_or_generate_value "VITE_API_URL" "https://api.hulta-foaltracker.app")
-    VITE_WEBSOCKET_URL=$(get_or_generate_value "VITE_WEBSOCKET_URL" "wss://api.hulta-foaltracker.app/notifications")
-    
-    # Database Configuration
-    POSTGRES_DB=$(get_or_generate_value "POSTGRES_DB" "horse_tracking_db")
-    POSTGRES_USER=$(get_or_generate_value "POSTGRES_USER" "horsetracker")
-    POSTGRES_PASSWORD=$(get_or_generate_value "POSTGRES_PASSWORD")
-    
-    # Redis Configuration (if needed)
-    REDIS_PASSWORD=$(get_or_generate_value "REDIS_PASSWORD")
-    
-    # App Configuration
-    NODE_ENV=$(get_or_generate_value "NODE_ENV" "production")
-    PORT=$(get_or_generate_value "PORT" "8080")
-
-    log "Writing environment variables to file..."
-    
-    # Write the environment file with error handling
-    cat <<EOF > $ENV_FILE || error_exit "Failed to write environment file"
+    # Create .env file if it doesn't exist
+    if [ ! -f "$ENV_FILE" ]; then
+        cat <<EOF > "$ENV_FILE"
 # Auth0 Configuration
-VITE_AUTH0_DOMAIN=${VITE_AUTH0_DOMAIN}
-VITE_AUTH0_CLIENT_ID=${VITE_AUTH0_CLIENT_ID}
-VITE_AUTH0_AUDIENCE=${VITE_AUTH0_AUDIENCE}
+VITE_AUTH0_DOMAIN=${VITE_AUTH0_DOMAIN:-'your-auth0-domain'}
+VITE_AUTH0_CLIENT_ID=${VITE_AUTH0_CLIENT_ID:-'your-auth0-client-id'}
+VITE_AUTH0_AUDIENCE=${VITE_AUTH0_AUDIENCE:-'your-auth0-audience'}
 
 # API Configuration
-VITE_API_URL=${VITE_API_URL}
-
-# WebSocket Connection
-VITE_WEBSOCKET_URL=${VITE_WEBSOCKET_URL}
+VITE_API_URL=${VITE_API_URL:-'https://api.hulta-foaltracker.app'}
+VITE_WEBSOCKET_URL=${VITE_WEBSOCKET_URL:-'wss://api.hulta-foaltracker.app/ws'}
 
 # Database Configuration
-POSTGRES_DB=${POSTGRES_DB}
-POSTGRES_USER=${POSTGRES_USER}
-POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+POSTGRES_DB=${POSTGRES_DB:-'hulta_db'}
+POSTGRES_USER=${POSTGRES_USER:-'hulta_user'}
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-$(openssl rand -base64 32)}
+DATABASE_URL=${DATABASE_URL:-"postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"}
 
-# Redis Configuration
-REDIS_PASSWORD=${REDIS_PASSWORD}
-
-# App Configuration
-NODE_ENV=${NODE_ENV}
-PORT=${PORT}
+# JWT Configuration
+JWT_SECRET=${JWT_SECRET:-$(openssl rand -base64 32)}
 EOF
-
-    # Verify the file was created and has content
-    if [ ! -s "$ENV_FILE" ]; then
-        error_exit "Environment file is empty or was not created properly"
     fi
-
-    log "✅ Environment variables configured (existing values preserved)"
+    
+    log "✅ Environment setup complete"
 }
 
 # Add after configure_deployment()
