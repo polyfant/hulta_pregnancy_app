@@ -4,6 +4,13 @@ FROM node:20-alpine AS builder
 # Set working directory
 WORKDIR /app
 
+# Define build arguments
+ARG VITE_AUTH0_DOMAIN
+ARG VITE_AUTH0_CLIENT_ID
+ARG VITE_AUTH0_AUDIENCE
+ARG VITE_API_URL
+ARG VITE_WEBSOCKET_URL
+
 # First copy only package.json
 COPY package.json ./
 
@@ -13,17 +20,18 @@ RUN npm install
 # Then copy the rest of the frontend files
 COPY . .
 
-# Create default .env file if not exists
-RUN if [ ! -f .env ]; then \
-    echo "VITE_AUTH0_DOMAIN=${VITE_AUTH0_DOMAIN:-''}" > .env && \
-    echo "VITE_AUTH0_CLIENT_ID=${VITE_AUTH0_CLIENT_ID:-''}" >> .env && \
-    echo "VITE_AUTH0_AUDIENCE=${VITE_AUTH0_AUDIENCE:-''}" >> .env && \
-    echo "VITE_API_URL=${VITE_API_URL:-'http://localhost:8080'}" >> .env && \
-    echo "VITE_WEBSOCKET_URL=${VITE_WEBSOCKET_URL:-'ws://localhost:8080/ws'}" >> .env; \
-    fi
+# Create .env file with build arguments
+RUN echo "VITE_AUTH0_DOMAIN=$VITE_AUTH0_DOMAIN" > .env && \
+    echo "VITE_AUTH0_CLIENT_ID=$VITE_AUTH0_CLIENT_ID" >> .env && \
+    echo "VITE_AUTH0_AUDIENCE=$VITE_AUTH0_AUDIENCE" >> .env && \
+    echo "VITE_API_URL=$VITE_API_URL" >> .env && \
+    echo "VITE_WEBSOCKET_URL=$VITE_WEBSOCKET_URL" >> .env
 
-# Build the application with environment variables
-RUN npm run build
+# Show env file for debugging
+RUN cat .env
+
+# Build the application
+RUN npm run build || (cat /tmp/build.log && exit 1)
 
 # Production stage
 FROM nginx:alpine

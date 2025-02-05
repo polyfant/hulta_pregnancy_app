@@ -255,22 +255,22 @@ setup_environment() {
     if [ ! -f "$ENV_FILE" ]; then
         cat <<EOF > "$ENV_FILE"
 # Auth0 Configuration
-VITE_AUTH0_DOMAIN=${VITE_AUTH0_DOMAIN:-'your-auth0-domain'}
-VITE_AUTH0_CLIENT_ID=${VITE_AUTH0_CLIENT_ID:-'your-auth0-client-id'}
-VITE_AUTH0_AUDIENCE=${VITE_AUTH0_AUDIENCE:-'your-auth0-audience'}
+VITE_AUTH0_DOMAIN=dev-r083cwkcv0pgz20x.eu.auth0.com
+VITE_AUTH0_CLIENT_ID=OBmEol1z4U49r3YI3priDdGbvF5i4O7d
+VITE_AUTH0_AUDIENCE=https://api.hulta-foaltracker.app
 
 # API Configuration
-VITE_API_URL=${VITE_API_URL:-'https://api.hulta-foaltracker.app'}
-VITE_WEBSOCKET_URL=${VITE_WEBSOCKET_URL:-'wss://api.hulta-foaltracker.app/ws'}
+VITE_API_URL=https://api.hulta-foaltracker.app
+VITE_WEBSOCKET_URL=wss://api.hulta-foaltracker.app/ws
 
 # Database Configuration
-POSTGRES_DB=${POSTGRES_DB:-'hulta_db'}
-POSTGRES_USER=${POSTGRES_USER:-'hulta_user'}
-POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-$(openssl rand -base64 32)}
-DATABASE_URL=${DATABASE_URL:-"postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"}
+POSTGRES_DB=hulta_db
+POSTGRES_USER=hulta_user
+POSTGRES_PASSWORD=$(openssl rand -base64 32)
+DATABASE_URL=postgresql://hulta_user:${POSTGRES_PASSWORD}@postgres:5432/hulta_db
 
 # JWT Configuration
-JWT_SECRET=${JWT_SECRET:-$(openssl rand -base64 32)}
+JWT_SECRET=$(openssl rand -base64 32)
 EOF
     fi
     
