@@ -30,8 +30,8 @@ RUN echo "VITE_AUTH0_DOMAIN=$VITE_AUTH0_DOMAIN" > .env && \
 # Show env file for debugging
 RUN cat .env
 
-# Build the application
-RUN npm run build || (cat /tmp/build.log && exit 1)
+# Build the application (with better error output)
+RUN npm run build 2>&1 || (echo "Build failed. Check the error above." && exit 1)
 
 # Production stage
 FROM nginx:alpine
