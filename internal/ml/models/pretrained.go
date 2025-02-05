@@ -4,25 +4,16 @@ import (
 	"encoding/gob"
 	"fmt"
 	"os"
-	"path/filepath"
 
-	"github.com/sjwhitworth/golearn/base"
-	"github.com/sjwhitworth/golearn/ensemble"
+	"github.com/goml/gobrain"
 )
 
 type PretrainedModel struct {
-	BaseModel *ensemble.RandomForest  // Lightweight model
-	ModelPath string
-	Version   string
-	Features  []string
-	Metadata  ModelMetadata
-}
-
-type ModelMetadata struct {
-	Accuracy      float64
-	LastUpdated   string
-	SampleSize    int
-	FeatureRanges map[string][2]float64  // min/max ranges for normalization
+	Network     *gobrain.FeedForward
+	Metadata    ModelMetadata
+	Features    []string
+	Version     string
+	ModelPath   string
 }
 
 func LoadPretrainedModel(modelType string) (*PretrainedModel, error) {
@@ -55,19 +46,21 @@ func loadFromPath(path string) (*PretrainedModel, error) {
 }
 
 func (m *PretrainedModel) Predict(features map[string]float64) (map[string]float64, error) {
-	// Normalize input features
-	normalizedFeatures := make([]float64, len(m.Features))
+	// Convert map to slice in correct order
+	inputData := make([]float64, len(m.Features))
 	for i, feature := range m.Features {
-		value := features[feature]
-		minVal, maxVal := m.Metadata.FeatureRanges[feature][0], m.Metadata.FeatureRanges[feature][1]
-		normalizedFeatures[i] = (value - minVal) / (maxVal - minVal)
+		val, ok := features[feature]
+		if !ok {
+			return nil, fmt.Errorf("missing feature: %s", feature)
+		}
+		inputData[i] = val
 	}
 
-	// Make prediction using the random forest
-	prediction, err := m.BaseModel.Predict(normalizedFeatures)
-	if err != nil {
-		return nil, fmt.Errorf("prediction failed: %w", err)
+	output := m.Network.Update(inputData)
+	
+	result := make(map[string]float64)
+	for i, val := range output {
+		result[m.Features[i]] = val
 	}
-
-	return prediction, nil
+	return result, nil
 } 

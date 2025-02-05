@@ -15,6 +15,10 @@ type PredictResponse struct {
 	Metadata    ModelMetadata        `json:"metadata"`
 }
 
+type MetadataRequest struct {
+	ModelType string `json:"modelType"`
+}
+
 func (s *ModelService) HandlePredict(w http.ResponseWriter, r *http.Request) {
 	var req PredictRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -28,10 +32,32 @@ func (s *ModelService) HandlePredict(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	metadata, err := s.getModelMetadata(req.ModelType)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	resp := PredictResponse{
 		Predictions: predictions,
-		Metadata:    s.getModelMetadata(req.ModelType),
+		Metadata:    *metadata,
 	}
 
 	json.NewEncoder(w).Encode(resp)
+}
+
+func (s *ModelService) handleModelMetadata(w http.ResponseWriter, r *http.Request) {
+	var req MetadataRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	metadata, err := s.getModelMetadata(req.ModelType)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	json.NewEncoder(w).Encode(metadata)
 } 

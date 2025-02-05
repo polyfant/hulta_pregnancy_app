@@ -1,10 +1,9 @@
 package ml
 
 import (
-	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"sync"
 )
 
@@ -21,7 +20,7 @@ func InitializeModels() error {
 	}
 
 	for _, path := range models {
-		model, err := loadFromPath(path)
+		model, err := loadModel(path)
 		if err != nil {
 			return fmt.Errorf("failed to load model %s: %w", path, err)
 		}
@@ -34,17 +33,15 @@ func InitializeModels() error {
 	return nil
 }
 
-func loadFromPath(path string) (*PretrainedModel, error) {
-	file, err := os.Open(path)
+func loadModel(path string) (*PretrainedModel, error) {
+	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open model file: %w", err)
+		return nil, fmt.Errorf("failed to read model file: %w", err)
 	}
-	defer file.Close()
 
 	var model PretrainedModel
-	decoder := gob.NewDecoder(file)
-	if err := decoder.Decode(&model); err != nil {
-		return nil, fmt.Errorf("failed to decode model: %w", err)
+	if err := json.Unmarshal(data, &model); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal model: %w", err)
 	}
 
 	return &model, nil

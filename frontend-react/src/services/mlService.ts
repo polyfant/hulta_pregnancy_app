@@ -74,6 +74,12 @@ interface ModelMetadata {
 // Update the type definition to include all model types
 export type ModelType = 'GROWTH' | 'HEALTH' | 'BREEDING' | 'TRAIN' | 'PREDICT';
 
+export interface PredictionRequest {
+	horseId: string;
+	type: ModelType;
+	features: Record<string, string | number>;
+}
+
 export interface PredictParams {
 	type: ModelType;
 	horseId: string;
