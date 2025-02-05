@@ -14,17 +14,25 @@ ARG VITE_WEBSOCKET_URL
 # First copy only package.json
 COPY package.json ./
 
-# Show package.json content for debugging
-RUN cat package.json
+# Debug package.json scripts
+RUN echo "=== Package.json Contents ===" && \
+    cat package.json && \
+    echo "=== Available Scripts ===" && \
+    grep '"scripts"' -A 10 package.json
 
-# Install dependencies
-RUN npm install
+# Install dependencies with debug output
+RUN npm install && npm list
 
 # Then copy the rest of the frontend files
 COPY . .
 
-# List files for debugging
-RUN ls -la
+# Debug project structure
+RUN echo "=== Project Structure ===" && \
+    ls -R && \
+    echo "=== Vite Config (if exists) ===" && \
+    [ -f vite.config.js ] && cat vite.config.js || echo "No vite.config.js found" && \
+    echo "=== Build Script ===" && \
+    [ -f package.json ] && grep -A 5 '"build"' package.json || echo "No build script found"
 
 # Create .env file with build arguments
 RUN echo "VITE_AUTH0_DOMAIN=$VITE_AUTH0_DOMAIN" > .env && \
@@ -33,16 +41,13 @@ RUN echo "VITE_AUTH0_DOMAIN=$VITE_AUTH0_DOMAIN" > .env && \
     echo "VITE_API_URL=$VITE_API_URL" >> .env && \
     echo "VITE_WEBSOCKET_URL=$VITE_WEBSOCKET_URL" >> .env
 
-# Show env file for debugging
-RUN echo "=== Environment Variables ===" && \
-    cat .env && \
-    echo "=== Package Scripts ===" && \
-    npm run || true && \
-    echo "=== Directory Contents ===" && \
-    ls -la
-
-# Build the application with verbose output
-RUN npm run build --verbose
+# Try to run build with maximum verbosity
+RUN set -x && \
+    echo "=== Node Version ===" && node -v && \
+    echo "=== NPM Version ===" && npm -v && \
+    echo "=== Environment ===" && env && \
+    echo "=== Starting Build ===" && \
+    npm run build --dd
 
 # Production stage
 FROM nginx:alpine
