@@ -15,14 +15,8 @@ services:
 
     frontend:
         build:
-            context: ./frontend-react
-            dockerfile: ../Dockerfile.frontend
-            args:
-                VITE_AUTH0_DOMAIN: ${VITE_AUTH0_DOMAIN:-'dev-r083cwkcv0pgz20x.eu.auth0.com'}
-                VITE_AUTH0_CLIENT_ID: ${VITE_AUTH0_CLIENT_ID:-'OBmEol1z4U49r3YI3priDdGbvF5i4O7d'}
-                VITE_AUTH0_AUDIENCE: ${VITE_AUTH0_AUDIENCE:-'https://api.hulta-foaltracker.app'}
-                VITE_API_URL: ${VITE_API_URL:-'https://api.hulta-foaltracker.app'}
-                VITE_WEBSOCKET_URL: ${VITE_WEBSOCKET_URL:-'wss://api.hulta-foaltracker.app/ws'}
+            context: .
+            dockerfile: Dockerfile.frontend
         ports:
             - '80:80'
         depends_on:
