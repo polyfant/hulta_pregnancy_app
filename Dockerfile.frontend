@@ -3,8 +3,8 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install typescript globally
-RUN npm install -g typescript
+# Install pnpm and typescript
+RUN npm install -g pnpm typescript
 
 # Copy the entire frontend-react directory
 COPY . .
@@ -12,8 +12,8 @@ COPY . .
 # Move to frontend-react directory
 WORKDIR /app/frontend-react
 
-# Install dependencies
-RUN npm install
+# Install dependencies with pnpm (much faster and more efficient)
+RUN pnpm install
 
 # Create .env file
 RUN echo "VITE_AUTH0_DOMAIN=dev-r083cwkcv0pgz20x.eu.auth0.com" > .env && \
@@ -22,8 +22,8 @@ RUN echo "VITE_AUTH0_DOMAIN=dev-r083cwkcv0pgz20x.eu.auth0.com" > .env && \
     echo "VITE_API_URL=https://api.hulta-foaltracker.app" >> .env && \
     echo "VITE_WEBSOCKET_URL=wss://api.hulta-foaltracker.app/ws" >> .env
 
-# Build the application
-RUN npm run build
+# Build the application with pnpm
+RUN pnpm build
 
 # Production stage
 FROM nginx:alpine
