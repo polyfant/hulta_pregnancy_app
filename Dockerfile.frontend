@@ -14,11 +14,17 @@ ARG VITE_WEBSOCKET_URL
 # First copy only package.json
 COPY package.json ./
 
+# Show package.json content for debugging
+RUN cat package.json
+
 # Install dependencies
 RUN npm install
 
 # Then copy the rest of the frontend files
 COPY . .
+
+# List files for debugging
+RUN ls -la
 
 # Create .env file with build arguments
 RUN echo "VITE_AUTH0_DOMAIN=$VITE_AUTH0_DOMAIN" > .env && \
@@ -28,10 +34,15 @@ RUN echo "VITE_AUTH0_DOMAIN=$VITE_AUTH0_DOMAIN" > .env && \
     echo "VITE_WEBSOCKET_URL=$VITE_WEBSOCKET_URL" >> .env
 
 # Show env file for debugging
-RUN cat .env
+RUN echo "=== Environment Variables ===" && \
+    cat .env && \
+    echo "=== Package Scripts ===" && \
+    npm run || true && \
+    echo "=== Directory Contents ===" && \
+    ls -la
 
-# Build the application (with better error output)
-RUN npm run build 2>&1 || (echo "Build failed. Check the error above." && exit 1)
+# Build the application with verbose output
+RUN npm run build --verbose
 
 # Production stage
 FROM nginx:alpine
