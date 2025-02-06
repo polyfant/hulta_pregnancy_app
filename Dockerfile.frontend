@@ -3,17 +3,15 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install pnpm and typescript
-RUN npm install -g pnpm typescript
+# Install pnpm globally
+RUN npm install -g pnpm
 
-# Copy the entire frontend-react directory
-COPY . .
-
-# Move to frontend-react directory
-WORKDIR /app/frontend-react
-
-# Install dependencies with pnpm (much faster and more efficient)
+# Copy package.json and install dependencies
+COPY frontend-react/package.json frontend-react/pnpm-lock.yaml ./
 RUN pnpm install
+
+# Copy the rest of the frontend files
+COPY frontend-react/ .
 
 # Create .env file
 RUN echo "VITE_AUTH0_DOMAIN=dev-r083cwkcv0pgz20x.eu.auth0.com" > .env && \
@@ -22,12 +20,12 @@ RUN echo "VITE_AUTH0_DOMAIN=dev-r083cwkcv0pgz20x.eu.auth0.com" > .env && \
     echo "VITE_API_URL=https://api.hulta-foaltracker.app" >> .env && \
     echo "VITE_WEBSOCKET_URL=wss://api.hulta-foaltracker.app/ws" >> .env
 
-# Build the application with pnpm
+# Build the application
 RUN pnpm build
 
 # Production stage
 FROM nginx:alpine
-COPY --from=builder /app/frontend-react/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY frontend-react/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
