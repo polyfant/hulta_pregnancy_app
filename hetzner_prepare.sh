@@ -121,7 +121,7 @@ configure_firewall() {
     log "Configuring UFW firewall"
     sudo ufw default deny incoming
     sudo ufw default allow outgoing
-    sudo ufw allow 22022/tcp  # SSH
+    sudo ufw allow 22/tcp  # SSH
     sudo ufw allow 80/tcp     # HTTP
     sudo ufw allow 443/tcp    # HTTPS
     sudo ufw --force enable
