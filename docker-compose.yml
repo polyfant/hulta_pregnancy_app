@@ -8,11 +8,11 @@ services:
         ports:
             - '8080:8080'
         environment:
-            - DATABASE_URL=${DATABASE_URL}
-            - JWT_SECRET=${JWT_SECRET}
-            - AUTH0_DOMAIN=${AUTH0_DOMAIN}
-            - AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
-            - ENVIRONMENT=production
+            DATABASE_URL: postgresql://horsetracker:R2,Y@B&wO46.Ln}Q@postgres:5432/horse_tracking_db
+            JWT_SECRET: your-super-secret-key-replace-in-production
+            AUTH0_DOMAIN: dev-r083cwkcv0pgz20x.eu.auth0.com
+            AUTH0_AUDIENCE: https://api.hulta-foaltracker.app
+            ENVIRONMENT: production
         depends_on:
             postgres:
                 condition: service_healthy
@@ -24,12 +24,6 @@ services:
             dockerfile: Dockerfile.frontend
         ports:
             - '80:80'
-        environment:
-            - VITE_AUTH0_DOMAIN=${AUTH0_DOMAIN}
-            - VITE_AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID}
-            - VITE_AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
-            - VITE_API_URL=${API_URL}
-            - VITE_WEBSOCKET_URL=${WEBSOCKET_URL}
         depends_on:
             - backend
         restart: unless-stopped
@@ -37,17 +31,14 @@ services:
     postgres:
         image: postgres:15-alpine
         environment:
-            - POSTGRES_DB=${POSTGRES_DB}
-            - POSTGRES_USER=${POSTGRES_USER}
-            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+            POSTGRES_DB: horse_tracking_db
+            POSTGRES_USER: horsetracker
+            POSTGRES_PASSWORD: R2,Y@B&wO46.Ln}Q
         volumes:
             - postgres_data:/var/lib/postgresql/data
         healthcheck:
             test:
-                [
-                    'CMD-SHELL',
-                    'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}',
-                ]
+                ['CMD-SHELL', 'pg_isready -U horsetracker -d horse_tracking_db']
             interval: 10s
             timeout: 5s
             retries: 5

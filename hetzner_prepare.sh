@@ -11,14 +11,11 @@ set -euo pipefail
 APP_DIR="/opt/hulta-pregnancy-app"
 ENV_FILE="$APP_DIR/.env"
 DOCKER_COMPOSE_FILE="$APP_DIR/docker-compose.yml"
-GIT_REPO="https://github.com/polyfant/hulta_pregnancy_app.git"  # Changed to HTTPS
+GIT_REPO="git@github.com:polyfant/hulta_pregnancy_app.git"  # Changed to SSH URL
 BRANCH="main"
 
-# Optionally set the Git SSH key to be used for repository cloning.
-# IMPORTANT: This must be the private key file (not authorized_keys).
-# For example, if your desired key is stored in ~/.ssh/id_ed25519 but its comment is wrong,
-# you can generate/use another key and point this variable to it.
-GIT_SSH_KEY="${HOME}/.ssh/id_ed25519"
+# Use the deploy user's SSH key
+GIT_SSH_KEY="/home/deploy/.ssh/id_ed25519"
 
 # Logging and error handling functions
 log() {
@@ -48,10 +45,52 @@ validate_environment() {
         error_exit "User lacks sudo privileges"
     fi
 
-    # Check available disk space
-    if [[ $(df -h / | awk '/\// {print $5}' | sed 's/%//') -gt 80 ]]; then
-        error_exit "Insufficient disk space. Need at least 20% free space."
+    # Check available disk space (requiring at least 20GB free)
+    FREE_SPACE=$(df -BG / | awk 'NR==2 {print $4}' | sed 's/G//')
+    if [ "$FREE_SPACE" -lt 20 ]; then
+        error_exit "Insufficient disk space. Need at least 20GB free space, found ${FREE_SPACE}GB"
     fi
+
+    # Check memory requirements (minimum 2GB)
+    TOTAL_MEM=$(grep MemTotal /proc/meminfo | awk '{print int($2/1024/1024)}')
+    if [ "$TOTAL_MEM" -lt 2 ]; then
+        error_exit "Insufficient memory. Need at least 2GB RAM, found ${TOTAL_MEM}GB"
+    fi
+
+    # Check for required ports availability (excluding port 22 which should be in use for SSH)
+    for port in 80 443 5432 3000 8080; do
+        if netstat -tuln | grep -q ":$port "; then
+            error_exit "Port $port is already in use"
+        fi
+    done
+
+    # Verify hostname resolution
+    if ! host hulta-foaltracker.app >/dev/null 2>&1; then
+        log "⚠️  Warning: Cannot resolve hulta-foaltracker.app - DNS may not be properly configured"
+    fi
+
+    log "✅ Environment validation passed"
+}
+
+validate_docker_compose() {
+    log "🔍 Validating Docker Compose configuration"
+    
+    if [ ! -f "$DOCKER_COMPOSE_FILE" ]; then
+        error_exit "Docker Compose file not found at $DOCKER_COMPOSE_FILE"
+    fi
+
+    # Test Docker Compose configuration
+    cd "$APP_DIR" || error_exit "Failed to change to app directory"
+    if ! docker compose -f "$DOCKER_COMPOSE_FILE" config > /dev/null; then
+        error_exit "Docker Compose configuration is invalid"
+    fi
+    
+    # Verify required services are defined
+    if ! docker compose -f "$DOCKER_COMPOSE_FILE" config --services | grep -q "frontend\|backend\|postgres"; then
+        error_exit "Required services (frontend, backend, postgres) not found in docker-compose.yml"
+    fi
+
+    log "✅ Docker Compose configuration is valid"
 }
 
 # System update and preparation
@@ -214,13 +253,65 @@ install_nodejs() {
     log "✅ Node.js and npm installation verified"
 }
 
-// ...existing code...
+# ...existing code...
 
 # Configure environment
 setup_environment() {
     log "Setting up environment variables"
     
-    # Create combined .env file with all variables
+    # Create backend .env file
+    cat <<EOF > "$APP_DIR/backend/.env"
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=horsetracker
+DB_PASSWORD=R2,Y@B&wO46.Ln}Q
+DB_NAME=horse_tracking_db
+
+# Auth0 Configuration
+AUTH0_AUDIENCE=https://api.hulta-foaltracker.app  
+AUTH0_ALGORITHM=RS256
+AUTH0_DOMAIN=dev-r083cwkcv0pgz20x.eu.auth0.com
+AUTH0_ISSUER=https://dev-r083cwkcv0pgz20x.eu.auth0.com/
+AUTH0_CLIENT_ID=OBmEol1z4U49r3YI3priDdGbvF5i4O7d
+AUTH0_CLIENT_SECRET=yTYWEdEogBYo9zpI9G8fD2s-i0FUfu8sg1HbHvpoikkwS3I8zh8kkuj-_8F2IZNP
+AUTH0_CALLBACK_URL=https://hulta-foaltracker.app/callback
+
+# Server Configuration
+SERVER_HOST=0.0.0.0
+SERVER_PORT=8080
+
+# JWT Configuration
+JWT_SECRET=hL8n7X2mK9pQ4vR3tY6uJ1cF5bN8mW0aS4dG7hK9lP2nX5vC8qE3wT6yU0iO4pA7sD9fG2hJ4kL7mN0bV5xC8zQ1wE3rT6yU
+
+# Deployment Specific
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+POSTGRES_DB=horse_tracking_db
+POSTGRES_USER=horsetracker
+POSTGRES_PASSWORD=R2,Y@B&wO46.Ln}Q
+
+# WebSocket Configuration
+WEBSOCKET_HOST=localhost
+WEBSOCKET_PORT=8081
+WEBSOCKET_PATH=/notifications
+EOF
+
+    # Create frontend .env file
+    cat <<EOF > "$APP_DIR/frontend-react/.env"
+# Auth0 Configuration
+VITE_AUTH0_DOMAIN=dev-r083cwkcv0pgz20x.eu.auth0.com
+VITE_AUTH0_CLIENT_ID=OBmEol1z4U49r3YI3priDdGbvF5i4O7d
+VITE_AUTH0_AUDIENCE=https://api.hulta-foaltracker.app
+
+# API Configuration
+VITE_API_URL=https://api.hulta-foaltracker.app
+
+# WebSocket Connection
+VITE_WEBSOCKET_URL=wss://api.hulta-foaltracker.app/notifications
+EOF
+
+    # Create a combined .env file for Docker Compose at the root
     cat <<EOF > "$APP_DIR/.env"
 # Database Configuration
 POSTGRES_DB=horse_tracking_db
@@ -228,27 +319,22 @@ POSTGRES_USER=horsetracker
 POSTGRES_PASSWORD=R2,Y@B&wO46.Ln}Q
 DATABASE_URL=postgresql://horsetracker:R2,Y@B&wO46.Ln}Q@postgres:5432/horse_tracking_db
 
-# JWT and Auth Configuration
-JWT_SECRET=your-super-secret-key-replace-in-production
+# JWT Configuration
+JWT_SECRET=hL8n7X2mK9pQ4vR3tY6uJ1cF5bN8mW0aS4dG7hK9lP2nX5vC8qE3wT6yU
+
+# Auth0 Configuration
 AUTH0_DOMAIN=dev-r083cwkcv0pgz20x.eu.auth0.com
 AUTH0_AUDIENCE=https://api.hulta-foaltracker.app
 AUTH0_CLIENT_ID=OBmEol1z4U49r3YI3priDdGbvF5i4O7d
+AUTH0_CLIENT_SECRET=yTYWEdEogBYo9zpI9G8fD2s-i0FUfu8sg1HbHvpoikkwS3I8zh8kkuj-_8F2IZNP
 
 # API Configuration
 API_URL=https://api.hulta-foaltracker.app
 WEBSOCKET_URL=wss://api.hulta-foaltracker.app/ws
-
-# Frontend Configuration
-VITE_AUTH0_DOMAIN=dev-r083cwkcv0pgz20x.eu.auth0.com
-VITE_AUTH0_CLIENT_ID=OBmEol1z4U49r3YI3priDdGbvF5i4O7d
-VITE_AUTH0_AUDIENCE=https://api.hulta-foaltracker.app
-VITE_API_URL=https://api.hulta-foaltracker.app
-VITE_WEBSOCKET_URL=wss://api.hulta-foaltracker.app/ws
 EOF
 
-    # Copy the same environment file to both locations
-    cp "$APP_DIR/.env" "$APP_DIR/frontend-react/.env"
-    cp "$APP_DIR/.env" "$APP_DIR/backend/.env"
+    # Ensure correct permissions
+    chmod 600 "$APP_DIR/.env" "$APP_DIR/backend/.env" "$APP_DIR/frontend-react/.env"
     
     log "✅ Environment setup complete with hardcoded values"
 }
@@ -274,39 +360,47 @@ install_security_tools() {
 setup_ssh_keys() {
     log "🔑 Checking SSH configuration"
 
-    # If GIT_SSH_KEY is set and exists, use it; otherwise, look for common keys
-    local key=""
-    if [ -n "${GIT_SSH_KEY:-}" ] && [ -f "${GIT_SSH_KEY}" ]; then
-        key="${GIT_SSH_KEY}"
-        log "✅ Using configured GIT_SSH_KEY: $key"
-    else
-        for candidate in "$HOME/.ssh/id_ed25519" "$HOME/.ssh/id_rsa"; do
-            if ( -f "$candidate" ]; then
-                key="$candidate"
-                log "✅ Found default SSH key: $key"
-                break
-            fi
-        done
+    # Start ssh-agent and ensure it's running
+    eval "$(ssh-agent -s)"
+    
+    # Use the deploy user's SSH key
+    key="/home/deploy/.ssh/id_ed25519"
+    
+    if [ ! -f "$key" ]; then
+        error_exit "SSH key not found at $key"
     fi
 
-    if [ -z "$key" ]; then
-        error_exit "No private SSH key found for outbound GitHub authentication. Please generate one."
-    fi
+    # Create .ssh directory if it doesn't exist
+    mkdir -p "/home/deploy/.ssh"
+    chmod 700 "/home/deploy/.ssh"
 
+    # Ensure correct permissions on the key
     chmod 600 "$key"
 
-    if ! pgrep -u "$USER" ssh-agent > /dev/null; then
-        eval "$(ssh-agent -s)"
+    # Clear any existing keys and add the new one
+    ssh-add -D 2>/dev/null || true
+    
+    # Try to add the key with more verbose output
+    if ! ssh-add "$key" 2>&1; then
+        log "⚠️ Warning: Could not add SSH key to agent. Using alternative method..."
+        export GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes"
     fi
-
-    ssh-add "$key" 2>/dev/null || log "Warning: Unable to add SSH key to agent."
 
     # Add GitHub to known_hosts if not already present
-    if ! grep -q "github.com" "$HOME/.ssh/known_hosts" 2>/dev/null; then
-        ssh-keyscan github.com >> "$HOME/.ssh/known_hosts" 2>/dev/null
+    touch "/home/deploy/.ssh/known_hosts"
+    chmod 644 "/home/deploy/.ssh/known_hosts"
+    
+    if ! grep -q "github.com" "/home/deploy/.ssh/known_hosts" 2>/null; then
+        ssh-keyscan github.com >> "/home/deploy/.ssh/known_hosts" 2>/dev/null
     fi
 
-    log "🔑 SSH key fingerprint: $(ssh-keygen -lf "$key")"
+    # Display the key fingerprint for verification
+    log "🔑 SSH key fingerprint: $(ssh-keygen -lf $key)"
+
+    # Test GitHub SSH connection
+    log "🔍 Testing GitHub SSH connection..."
+    ssh -T -v git@github.com || true
+
     log "✅ SSH configuration verified"
 }
 
@@ -334,7 +428,12 @@ setup_repository() {
         git fetch --all || error_exit "Failed to fetch repository updates"
         git reset --hard origin/$BRANCH || error_exit "Failed to reset to $BRANCH"
     else
-        log "📥 Cloning repository using HTTPS"
+        log "📥 Cloning repository using SSH"
+        # Test SSH connection first
+        if ! ssh -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+            error_exit "SSH authentication to GitHub failed. Please ensure your SSH key is added to GitHub"
+        fi
+        
         git clone -b $BRANCH $GIT_REPO $APP_DIR || error_exit "Failed to clone repository"
         cd $APP_DIR || error_exit "Failed to change to app directory"
     fi
@@ -438,7 +537,7 @@ verify_project_structure() {
     log "✅ Project structure verified"
 }
 
-// ...existing code...
+# ...existing code...
 
 # Update start_services to handle separate env files
 start_services() {
@@ -500,27 +599,30 @@ verify_deployment() {
     log "🎉 Deployment verified successfully!"
 }
 
-# Main execution
+# Main execution with improved error handling
 main() {
     log "🚀 Starting Hulta Pregnancy App Full Deployment"
     
-    validate_environment
-    prepare_system
-    cleanup_system
-    configure_ssh
-    setup_ssh_keys      
-    configure_firewall
-    install_docker
-    install_nodejs
-    configure_deployment
-    install_security_tools
-    setup_repository
-    setup_environment
-    verify_project_structure
-    setup_nginx
-    start_services
-    setup_ssl
-    verify_deployment
+    # Create APP_DIR if it doesn't exist
+    mkdir -p "$APP_DIR" || error_exit "Failed to create application directory"
+    
+    validate_environment || error_exit "Environment validation failed"
+    prepare_system || error_exit "System preparation failed"
+    cleanup_system || error_exit "System cleanup failed"
+    configure_ssh || error_exit "SSH configuration failed"
+    setup_ssh_keys || error_exit "SSH key setup failed"
+    configure_firewall || error_exit "Firewall configuration failed"
+    install_docker || error_exit "Docker installation failed"
+    install_nodejs || error_exit "Node.js installation failed"
+    install_security_tools || error_exit "Security tools installation failed"
+    setup_repository || error_exit "Repository setup failed"
+    setup_environment || error_exit "Environment setup failed"
+    verify_project_structure || error_exit "Project structure verification failed"
+    validate_docker_compose || error_exit "Docker Compose validation failed"
+    setup_nginx || error_exit "Nginx setup failed"
+    start_services || error_exit "Service startup failed"
+    setup_ssl || error_exit "SSL setup failed"
+    verify_deployment || error_exit "Deployment verification failed"
 
     log "🎉🎉🎉 Deployment completed successfully! 🎉🎉🎉"
     log "🌐 Application is now live at https://hulta-foaltracker.app"
