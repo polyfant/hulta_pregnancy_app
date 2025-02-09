@@ -11,8 +11,14 @@ set -euo pipefail
 APP_DIR="/opt/hulta-pregnancy-app"
 ENV_FILE="$APP_DIR/.env"
 DOCKER_COMPOSE_FILE="$APP_DIR/docker-compose.yml"
-GIT_REPO="git@github.com:polyfant/hulta_pregnancy_app.git"
+GIT_REPO="https://github.com/polyfant/hulta_pregnancy_app.git"  # Changed to HTTPS
 BRANCH="main"
+
+# Optionally set the Git SSH key to be used for repository cloning.
+# IMPORTANT: This must be the private key file (not authorized_keys).
+# For example, if your desired key is stored in ~/.ssh/id_ed25519 but its comment is wrong,
+# you can generate/use another key and point this variable to it.
+GIT_SSH_KEY="${HOME}/.ssh/id_ed25519"
 
 # Logging and error handling functions
 log() {
@@ -33,13 +39,8 @@ validate_environment() {
     log "🔍 Validating system environment"
     
     # Check Ubuntu version
-    if ! grep -q 'Ubuntu 22.04' /etc/os-release; then
-        error_exit "Unsupported OS. Requires Ubuntu 22.04 LTS"
-    fi
-
-    # Check current user
-    if [[ "$USER" != "deploy" ]]; then
-        error_exit "Script must be run as 'deploy' user"
+    if ! grep -q 'Ubuntu' /etc/os-release || ! grep -q '24.04\|22.04' /etc/os-release; then
+        error_exit "Unsupported OS. Requires Ubuntu 24.04 or 22.04 LTS"
     fi
 
     # Check sudo access
@@ -213,21 +214,43 @@ install_nodejs() {
     log "✅ Node.js and npm installation verified"
 }
 
-# Configure deployment environment
-configure_deployment() {
-    log "Configuring deployment environment"
-    
-    # Create project directory
-    sudo mkdir -p /opt/hulta-pregnancy-app
-    sudo chown $USER:$USER /opt/hulta-pregnancy-app
+// ...existing code...
 
-    # Secure SSH directory
-    mkdir -p ~/.ssh
-    chmod 700 ~/.ssh
+# Configure environment
+setup_environment() {
+    log "Setting up environment variables"
     
-    # Ensure authorized_keys exists with correct permissions
-    touch ~/.ssh/authorized_keys
-    chmod 600 ~/.ssh/authorized_keys
+    # Create combined .env file with all variables
+    cat <<EOF > "$APP_DIR/.env"
+# Database Configuration
+POSTGRES_DB=horse_tracking_db
+POSTGRES_USER=horsetracker
+POSTGRES_PASSWORD=R2,Y@B&wO46.Ln}Q
+DATABASE_URL=postgresql://horsetracker:R2,Y@B&wO46.Ln}Q@postgres:5432/horse_tracking_db
+
+# JWT and Auth Configuration
+JWT_SECRET=your-super-secret-key-replace-in-production
+AUTH0_DOMAIN=dev-r083cwkcv0pgz20x.eu.auth0.com
+AUTH0_AUDIENCE=https://api.hulta-foaltracker.app
+AUTH0_CLIENT_ID=OBmEol1z4U49r3YI3priDdGbvF5i4O7d
+
+# API Configuration
+API_URL=https://api.hulta-foaltracker.app
+WEBSOCKET_URL=wss://api.hulta-foaltracker.app/ws
+
+# Frontend Configuration
+VITE_AUTH0_DOMAIN=dev-r083cwkcv0pgz20x.eu.auth0.com
+VITE_AUTH0_CLIENT_ID=OBmEol1z4U49r3YI3priDdGbvF5i4O7d
+VITE_AUTH0_AUDIENCE=https://api.hulta-foaltracker.app
+VITE_API_URL=https://api.hulta-foaltracker.app
+VITE_WEBSOCKET_URL=wss://api.hulta-foaltracker.app/ws
+EOF
+
+    # Copy the same environment file to both locations
+    cp "$APP_DIR/.env" "$APP_DIR/frontend-react/.env"
+    cp "$APP_DIR/.env" "$APP_DIR/backend/.env"
+    
+    log "✅ Environment setup complete with hardcoded values"
 }
 
 # Additional security tools
@@ -247,69 +270,43 @@ install_security_tools() {
     sudo systemctl restart fail2ban
 }
 
-# Configure environment
-setup_environment() {
-    log "Setting up environment variables"
-    
-    # Create .env file if it doesn't exist
-    if [ ! -f "$ENV_FILE" ]; then
-        cat <<EOF > "$ENV_FILE"
-# Auth0 Configuration
-VITE_AUTH0_DOMAIN=dev-r083cwkcv0pgz20x.eu.auth0.com
-VITE_AUTH0_CLIENT_ID=OBmEol1z4U49r3YI3priDdGbvF5i4O7d
-VITE_AUTH0_AUDIENCE=https://api.hulta-foaltracker.app
-
-# API Configuration
-VITE_API_URL=https://api.hulta-foaltracker.app
-VITE_WEBSOCKET_URL=wss://api.hulta-foaltracker.app/ws
-
-# Database Configuration
-POSTGRES_DB=hulta_db
-POSTGRES_USER=hulta_user
-POSTGRES_PASSWORD=$(openssl rand -base64 32)
-DATABASE_URL=postgresql://hulta_user:${POSTGRES_PASSWORD}@postgres:5432/hulta_db
-
-# JWT Configuration
-JWT_SECRET=$(openssl rand -base64 32)
-EOF
-    fi
-    
-    log "✅ Environment setup complete"
-}
-
-# Add after configure_deployment()
+# Update setup_ssh_keys() with better error handling
 setup_ssh_keys() {
     log "🔑 Checking SSH configuration"
-    
-    # Check for any existing SSH keys
-    EXISTING_KEYS=( "$HOME/.ssh/id_rsa" "$HOME/.ssh/id_ed25519" )
-    SSH_KEY_FILE=""
-    
-    for key in "${EXISTING_KEYS[@]}"; do
-        if [ -f "$key" ]; then
-            SSH_KEY_FILE="$key"
-            log "✅ Found existing SSH key: $SSH_KEY_FILE"
-            break
-        fi
-    done
-    
-    # If no key was found, error out since we want to use existing keys
-    if [ -z "$SSH_KEY_FILE" ]; then
-        error_exit "No existing SSH keys found. Please add your SSH key to the server first."
+
+    # If GIT_SSH_KEY is set and exists, use it; otherwise, look for common keys
+    local key=""
+    if [ -n "${GIT_SSH_KEY:-}" ] && [ -f "${GIT_SSH_KEY}" ]; then
+        key="${GIT_SSH_KEY}"
+        log "✅ Using configured GIT_SSH_KEY: $key"
+    else
+        for candidate in "$HOME/.ssh/id_ed25519" "$HOME/.ssh/id_rsa"; do
+            if ( -f "$candidate" ]; then
+                key="$candidate"
+                log "✅ Found default SSH key: $key"
+                break
+            fi
+        done
     fi
 
-    # Add GitHub to known_hosts if not already there
-    if ! grep -q "github.com" ~/.ssh/known_hosts 2>/dev/null; then
-        ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+    if [ -z "$key" ]; then
+        error_exit "No private SSH key found for outbound GitHub authentication. Please generate one."
     fi
-    
-    # Since we know the key is already in GitHub, just verify it exists
-    log "✅ Using existing SSH key: ${SSH_KEY_FILE}"
-    log "🔑 Key fingerprint: $(ssh-keygen -lf $SSH_KEY_FILE)"
-    
-    # Set proper permissions just in case
-    chmod 600 $SSH_KEY_FILE
-    
+
+    chmod 600 "$key"
+
+    if ! pgrep -u "$USER" ssh-agent > /dev/null; then
+        eval "$(ssh-agent -s)"
+    fi
+
+    ssh-add "$key" 2>/dev/null || log "Warning: Unable to add SSH key to agent."
+
+    # Add GitHub to known_hosts if not already present
+    if ! grep -q "github.com" "$HOME/.ssh/known_hosts" 2>/dev/null; then
+        ssh-keyscan github.com >> "$HOME/.ssh/known_hosts" 2>/dev/null
+    fi
+
+    log "🔑 SSH key fingerprint: $(ssh-keygen -lf "$key")"
     log "✅ SSH configuration verified"
 }
 
@@ -337,12 +334,13 @@ setup_repository() {
         git fetch --all || error_exit "Failed to fetch repository updates"
         git reset --hard origin/$BRANCH || error_exit "Failed to reset to $BRANCH"
     else
-        log "📥 Cloning repository"
+        log "📥 Cloning repository using HTTPS"
         git clone -b $BRANCH $GIT_REPO $APP_DIR || error_exit "Failed to clone repository"
         cd $APP_DIR || error_exit "Failed to change to app directory"
     fi
     
     log "✅ Repository setup complete"
+    setup_environment
 }
 
 # Add Nginx configuration
@@ -427,11 +425,22 @@ verify_project_structure() {
     if [ ! -f "$DOCKER_COMPOSE_FILE" ]; then
         error_exit "docker-compose.yml not found in $APP_DIR"
     fi
+
+    # Check for environment files
+    if [ ! -f "$APP_DIR/.env.frontend" ]; then
+        error_exit ".env.frontend not found in $APP_DIR"
+    fi
+
+    if [ ! -f "$APP_DIR/.env.backend" ]; then
+        error_exit ".env.backend not found in $APP_DIR"
+    fi
     
     log "✅ Project structure verified"
 }
 
-# Update start_services() to handle environment files better
+// ...existing code...
+
+# Update start_services to handle separate env files
 start_services() {
     log "🐳 Starting Docker services"
     
@@ -440,29 +449,30 @@ start_services() {
     
     # Ensure Docker is running
     sudo systemctl start docker
+
+    # Create necessary directories if they don't exist
+    mkdir -p "$APP_DIR/backend"
+    mkdir -p "$APP_DIR/frontend-react"
     
-    # Create or update environment files
-    if [ ! -f "$APP_DIR/.env" ]; then
-        # If .env doesn't exist in APP_DIR, create it from ENV_FILE
-        cp "$ENV_FILE" "$APP_DIR/.env"
-    else
-        # If both exist and are different, update APP_DIR/.env
-        if ! cmp -s "$ENV_FILE" "$APP_DIR/.env"; then
-            cp "$ENV_FILE" "$APP_DIR/.env"
-        fi
+    # Handle backend environment file
+    if [ -f "$APP_DIR/.env.backend" ]; then
+        cp "$APP_DIR/.env.backend" "$APP_DIR/backend/.env"
+        # Also copy to root for docker-compose
+        cp "$APP_DIR/.env.backend" "$APP_DIR/.env"
     fi
     
     # Handle frontend environment file
-    if [ -d "$APP_DIR/frontend-react" ]; then
-        if [ ! -f "$APP_DIR/frontend-react/.env" ] || ! cmp -s "$ENV_FILE" "$APP_DIR/frontend-react/.env"; then
-            cp "$ENV_FILE" "$APP_DIR/frontend-react/.env"
-        fi
+    if [ -f "$APP_DIR/.env.frontend" ]; then
+        cp "$APP_DIR/.env.frontend" "$APP_DIR/frontend-react/.env"
     fi
     
-    # Export required environment variables
+    # Export required environment variables for docker-compose
     if [ -f "$APP_DIR/.env" ]; then
         export DATABASE_URL=$(grep '^DATABASE_URL=' "$APP_DIR/.env" | cut -d '=' -f2 || echo "")
         export JWT_SECRET=$(grep '^JWT_SECRET=' "$APP_DIR/.env" | cut -d '=' -f2 || echo "")
+        export POSTGRES_DB=$(grep '^POSTGRES_DB=' "$APP_DIR/.env" | cut -d '=' -f2 || echo "")
+        export POSTGRES_USER=$(grep '^POSTGRES_USER=' "$APP_DIR/.env" | cut -d '=' -f2 || echo "")
+        export POSTGRES_PASSWORD=$(grep '^POSTGRES_PASSWORD=' "$APP_DIR/.env" | cut -d '=' -f2 || echo "")
     fi
     
     # Build and start containers with environment variables
@@ -498,14 +508,14 @@ main() {
     prepare_system
     cleanup_system
     configure_ssh
-    setup_ssh_keys
+    setup_ssh_keys      
     configure_firewall
     install_docker
     install_nodejs
     configure_deployment
     install_security_tools
-    setup_environment
     setup_repository
+    setup_environment
     verify_project_structure
     setup_nginx
     start_services
