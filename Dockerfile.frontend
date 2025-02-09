@@ -13,13 +13,6 @@ RUN pnpm install
 # Copy the rest of the frontend files
 COPY frontend-react/ .
 
-# Create .env file
-RUN echo "VITE_AUTH0_DOMAIN=dev-r083cwkcv0pgz20x.eu.auth0.com" > .env && \
-    echo "VITE_AUTH0_CLIENT_ID=OBmEol1z4U49r3YI3priDdGbvF5i4O7d" >> .env && \
-    echo "VITE_AUTH0_AUDIENCE=https://api.hulta-foaltracker.app" >> .env && \
-    echo "VITE_API_URL=https://api.hulta-foaltracker.app" >> .env && \
-    echo "VITE_WEBSOCKET_URL=wss://api.hulta-foaltracker.app/ws" >> .env
-
 # Build the application
 RUN pnpm build
 
@@ -28,12 +21,5 @@ FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY frontend-react/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Add script to replace environment variables at runtime
-RUN echo $'\
-#!/bin/sh\n\
-envsubst < /usr/share/nginx/html/env-config.js.template > /usr/share/nginx/html/env-config.js\n\
-nginx -g "daemon off;"\
-' > /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
-
 EXPOSE 80
-CMD ["/docker-entrypoint.sh"]
+CMD ["nginx", "-g", "daemon off;"]
