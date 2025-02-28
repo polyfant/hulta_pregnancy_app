@@ -363,43 +363,27 @@ setup_ssh_keys() {
     # Start ssh-agent and ensure it's running
     eval "$(ssh-agent -s)"
     
-    # Use the deploy user's SSH key
+    # Use the existing deploy user's SSH key
     key="/home/deploy/.ssh/id_ed25519"
     
     if [ ! -f "$key" ]; then
         error_exit "SSH key not found at $key"
     fi
 
-    # Create .ssh directory if it doesn't exist
-    mkdir -p "/home/deploy/.ssh"
-    chmod 700 "/home/deploy/.ssh"
-
-    # Ensure correct permissions on the key
-    chmod 600 "$key"
-
-    # Clear any existing keys and add the new one
-    ssh-add -D 2>/dev/null || true
-    
-    # Try to add the key with more verbose output
-    if ! ssh-add "$key" 2>&1; then
-        log "⚠️ Warning: Could not add SSH key to agent. Using alternative method..."
-        export GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes"
-    fi
-
-    # Add GitHub to known_hosts if not already present
-    touch "/home/deploy/.ssh/known_hosts"
-    chmod 644 "/home/deploy/.ssh/known_hosts"
-    
-    if ! grep -q "github.com" "/home/deploy/.ssh/known_hosts" 2>/null; then
-        ssh-keyscan github.com >> "/home/deploy/.ssh/known_hosts" 2>/dev/null
+    # Add the key to the agent
+    if ! ssh-add "$key" 2>/dev/null; then
+        log "⚠️ Warning: Could not add SSH key to agent, trying alternative method..."
+        export GIT_SSH_COMMAND="ssh -i $key -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes"
     fi
 
     # Display the key fingerprint for verification
     log "🔑 SSH key fingerprint: $(ssh-keygen -lf $key)"
 
-    # Test GitHub SSH connection
+    # Test GitHub SSH connection (ignoring exit code as it always returns 1)
     log "🔍 Testing GitHub SSH connection..."
-    ssh -T -v git@github.com || true
+    if ! ssh -T -o StrictHostKeyChecking=accept-new git@github.com 2>&1 | grep -q "successfully authenticated"; then
+        error_exit "SSH authentication to GitHub failed. Please ensure your SSH key is added to GitHub"
+    fi
 
     log "✅ SSH configuration verified"
 }
