@@ -1,32 +1,37 @@
 version: '3.8'
 
 services:
-    backend:
-        build:
-            context: .
-            dockerfile: Dockerfile.backend
-        ports:
-            - '8080:8080'
-        environment:
-            DATABASE_URL: postgresql://horsetracker:R2,Y@B&wO46.Ln}Q@postgres:5432/horse_tracking_db
-            JWT_SECRET: your-super-secret-key-replace-in-production
-            AUTH0_DOMAIN: dev-r083cwkcv0pgz20x.eu.auth0.com
-            AUTH0_AUDIENCE: https://api.hulta-foaltracker.app
-            ENVIRONMENT: production
-        depends_on:
-            postgres:
-                condition: service_healthy
-        restart: unless-stopped
 
-    frontend:
-        build:
-            context: .
-            dockerfile: Dockerfile.frontend
-        ports:
-            - '80:80'
-        depends_on:
-            - backend
-        restart: unless-stopped
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - AUTH0_DOMAIN=${AUTH0_DOMAIN}
+      - AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
+      - GIN_MODE=${GIN_MODE:-release}
+    depends_on:
+      - postgres
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "80:80"
+    environment:
+      - NODE_ENV=production
+      - VITE_AUTH0_DOMAIN=${AUTH0_DOMAIN}
+      - VITE_AUTH0_CLIENT_ID=${VITE_AUTH0_CLIENT_ID:-your-client-id}
+      - VITE_AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
+      - VITE_API_URL=/api
+    depends_on:
+      - backend
+
 
     postgres:
         image: postgres:15-alpine
