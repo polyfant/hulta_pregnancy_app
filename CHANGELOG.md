@@ -9,9 +9,17 @@
 
 ### Added
 
+-   Migrated from Mantine UI to shadcn/ui components 🎉
+-   Comprehensive form validation using zod
+-   EditHorse form component for updating horse details
+-   AddHorse form component for creating new horses
+-   Auth0 authentication integration with protected routes
+-   API service layer using React Query hooks
+-   User profile and login interface
 -   ML-powered growth predictions 🧠
 -   Environmental impact monitoring 🌍
 -   Privacy Dashboard with real-time scoring 🔒
+-   Notification System with WebSocket, Email, and SMS support
 -   Automated privacy audits
 -   Granular privacy controls
 -   Data masking capabilities
@@ -31,15 +39,13 @@
 -   Test environment setup with Vitest
 -   MSW for API mocking
 -   Basic component tests structure
--   Mantine UI provider setup
 -   React Query integration
 
 ### Changed
 
--   Migrated frontend from vanilla JS to React
+-   Migrated from Mantine UI to shadcn/ui component library 🎨
+-   Implemented authenticated API client with token management
 -   Refactored API calls to use React Query
--   Replaced custom styling with Mantine UI
--   Updated project documentation
 -   Moved ErrorResponse to types package
 -   Updated handler error responses to use types.ErrorResponse
 -   Improved main.go error handling and structure

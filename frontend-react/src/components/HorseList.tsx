@@ -1,341 +1,313 @@
+import { motion } from 'framer-motion';
 import {
-	ActionIcon,
-	Badge,
-	Button,
+	Calendar,
+	Filter,
+	Heart,
+	Info,
+	Search,
+	Trophy,
+	User,
+} from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Button } from '../components/ui/button';
+import {
+	SelectAdapter,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '../components/ui/select';
+import { useToast } from '../components/ui/use-toast';
+import { Horse } from '../types/horse';
+import { StatsDashboard } from './StatsDashboard';
+import { Badge } from './ui/badge';
+import {
 	Card,
-	Group,
-	LoadingOverlay,
-	Progress,
-	SimpleGrid,
-	Skeleton,
-	Stack,
-	Text,
-	TextInput,
-	Title,
-} from '@mantine/core';
-import {
-	GenderFemale,
-	GenderMale,
-	Horse,
-	MagnifyingGlass,
-	Plus,
-} from '@phosphor-icons/react';
-import { useQuery } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { vi } from 'vitest';
-import { useApiClient } from '../api/client';
-import { PregnancyStage } from '../types/pregnancy';
-import { EmptyState } from './states/EmptyState';
-import { NetworkError } from './states/NetworkError';
+	CardContent,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+} from './ui/card';
+import { Input } from './ui/input';
 
-interface Horse {
-	id: string;
-	name: string;
-	breed?: string;
-	color?: string;
-	gender: 'MARE' | 'STALLION' | 'GELDING';
-	birthDate?: string;
-	isPregnant?: boolean;
-}
+const HorseList: React.FC = () => {
+	const [horses, setHorses] = useState<Horse[]>([]);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
+	const [searchTerm, setSearchTerm] = useState('');
+	const [filterStatus, setFilterStatus] = useState<string>('all');
+	const { toast } = useToast();
 
-interface PregnancyStatusMap {
-	[key: string]: {
-		currentStage: PregnancyStage;
-		daysRemaining: number;
-		progress: number;
-	};
-}
+	// Calculate statistics
+	const stats = useMemo(() => {
+		const totalHorses = horses.length;
+		const activeHorses = horses.filter((h) => h.status === 'active').length;
+		const pregnantHorses = horses.filter((h) => h.isPregnant).length;
+		const upcomingCheckups = horses.filter((h) => {
+			if (!h.nextCheckup) return false;
+			const nextCheckup = new Date(h.nextCheckup);
+			const thirtyDaysFromNow = new Date();
+			thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+			return nextCheckup <= thirtyDaysFromNow;
+		}).length;
 
-interface PregnancyResponse {
-	currentStage: PregnancyStage;
-	daysRemaining: number;
-}
+		const averageAge =
+			horses.reduce((acc, horse) => acc + (horse.age || 0), 0) /
+				totalHorses || 0;
 
-const getStageColor = (stage: string) => {
-	const colors = {
-		EARLY: 'blue',
-		MIDDLE: 'cyan',
-		LATE: 'teal',
-		NEARTERM: 'indigo',
-		FOALING: 'grape',
-	};
-	return colors[stage as keyof typeof colors] || 'gray';
-};
+		const healthStatus = {
+			excellent: horses.filter((h) => h.healthStatus === 'excellent')
+				.length,
+			good: horses.filter((h) => h.healthStatus === 'good').length,
+			fair: horses.filter((h) => h.healthStatus === 'fair').length,
+			poor: horses.filter((h) => h.healthStatus === 'poor').length,
+		};
 
-const HorseCardSkeleton = () => (
-	<Card shadow='sm' padding='lg' radius='md' withBorder bg='dark.7'>
-		<Skeleton height={20} width='60%' mb='xs' />
-		<Group gap='xs' mb='xs'>
-			<Skeleton height={20} width={60} />
-			<Skeleton height={20} width={80} />
-		</Group>
-		<Skeleton height={8} width='100%' mb='xl' />
-		<Skeleton height={36} width='100%' />
-	</Card>
-);
+		// ML Predictions (mock data for now)
+		const mlPredictions = {
+			nextPregnancyProbability: Math.round(Math.random() * 100),
+			optimalBreedingTime: new Date(
+				Date.now() + 30 * 24 * 60 * 60 * 1000
+			).toLocaleDateString(),
+			foalHealthPrediction: 'Excellent',
+		};
 
-const mockNavigate = vi.fn();
-vi.mock('react-router-dom', async () => ({
-	...(await vi.importActual('react-router-dom')),
-	useNavigate: () => mockNavigate,
-}));
+		// Environmental Data (mock data for now)
+		const environmentalData = {
+			temperature: 22.5,
+			humidity: 65,
+			weatherCondition: 'Sunny',
+			impactScore: 8,
+		};
 
-export function HorseList() {
-	const [searchQuery, setSearchQuery] = useState('');
-	const apiClient = useApiClient();
-	const navigate = useNavigate();
+		return {
+			totalHorses,
+			activeHorses,
+			pregnantHorses,
+			upcomingCheckups,
+			averageAge: Math.round(averageAge * 10) / 10,
+			healthStatus,
+			mlPredictions,
+			environmentalData,
+		};
+	}, [horses]);
 
-	const { data, isLoading, error, refetch } = useQuery<Horse[]>({
-		queryKey: ['horses'],
-		queryFn: async () => {
-			console.log('Fetching horses...');
+	useEffect(() => {
+		const fetchHorses = async () => {
 			try {
-				const data = await apiClient.get<Horse[]>('/api/horses');
-				return data;
-			} catch (error) {
-				console.error('Error fetching horses:', error);
-				throw error;
-			}
-		},
-		retry: 1,
-		staleTime: 30000,
-		refetchOnWindowFocus: false,
-	});
-
-	const horses = data || [];
-
-	const filteredHorses = horses.filter(
-		(horse) =>
-			horse.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			(horse.breed &&
-				horse.breed.toLowerCase().includes(searchQuery.toLowerCase()))
-	);
-
-	const pregnancyQueries = useQuery<PregnancyResponse[]>({
-		queryKey: ['pregnancy'],
-		queryFn: async () => {
-			const pregnantHorses = filteredHorses.filter(
-				(horse) => horse.isPregnant
-			);
-			const promises = pregnantHorses.map((horse) =>
-				fetch(`/api/horses/${horse.id}/pregnancy`).then((response) => {
-					if (!response.ok) {
-						throw new Error('Failed to fetch pregnancy status');
-					}
-					return response.json();
-				})
-			);
-			return Promise.all(promises);
-		},
-		enabled: filteredHorses.some((horse) => horse.isPregnant),
-	});
-
-	const pregnancyStatusMap = useMemo(() => {
-		const statusMap: PregnancyStatusMap = {};
-		if (pregnancyQueries.data) {
-			const pregnantHorses = filteredHorses.filter(
-				(horse) => horse.isPregnant
-			);
-			pregnantHorses.forEach((horse, index) => {
-				const status = pregnancyQueries.data[index];
-				if (status) {
-					statusMap[horse.id] = {
-						currentStage: status.currentStage,
-						daysRemaining: status.daysRemaining,
-						progress: Math.min(
-							Math.max(
-								((340 - status.daysRemaining) / 340) * 100,
-								0
-							),
-							100
-						),
-					};
+				const response = await fetch(
+					'http://localhost:8080/api/horses'
+				);
+				if (!response.ok) {
+					throw new Error('Failed to fetch horses');
 				}
-			});
-		}
-		return statusMap;
-	}, [pregnancyQueries.data, filteredHorses]);
+				const data = await response.json();
+				setHorses(data);
+			} catch (err) {
+				setError(
+					err instanceof Error ? err.message : 'An error occurred'
+				);
+				toast({
+					title: 'Error',
+					description: 'Failed to fetch horses',
+					variant: 'destructive',
+				});
+			} finally {
+				setLoading(false);
+			}
+		};
 
-	const getPregnancyStatus = (horseId: string) => {
-		if (!hasPregnancyStatus(horseId)) return null;
-		return pregnancyStatusMap[horseId];
-	};
+		fetchHorses();
+	}, [toast]);
 
-	const _getStatusBadge = (horse: Horse) => {
-		if (!horse.isPregnant) return null;
-		const status = getPregnancyStatus(horse.id);
-		if (!status) return null;
+	const filteredHorses = horses.filter((horse) => {
+		const matchesSearch =
+			horse.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+			(horse.breed?.toLowerCase() || '').includes(
+				searchTerm.toLowerCase()
+			);
+		const matchesStatus =
+			filterStatus === 'all' || horse.status === filterStatus;
+		return matchesSearch && matchesStatus;
+	});
+
+	if (loading) {
 		return (
-			<Badge color={getStageColor(status.currentStage)}>
-				{status.daysRemaining} days to foaling
-			</Badge>
+			<div className='flex items-center justify-center min-h-screen'>
+				<div className='animate-spin rounded-full h-12 w-12 border-b-2 border-primary'></div>
+			</div>
 		);
-	};
-
-	const hasPregnancyStatus = (horseId: string): boolean => {
-		return Boolean(
-			pregnancyStatusMap[horseId] &&
-				pregnancyStatusMap[horseId].currentStage &&
-				pregnancyStatusMap[horseId].daysRemaining
-		);
-	};
+	}
 
 	if (error) {
 		return (
-			<NetworkError
-				message='Failed to load horses. Please try again.'
-				onRetry={() => refetch()}
-			/>
-		);
-	}
-
-	if (isLoading) {
-		return (
-			<SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing='md'>
-				{[...Array(6)].map((_, i) => (
-					<HorseCardSkeleton key={i} />
-				))}
-			</SimpleGrid>
-		);
-	}
-
-	if (!filteredHorses.length) {
-		return (
-			<EmptyState
-				title='No Horses Found'
-				message={
-					searchQuery
-						? 'No horses match your search criteria.'
-						: 'Start by adding your first horse!'
-				}
-				actionLabel='Add Horse'
-				onAction={() => navigate('/add-horse')}
-			/>
+			<div className='flex items-center justify-center min-h-screen'>
+				<Card className='w-full max-w-md'>
+					<CardHeader>
+						<CardTitle>Error</CardTitle>
+					</CardHeader>
+					<CardContent>
+						<p className='text-destructive'>{error}</p>
+					</CardContent>
+				</Card>
+			</div>
 		);
 	}
 
 	return (
-		<Stack>
-			<Group justify='space-between' align='center'>
-				<Title order={2} c='white'>
-					Horses
-				</Title>
-				<Button
-					component={Link}
-					to='/add-horse'
-					variant='filled'
-					styles={(theme) => ({
-						root: {
-							color: theme.colors.green[4],
-							backgroundColor: theme.colors.dark[7],
-							'&:hover': {
-								backgroundColor: theme.colors.dark[8],
-							},
-						},
-					})}
-					leftSection={<Plus size='1rem' />}
-				>
-					Add Horse
-				</Button>
-			</Group>
-
-			<TextInput
-				placeholder='Search horses...'
-				leftSection={<MagnifyingGlass size='1rem' />}
-				value={searchQuery}
-				onChange={(e) => setSearchQuery(e.target.value)}
-				styles={(theme) => ({
-					input: {
-						backgroundColor: theme.colors.dark[7],
-						color: theme.white,
-						'&::placeholder': {
-							color: theme.colors.dark[2],
-						},
-					},
-				})}
-			/>
-
-			<div style={{ position: 'relative' }}>
-				<LoadingOverlay visible={isLoading} />
-				<SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing='md'>
-					{filteredHorses.map((horse) => (
-						<Card
-							key={horse.id}
-							shadow='sm'
-							padding='lg'
-							radius='md'
-							withBorder
-							bg='dark.7'
-						>
-							<Group justify='space-between' mb='xs'>
-								<Text fw={500} c='white'>
-									{horse.name}
-								</Text>
-								<ActionIcon
-									variant='light'
-									color={
-										horse.gender === 'STALLION' ||
-										horse.gender === 'GELDING'
-											? 'blue'
-											: 'pink'
-									}
-									title={horse.gender}
-								>
-									{horse.gender === 'STALLION' ||
-									horse.gender === 'GELDING' ? (
-										<GenderMale
-											color='blue'
-											size='1.2rem'
-										/>
-									) : (
-										<GenderFemale
-											color='pink'
-											size='1.2rem'
-										/>
-									)}
-								</ActionIcon>
-							</Group>
-
-							<Group gap='xs' mb='xs'>
-								{horse.breed && (
-									<Badge color='blue' variant='light'>
-										{horse.breed}
-									</Badge>
-								)}
-								{horse.isPregnant && _getStatusBadge(horse)}
-							</Group>
-
-							{horse.isPregnant &&
-								hasPregnancyStatus(horse.id) && (
-									<Progress
-										value={
-											pregnancyStatusMap[horse.id]
-												?.progress ?? 0
-										}
-										color='grape'
-										size='sm'
-										mb='md'
-									/>
-								)}
-
-							<Button
-								component={Link}
-								to={`/horses/${horse.id}`}
-								variant='light'
-								color='blue'
-								fullWidth
-								radius='md'
-								leftSection={<Horse size='1rem' />}
-							>
-								View Details
-							</Button>
-						</Card>
-					))}
-				</SimpleGrid>
+		<div className='container mx-auto px-4 py-8'>
+			<div className='mb-8'>
+				<h1 className='text-3xl font-bold tracking-tight mb-2'>
+					Horse Management
+				</h1>
+				<p className='text-muted-foreground'>
+					Manage and monitor your horses with precision and care
+				</p>
 			</div>
-		</Stack>
+
+			{/* Stats Dashboard */}
+			<StatsDashboard {...stats} />
+
+			<div className='flex flex-col md:flex-row gap-4 mb-8'>
+				<div className='relative flex-1'>
+					<Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground' />
+					<Input
+						type='text'
+						placeholder='Search by name or breed...'
+						value={searchTerm}
+						onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+							setSearchTerm(e.target.value)
+						}
+						className='w-full pl-10'
+					/>
+				</div>
+				<div className='w-full md:w-48'>
+					<SelectAdapter
+						value={filterStatus}
+						onValueChange={setFilterStatus}
+					>
+						<SelectTrigger className='w-full'>
+							<Filter className='h-4 w-4 mr-2' />
+							<SelectValue placeholder='Filter by status' />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value='all'>All Horses</SelectItem>
+							<SelectItem value='active'>Active</SelectItem>
+							<SelectItem value='retired'>Retired</SelectItem>
+							<SelectItem value='sold'>Sold</SelectItem>
+						</SelectContent>
+					</SelectAdapter>
+				</div>
+			</div>
+
+			<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
+				{filteredHorses.map((horse, index) => (
+					<motion.div
+						key={horse.id}
+						initial={{ opacity: 0, y: 20 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.3, delay: index * 0.1 }}
+					>
+						<Card className='group hover:shadow-xl transition-all duration-300 border-border/50 hover:border-primary/50 relative overflow-hidden'>
+							{/* Premium Ribbon */}
+							{horse.isPremium && (
+								<div className='absolute top-0 right-0 bg-gradient-to-r from-amber-500 to-yellow-400 text-white px-3 py-1 text-xs font-semibold transform rotate-45 translate-x-8 -translate-y-2'>
+									Premium
+								</div>
+							)}
+
+							<CardHeader className='pb-4'>
+								<div className='flex items-start justify-between'>
+									<div>
+										<div className='flex items-center gap-2'>
+											<CardTitle className='text-xl font-semibold tracking-tight group-hover:text-primary transition-colors'>
+												{horse.name}
+											</CardTitle>
+											{horse.isChampion && (
+												<Trophy className='h-4 w-4 text-amber-500' />
+											)}
+										</div>
+										<p className='text-sm text-muted-foreground mt-1'>
+											{horse.breed || 'Unknown breed'}
+										</p>
+									</div>
+									<Badge
+										variant={
+											// Type-safe variant selection
+											horse.status === 'active'
+												? 'success'
+												: horse.status === 'retired'
+												? 'warning'
+												: 'secondary'
+										}
+										className='capitalize'
+									>
+										{horse.status}
+									</Badge>
+								</div>
+							</CardHeader>
+							<CardContent className='pb-4'>
+								<div className='space-y-3'>
+									<div className='flex items-center gap-2 text-sm'>
+										<User className='h-4 w-4 text-muted-foreground' />
+										<span className='font-medium'>
+											Gender:
+										</span>
+										<span className='text-muted-foreground'>
+											{horse.gender}
+										</span>
+									</div>
+									<div className='flex items-center gap-2 text-sm'>
+										<Calendar className='h-4 w-4 text-muted-foreground' />
+										<span className='font-medium'>
+											Age:
+										</span>
+										<span className='text-muted-foreground'>
+											{horse.age || 'Unknown'} years
+										</span>
+									</div>
+									{horse.notes && (
+										<div className='flex items-start gap-2 text-sm'>
+											<Info className='h-4 w-4 text-muted-foreground mt-0.5' />
+											<span className='text-muted-foreground'>
+												{horse.notes}
+											</span>
+										</div>
+									)}
+								</div>
+							</CardContent>
+							<CardFooter className='flex justify-between items-center pt-4 border-t'>
+								<Button
+									variant='ghost'
+									size='sm'
+									className='hover:bg-primary/10 group/favorite'
+								>
+									<Heart className='h-4 w-4 mr-2 group-hover/favorite:text-red-500 transition-colors' />
+									Favorite
+								</Button>
+								<div className='flex gap-2'>
+									<Button
+										variant='outline'
+										size='sm'
+										className='hover:bg-primary/10 hover:text-primary'
+									>
+										Edit
+									</Button>
+									<Button
+										variant='destructive'
+										size='sm'
+										className='hover:bg-destructive/90'
+									>
+										Delete
+									</Button>
+								</div>
+							</CardFooter>
+						</Card>
+					</motion.div>
+				))}
+			</div>
+		</div>
 	);
-}
+};
 
 export default HorseList;
