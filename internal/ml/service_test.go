@@ -3,6 +3,8 @@ package ml
 import (
 	"testing"
 	"time"
+
+	"github.com/goml/gobrain"
 )
 
 func TestModelPrediction(t *testing.T) {
@@ -12,6 +14,14 @@ func TestModelPrediction(t *testing.T) {
 	}
 	
 	service := NewModelService(config)
+
+	// The test features for GROWTH are: age, weight, height, temperature, exercise (5 inputs)
+	ff := &gobrain.FeedForward{}
+	ff.Init(5, 3, 2) // 5 inputs, 3 hidden, 2 outputs (for weight_gain, height_gain)
+	service.models["GROWTH"] = &Model{
+		Network: ff,
+	}
+
 	collector := NewDataCollector(service)
 
 	// Test cases

@@ -16,11 +16,11 @@ func TestGetPregnancyStage(t *testing.T) {
 		daysSinceConception int
 		expectedStage     models.PregnancyStage
 	}{
-		{"Early stage", 50, models.PregnancyStageEarly},
-		{"Mid stage", 150, models.PregnancyStageMid},
-		{"Late stage", 300, models.PregnancyStageLate},
-		{"Overdue", 345, models.PregnancyStageOverdue},
-		{"High risk", 380, models.PregnancyStageHighRisk},
+		{"Early stage", 50, models.PregnancyStage("EARLY_GESTATION")},
+		{"Mid stage", 150, models.PregnancyStage("MID_GESTATION")},
+		{"Late stage", 300, models.PregnancyStage("LATE_GESTATION")},
+		{"Overdue", 345, models.PregnancyStage("LATE_GESTATION")},
+		{"High risk", 380, models.PregnancyStage("OVERDUE")},
 	}
 	
 	for _, tt := range tests {

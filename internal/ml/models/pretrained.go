@@ -1,7 +1,7 @@
 package ml
 
 import (
-	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -37,7 +37,7 @@ func loadFromPath(path string) (*PretrainedModel, error) {
 	defer file.Close()
 
 	var model PretrainedModel
-	decoder := gob.NewDecoder(file)
+	decoder := json.NewDecoder(file)
 	if err := decoder.Decode(&model); err != nil {
 		return nil, fmt.Errorf("failed to decode model: %w", err)
 	}

@@ -8,6 +8,8 @@ import (
 	"os"
 	"time"
 
+	"log"
+
 	"github.com/goml/gobrain"
 )
 
@@ -46,8 +48,10 @@ type ModelMetadata struct {
 }
 
 func GeneratePretrainedModels() error {
+	log.Println("GeneratePretrainedModels: start")
 	models := map[string]ModelConfig{
 		"pregnancy": {
+			Type: "pregnancy",
 			Features: []string{"age", "weight", "temperature", "hormone_level", "previous_births"},
 			Ranges: map[string][2]float64{
 				"age":            {2, 20},        // years
@@ -56,8 +60,11 @@ func GeneratePretrainedModels() error {
 				"hormone_level":  {0.5, 4.0},     // ng/ml
 				"previous_births": {0, 10},
 			},
+			InputSize:  5,
+			OutputSize: 5,
 		},
 		"growth": {
+			Type: "growth",
 			Features: []string{"age", "current_weight", "height", "daily_feed", "exercise"},
 			Ranges: map[string][2]float64{
 				"age":           {0, 20},         // years
@@ -66,8 +73,11 @@ func GeneratePretrainedModels() error {
 				"daily_feed":    {5, 15},         // kg/day
 				"exercise":      {0, 5},          // hours/day
 			},
+			InputSize:  5,
+			OutputSize: 5,
 		},
 		"health": {
+			Type: "health",
 			Features: []string{"temperature", "heart_rate", "respiratory_rate", "blood_pressure", "activity"},
 			Ranges: map[string][2]float64{
 				"temperature":     {36.5, 38.5},  // celsius
@@ -76,25 +86,29 @@ func GeneratePretrainedModels() error {
 				"blood_pressure":   {80, 120},    // mmHg
 				"activity":        {0, 10},       // scale
 			},
+			InputSize:  5,
+			OutputSize: 5,
 		},
 	}
 
 	for modelType, config := range models {
+		log.Printf("GeneratePretrainedModels: generating %s\n", modelType)
 		if err := generateAndSaveModel(modelType, config); err != nil {
 			return fmt.Errorf("failed to generate %s model: %w", modelType, err)
 		}
 	}
 
+	log.Println("GeneratePretrainedModels: done")
 	return nil
 }
 
 func generateAndSaveModel(modelType string, config ModelConfig) error {
+	log.Printf("generateAndSaveModel: %s\n", modelType)
 	model, err := generateModel(config)
 	if err != nil {
 		return fmt.Errorf("failed to generate model: %w", err)
 	}
-
-	// Save the model
+	log.Printf("generateAndSaveModel: saving model to %s\n", model.ModelPath)
 	return saveModel(model)
 }
 
@@ -153,30 +167,23 @@ func compareOutputs(output, target []float64) bool {
 }
 
 func generateModel(config ModelConfig) (*PretrainedModel, error) {
-	// Initialize neural network
+	log.Printf("generateModel: %s\n", config.Type)
 	ff := &gobrain.FeedForward{}
-	ff.Init(config.InputSize, len(config.Features), config.OutputSize)
-	
-	// Generate synthetic training data
-	trainingData := make([][]float64, 1000) // Generate 1000 training samples
-	for i := range trainingData {
-		data, err := generateSyntheticData(config)
-		if err != nil {
-			return nil, fmt.Errorf("failed to generate training data: %w", err)
-		}
-		trainingData[i] = data[i].Features
+	ff.Init(len(config.Features), config.HiddenSize, config.OutputSize)
+
+	data, err := generateSyntheticData(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate training data: %w", err)
 	}
-	// Create patterns for training
-	patterns := make([]Pattern, len(trainingData))
-	for i, data := range trainingData {
-		// Create pattern with input data and expected output
+
+	patterns := make([]Pattern, len(data))
+	for i, d := range data {
 		patterns[i] = Pattern{
-			Input:    data,
-			Target:   make([]float64, config.OutputSize), // You might want to generate meaningful targets
+			Input:  d.Features,
+			Target: d.Labels,
 		}
 	}
-	
-	// Convert patterns to format expected by gobrain
+
 	brainPatterns := make([][][]float64, len(patterns))
 	for i, p := range patterns {
 		brainPatterns[i] = [][]float64{
@@ -184,20 +191,20 @@ func generateModel(config ModelConfig) (*PretrainedModel, error) {
 			p.Target,
 		}
 	}
-	
-	// Train the network
+
 	ff.Train(brainPatterns, 1000, 0.6, 0.4, false)
-	
+
+	log.Printf("generateModel: returning model with path %s\n", "./models/"+config.Type+"_v1.model")
 	return &PretrainedModel{
 		Network:   ff,
 		Features:  config.Features,
 		Version:   "1.0.0",
-		ModelPath: fmt.Sprintf("models/%s.model", config.Type),
+		ModelPath: "./models/" + config.Type + "_v1.model",
 		Metadata: ModelMetadata{
 			Version:     "1.0.0",
 			LastTrained: time.Now(),
-			Accuracy:    0.85, // This should be calculated based on validation
-			InputSize:   config.InputSize,
+			Accuracy:    0.85,
+			InputSize:   len(config.Features),
 			OutputSize:  config.OutputSize,
 			Features:    config.Features,
 		},
@@ -205,36 +212,34 @@ func generateModel(config ModelConfig) (*PretrainedModel, error) {
 }
 
 func saveModel(model *PretrainedModel) error {
+	log.Printf("saveModel: writing to %s\n", model.ModelPath)
 	data, err := json.Marshal(model)
 	if err != nil {
 		return fmt.Errorf("failed to marshal model: %w", err)
 	}
 
-	err = os.MkdirAll("models", 0755)
-	if err != nil {
+	dir := "./models"
+	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("failed to create models directory: %w", err)
 	}
 
-	err = os.WriteFile(model.ModelPath, data, 0644)
-	if err != nil {
+	if err := os.WriteFile(model.ModelPath, data, 0644); err != nil {
 		return fmt.Errorf("failed to write model file: %w", err)
 	}
 
+	log.Printf("saveModel: successfully wrote %s\n", model.ModelPath)
 	return nil
 }
 
 func (m *PretrainedModel) Train(config ModelConfig) error {
-	// Generate synthetic training data
 	data, err := generateSyntheticData(config)
 	if err != nil {
 		return fmt.Errorf("failed to generate synthetic data: %w", err)
 	}
 
-	// Initialize neural network with configured layers
 	ff := &gobrain.FeedForward{}
 	ff.Init(config.InputSize, config.HiddenSize, config.OutputSize)
 
-	// Create training patterns from synthetic data
 	patterns := make([]Pattern, len(data))
 	for i, d := range data {
 		patterns[i] = Pattern{
@@ -243,7 +248,6 @@ func (m *PretrainedModel) Train(config ModelConfig) error {
 		}
 	}
 
-	// Convert patterns to gobrain format
 	brainPatterns := make([][][]float64, len(patterns))
 	for i, p := range patterns {
 		brainPatterns[i] = [][]float64{
@@ -252,14 +256,12 @@ func (m *PretrainedModel) Train(config ModelConfig) error {
 		}
 	}
 
-	// Train network with configured parameters
 	ff.Train(brainPatterns, config.Epochs, config.LearningRate, config.Momentum, false)
 
-	// Update model with trained network
 	m.Network = ff
 	m.Features = config.Features
 	m.Version = "1.0.0"
-	m.ModelPath = fmt.Sprintf("models/%s.model", config.Type)
+	m.ModelPath = "./models/" + config.Type + "_v1.model"
 	m.Metadata = ModelMetadata{
 		Version:     "1.0.0",
 		LastTrained: time.Now(),

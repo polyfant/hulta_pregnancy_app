@@ -6,6 +6,7 @@ import (
 
 	"github.com/polyfant/hulta_pregnancy_app/internal/api"
 	"github.com/polyfant/hulta_pregnancy_app/internal/cache"
+	"github.com/polyfant/hulta_pregnancy_app/internal/config"
 	"github.com/polyfant/hulta_pregnancy_app/internal/mocks"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service/breeding"
@@ -39,6 +40,7 @@ func setupTestHandler() (*api.Handler, *mocks.MockHorseRepository, *mocks.MockUs
 		Cache:            cache,
 		HorseRepo:        mockHorseRepo,
 		BreedingRepo:     mockBreedingRepo,
+		Auth0:            config.Auth0Config{Domain: "test"},
 	})
 	return handler, mockHorseRepo, mockUserRepo, mockPregnancyRepo, mockHealthRepo, mockBreedingRepo
 }

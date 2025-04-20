@@ -20,8 +20,17 @@ import { Horse } from '../../types/horse';
 import { formatDate } from '../../utils/dateUtils';
 import { CriticalAlerts } from './CriticalAlerts';
 import { EndPregnancyDialog } from './EndPregnancyDialog';
+import { GrowthCharts } from './GrowthCharts';
+import { PreFoalingSigns } from './PreFoalingSigns';
+import { PregnancyChecklist } from './PregnancyChecklist';
+import { PregnancyEvents } from './PregnancyEvents';
+import { PregnancyGuidelines } from './PregnancyGuidelines';
+import { PregnancyTimeline } from './PregnancyTimeline';
+import { QuickMeasurement } from './QuickMeasurement';
 import { StageChecklist } from './StageChecklist';
+import { StageVisualization } from './StageVisualization';
 import { StartPregnancyDialog } from './StartPregnancyDialog';
+import { SyncDashboard } from './SyncDashboard';
 
 const STAGES = {
 	EARLY: { label: 'Early Stage', progress: 25, days: 110 },
@@ -170,6 +179,11 @@ export default function PregnancyTracking() {
 
 	return (
 		<Stack gap='lg'>
+			{horse && (
+				<StageVisualization
+					horseId={parseInt(horse.id.toString(), 10)}
+				/>
+			)}
 			<Card withBorder>
 				<Stack>
 					<Group justify='space-between'>
@@ -293,6 +307,23 @@ export default function PregnancyTracking() {
 					)}
 				</Stack>
 			</Card>
+
+			{horse && (
+				<>
+					<PregnancyEvents horseId={horse.id.toString()} />
+					<QuickMeasurement
+						foalId={parseInt(horse.id.toString(), 10)}
+					/>
+					<GrowthCharts foalId={parseInt(horse.id.toString(), 10)} />
+					<PregnancyTimeline
+						horseId={parseInt(horse.id.toString(), 10)}
+					/>
+					<PregnancyGuidelines />
+					<PreFoalingSigns horseId={horse.id.toString()} />
+					<SyncDashboard />
+					<PregnancyChecklist />
+				</>
+			)}
 
 			<StartPregnancyDialog
 				opened={startDialogOpened}

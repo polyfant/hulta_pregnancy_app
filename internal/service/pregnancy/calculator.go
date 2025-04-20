@@ -1,7 +1,6 @@
 package pregnancy
 
 import (
-	"math"
 	"time"
 
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
@@ -46,14 +45,15 @@ func (c *Calculator) GetPregnancyStage(daysSinceConception int) models.Pregnancy
 
 // CalculateProgress calculates the pregnancy progress as a percentage with advanced heuristics
 func (c *Calculator) CalculateProgress(conceptionDate time.Time) float64 {
-	const averageGestationDays = 340 // Standard horse gestation
 	daysSinceConception := time.Since(conceptionDate).Hours() / 24
-
-	// Non-linear progress calculation
-	progress := (1 - math.Exp(-daysSinceConception/averageGestationDays)) * 100
-
-	// Ensure progress is between 0 and 100
-	return math.Min(math.Max(progress, 0), 100)
+	progress := (daysSinceConception / float64(defaultGestationDays)) * 100
+	if progress < 0 {
+		progress = 0
+	}
+	if progress > 100 {
+		progress = 100
+	}
+	return progress
 }
 
 // GetStageInfo returns detailed information about the current pregnancy stage

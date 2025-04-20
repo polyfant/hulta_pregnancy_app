@@ -15,17 +15,20 @@ import (
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 )
 
+func testAuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Set("user_id", "test_user")
+		c.Next()
+	}
+}
+
 func TestHandlers(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	handler, mockHorse, _, _, _, _ := setupTestHandler()
 	router := gin.New()
-	
-	// Add test auth middleware
-	router.Use(func(c *gin.Context) {
-		c.Set("user_id", "test_user")
-		c.Next()
-	})
-	
+
+	router.Use(testAuthMiddleware())
+
 	api.SetupRouter(router, handler)
 
 	t.Run("GetHorse", func(t *testing.T) {
@@ -39,7 +42,7 @@ func TestHandlers(t *testing.T) {
 		mockHorse.On("GetByID", mock.Anything, horseID).
 			Return(expectedHorse, nil).Once()
 
-		w := performRequest(router, "GET", "/api/horses/1", nil)
+		w := performRequest(router, "GET", "/api/v1/horses/1", nil)
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		var response models.Horse

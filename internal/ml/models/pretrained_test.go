@@ -1,16 +1,25 @@
 package ml
 
 import (
+	"os"
 	"testing"
 )
 
 func TestPretrainedModels(t *testing.T) {
-	// First generate the models
 	if err := GeneratePretrainedModels(); err != nil {
 		t.Fatalf("Failed to generate models: %v", err)
 	}
 
-	// Initialize models
+	if _, err := os.Stat("models/pregnancy_v1.model"); os.IsNotExist(err) {
+		t.Fatalf("Model file models/pregnancy_v1.model was not created")
+	}
+	if _, err := os.Stat("models/growth_v1.model"); os.IsNotExist(err) {
+		t.Fatalf("Model file models/growth_v1.model was not created")
+	}
+	if _, err := os.Stat("models/health_v1.model"); os.IsNotExist(err) {
+		t.Fatalf("Model file models/health_v1.model was not created")
+	}
+
 	if err := InitializeModels(); err != nil {
 		t.Fatalf("Failed to initialize models: %v", err)
 	}

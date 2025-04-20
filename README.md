@@ -92,10 +92,7 @@ A specialized horse breeding and pregnancy tracking application for Hulta Farm, 
 
 1. Clone the repository:
 
-    ```bash
-    git clone https://github.com/your-org/hulta-pregnancy-app.git
-    cd hulta-pregnancy-app
-    ```
+
 
 2. Set up environment variables:
 
@@ -163,9 +160,6 @@ To use authentication features, you'll need to set up an Auth0 application and A
 └── docker-compose.yml      # Docker Compose configuration
 ```
 
-## Contributing 🤝
-
-Contributions are welcome! Please check out our [contribution guidelines](CONTRIBUTING.md) before getting started.
 
 ## License 📝
 
