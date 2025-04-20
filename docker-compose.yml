@@ -32,22 +32,21 @@ services:
     depends_on:
       - backend
 
-
-    postgres:
-        image: postgres:15-alpine
-        environment:
-            POSTGRES_DB: horse_tracking_db
-            POSTGRES_USER: horsetracker
-            POSTGRES_PASSWORD: R2,Y@B&wO46.Ln}Q
-        volumes:
-            - postgres_data:/var/lib/postgresql/data
-        healthcheck:
-            test:
-                ['CMD-SHELL', 'pg_isready -U horsetracker -d horse_tracking_db']
-            interval: 10s
-            timeout: 5s
-            retries: 5
-        restart: unless-stopped
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: horse_tracking_db
+      POSTGRES_USER: horsetracker
+      POSTGRES_PASSWORD: R2,Y@B&wO46.Ln}Q
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'pg_isready -U horsetracker -d horse_tracking_db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
 volumes:
-    postgres_data:
+  postgres_data:
