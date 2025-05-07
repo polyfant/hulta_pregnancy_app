@@ -54,6 +54,14 @@ func (m *mockHealthRepo) DeleteRecord(ctx context.Context, id uint) error {
 	return args.Error(0)
 }
 
+func (m *mockHealthRepo) GetByID(ctx context.Context, id uint) (*models.HealthRecord, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.HealthRecord), args.Error(1)
+}
+
 type mockHorseRepo struct {
 	mock.Mock
 }

@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: synergychat-api-deployment
+  labels:
+    app: synergychat-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: synergychat-api
+  template:
+    metadata:
+      labels:
+        app: synergychat-api
+    spec:
+      containers:
+        - name: synergychat-api
+          image: <your-api-image:latest> # TODO: Replace with your actual image
+          ports:
+            - containerPort: 8080
+          env:
+            - name: API_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: synergychat-api-configmap
+                  key: API_PORT

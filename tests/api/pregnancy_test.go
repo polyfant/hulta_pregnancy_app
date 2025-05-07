@@ -46,25 +46,52 @@ func TestPregnancyService(t *testing.T) {
 	})
 
 	t.Run("AddAndGetPregnancyEvent", func(t *testing.T) {
+		userID := "user-1" 
 		horseID := uint(1)
-		event := &models.PregnancyEvent{
-			PregnancyID: 1,
-			UserID:      "user-1",
+		pregnancyID := uint(1)
+		currentTime := time.Now()
+
+		eventInput := &models.PregnancyEventInputDTO{
 			Type:        "checkup",
 			Description: "Vet checkup",
-			Date:        time.Now(),
+			Date:        currentTime,
 		}
 
-		mockPregnancyRepo.On("AddPregnancyEvent", mock.Anything, event).Return(nil).Once()
-		mockPregnancyRepo.On("GetEvents", mock.Anything, horseID).Return([]models.PregnancyEvent{*event}, nil).Once()
+		expectedRepoEvent := &models.PregnancyEvent{
+			PregnancyID: pregnancyID,
+			UserID:      userID,
+			Type:        eventInput.Type,
+			Description: eventInput.Description,
+			Date:        eventInput.Date,
+		}
 
-		err := handler.GetPregnancyService().AddPregnancyEvent(ctx, event)
+		mockPregnancyRepo.On("GetCurrentPregnancy", mock.Anything, horseID).
+			Return(&models.Pregnancy{ID: pregnancyID, HorseID: horseID}, nil).Once()
+
+		mockPregnancyRepo.On("AddPregnancyEvent", mock.Anything, mock.MatchedBy(func(e *models.PregnancyEvent) bool {
+			return e.PregnancyID == expectedRepoEvent.PregnancyID && 
+				   e.UserID == expectedRepoEvent.UserID && 
+				   e.Type == expectedRepoEvent.Type && 
+				   e.Description == expectedRepoEvent.Description && 
+				   e.Date.Equal(expectedRepoEvent.Date)
+		})).Return(nil).Once()
+		
+		mockPregnancyRepo.On("GetEvents", mock.Anything, horseID).Return([]models.PregnancyEvent{*expectedRepoEvent}, nil).Once()
+
+		createdEvent, err := handler.GetPregnancyService().AddPregnancyEvent(ctx, userID, horseID, eventInput)
 		assert.NoError(t, err)
+		assert.NotNil(t, createdEvent)
+		assert.Equal(t, expectedRepoEvent.PregnancyID, createdEvent.PregnancyID)
+		assert.Equal(t, expectedRepoEvent.UserID, createdEvent.UserID)
+		assert.Equal(t, expectedRepoEvent.Type, createdEvent.Type)
+		assert.Equal(t, expectedRepoEvent.Description, createdEvent.Description)
 
 		events, err := handler.GetPregnancyService().GetPregnancyEvents(ctx, horseID)
 		assert.NoError(t, err)
 		assert.Len(t, events, 1)
 		assert.Equal(t, "Vet checkup", events[0].Description)
+
+		mockPregnancyRepo.AssertExpectations(t)
 	})
 
 	t.Run("AddAndGetPreFoalingSign", func(t *testing.T) {

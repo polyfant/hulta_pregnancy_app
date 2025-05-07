@@ -3,16 +3,16 @@ package service
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
 )
 
 type GrowthService interface {
-	RecordGrowthMeasurement(ctx context.Context, foalID uint, weight, height float64) error
+	RecordGrowthMeasurement(ctx context.Context, data *models.GrowthData) (*models.GrowthData, error)
 	GetFoalGrowthData(ctx context.Context, foalID uint) ([]models.GrowthData, error)
 	AnalyzeGrowthTrends(ctx context.Context, foalID uint) (*GrowthAnalysis, error)
+	RecordBodyCondition(ctx context.Context, data *models.BodyCondition) (*models.BodyCondition, error)
 }
 
 type GrowthServiceImpl struct {
@@ -35,32 +35,23 @@ func NewGrowthService(growthRepo repository.GrowthRepository, horseRepo reposito
 	}
 }
 
-func (s *GrowthServiceImpl) RecordGrowthMeasurement(ctx context.Context, foalID uint, weight, height float64) error {
+func (s *GrowthServiceImpl) RecordGrowthMeasurement(ctx context.Context, data *models.GrowthData) (*models.GrowthData, error) {
 	// Validate horse exists
-	horse, err := s.horseRepo.GetByID(ctx, foalID)
+	horse, err := s.horseRepo.GetByID(ctx, data.FoalID)
 	if err != nil {
-		return fmt.Errorf("invalid foal ID: %w", err)
+		return nil, fmt.Errorf("invalid foal ID: %w", err)
 	}
 
-	// Get existing growth data to calculate age
-	existingData, _ := s.growthRepo.GetGrowthDataByFoalID(ctx, foalID)
-	age := len(existingData)
+	// Determine expected values based on breed and provided age
+	// MeasurementDate is now provided in data
+	data.ExpectedWeight = calculateExpectedWeight(horse.Breed, data.Age)
+	data.ExpectedHeight = calculateExpectedHeight(horse.Breed, data.Age)
 
-	// Determine expected values based on breed (simplified)
-	expectedWeight := calculateExpectedWeight(horse.Breed, age)
-	expectedHeight := calculateExpectedHeight(horse.Breed, age)
-
-	growthData := &models.GrowthData{
-		FoalID:          foalID,
-		Age:             age,
-		Weight:          weight,
-		Height:          height,
-		ExpectedWeight:  expectedWeight,
-		ExpectedHeight:  expectedHeight,
-		MeasurementDate: time.Now(),
+	createdData, err := s.growthRepo.CreateGrowthData(ctx, data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create growth data: %w", err)
 	}
-
-	return s.growthRepo.CreateGrowthData(ctx, growthData)
+	return createdData, nil // Return the created/updated data from repository
 }
 
 func (s *GrowthServiceImpl) GetFoalGrowthData(ctx context.Context, foalID uint) ([]models.GrowthData, error) {
@@ -103,6 +94,22 @@ func (s *GrowthServiceImpl) AnalyzeGrowthTrends(ctx context.Context, foalID uint
 		ProjectedHeight:   projectedHeight,
 		GrowthStatus:      growthStatus,
 	}, nil
+}
+
+// RecordBodyCondition creates a new body condition record.
+func (s *GrowthServiceImpl) RecordBodyCondition(ctx context.Context, data *models.BodyCondition) (*models.BodyCondition, error) {
+	// Basic validation: Ensure the foal (horse) exists
+	_, err := s.horseRepo.GetByID(ctx, data.FoalID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid foal ID %d: %w", data.FoalID, err)
+	}
+
+	// Call repository to create body condition data
+	createdRecord, err := s.growthRepo.CreateBodyCondition(ctx, data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create body condition record in repository: %w", err)
+	}
+	return createdRecord, nil
 }
 
 // Simplified breed-specific growth expectation calculations

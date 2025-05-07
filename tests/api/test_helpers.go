@@ -1,15 +1,7 @@
 package api
 
-import (
-	"bytes"
-	"context"
-	"encoding/json"
-	"net/http"
-	"net/http/httptest"
-
-	"github.com/gin-gonic/gin"
-)
-
+// Removed unused function performAuthenticatedRequest
+/*
 func performAuthenticatedRequest(router *gin.Engine, method, url string, body interface{}) *httptest.ResponseRecorder {
 	w := httptest.NewRecorder()
 	var req *http.Request
@@ -32,4 +24,5 @@ func performAuthenticatedRequest(router *gin.Engine, method, url string, body in
 
 	router.ServeHTTP(w, req)
 	return w
-} 
+}
+*/

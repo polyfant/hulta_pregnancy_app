@@ -3,23 +3,23 @@ package models
 import "time"
 
 type User struct {
-	ID             string         `json:"id" db:"id"`
-    Email          string         `json:"email" db:"email"`
-    HashedPassword string         `json:"-" db:"hashed_password"` // Already properly hidden
-    LastLogin      *time.Time     `json:"last_login" db:"last_login"`
+	ID             string         `json:"id" db:"id"` // Typically not changed by user directly via profile update
+	Email          string         `json:"email" db:"email" validate:"omitempty,email"`
+	HashedPassword string         `json:"-" db:"hashed_password"`
+	LastLogin      *time.Time     `json:"last_login" db:"last_login"`
 	LastSync       time.Time      `json:"last_sync" db:"last_sync"`
-	CreatedAt      time.Time  `json:"created_at" db:"created_at"`
-	UpdatedAt      time.Time  `json:"updated_at" db:"updated_at"`
-	IsActive       bool       `json:"is_active" db:"is_active"`
-	WeatherSettings WeatherSettings `json:"weather_settings" gorm:"embedded"`
+	CreatedAt      time.Time      `json:"created_at" db:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at" db:"updated_at"`
+	IsActive       bool           `json:"is_active" db:"is_active"`
+	WeatherSettings WeatherSettings `json:"weather_settings" gorm:"embedded" validate:"omitempty"` // omitempty for the struct itself if it can be omitted in updates
 }
 
 // WeatherSettings stores user preferences for weather tracking
 type WeatherSettings struct {
 	NotificationsEnabled bool    `json:"notifications_enabled" gorm:"default:false"`
-	DefaultLatitude     float64 `json:"default_latitude"`
-	DefaultLongitude    float64 `json:"default_longitude"`
-	UpdateFrequency     string  `json:"update_frequency" gorm:"default:'hourly'"` // hourly, daily, realtime
+	DefaultLatitude     float64 `json:"default_latitude" validate:"omitempty,latitude"`
+	DefaultLongitude    float64 `json:"default_longitude" validate:"omitempty,longitude"`
+	UpdateFrequency     string  `json:"update_frequency" gorm:"default:'hourly'" validate:"omitempty,oneof=hourly daily realtime"`
 	ForecastAlerts      bool    `json:"forecast_alerts" gorm:"default:false"`
 }
 

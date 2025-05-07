@@ -1,27 +1,35 @@
 package api
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
+	"github.com/polyfant/hulta_pregnancy_app/internal/api/types"
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service"
-	"github.com/polyfant/hulta_pregnancy_app/internal/api/types"
+	"gorm.io/gorm"
 )
 
 type PregnancyHandler struct {
-	service service.PregnancyService
+	service      service.PregnancyService
+	validate     *validator.Validate
+	horseService service.HorseService
 }
 
-func NewPregnancyHandler(service service.PregnancyService) *PregnancyHandler {
+func NewPregnancyHandler(pregService service.PregnancyService, horseService service.HorseService, validate *validator.Validate) *PregnancyHandler {
 	return &PregnancyHandler{
-		service: service,
+		service:      pregService,
+		horseService: horseService,
+		validate:     validate,
 	}
 }
 
-// Add the missing methods
 func (h *PregnancyHandler) GetPregnancies(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
@@ -52,7 +60,6 @@ func (h *PregnancyHandler) GetPregnancyStage(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"stage": stage})
 }
 
-// Add other pregnancy-specific handlers
 func (h *PregnancyHandler) GetPregnancyStatus(c *gin.Context) {
 	horseID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
@@ -140,18 +147,56 @@ func (h *PregnancyHandler) GetPregnancyEvents(c *gin.Context) {
 }
 
 func (h *PregnancyHandler) AddPregnancyEvent(c *gin.Context) {
-	var event models.PregnancyEvent
-	if err := c.ShouldBindJSON(&event); err != nil {
-		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: err.Error()})
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, types.ErrorResponse{Error: "User not authenticated"})
 		return
 	}
 
-	if err := h.service.AddPregnancyEvent(c.Request.Context(), &event); err != nil {
-		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
+	horseIDParam := c.Param("id")
+	horseID, err := strconv.ParseUint(horseIDParam, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid horse ID in path"})
 		return
 	}
 
-	c.JSON(http.StatusCreated, event)
+	_, err = h.horseService.GetByID(c.Request.Context(), uint(horseID))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, types.ErrorResponse{Error: "Horse not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: "Failed to retrieve horse: " + err.Error()})
+		}
+		return
+	}
+
+	var eventInput models.PregnancyEventInputDTO
+	if err := c.ShouldBindJSON(&eventInput); err != nil {
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Invalid request payload: " + err.Error()})
+		return
+	}
+
+	if err := h.validate.Struct(&eventInput); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"validation_errors": formatValidationErrorsForPregnancyHandler(err)})
+		return
+	}
+
+	if eventInput.Date.After(time.Now()) {
+		c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: "Event date cannot be in the future."})
+		return
+	}
+
+	createdEvent, err := h.service.AddPregnancyEvent(c.Request.Context(), userID, uint(horseID), &eventInput)
+	if err != nil {
+		if strings.Contains(err.Error(), "no active pregnancy found") {
+			c.JSON(http.StatusBadRequest, types.ErrorResponse{Error: err.Error()})
+		} else {
+			c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: "Failed to add pregnancy event: " + err.Error()})
+		}
+		return
+	}
+
+	c.JSON(http.StatusCreated, createdEvent)
 }
 
 func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
@@ -161,16 +206,13 @@ func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 		return
 	}
 
-	// Get existing checklist
 	items, err := h.service.GetPreFoalingChecklist(c.Request.Context(), uint(horseID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	// If no checklist exists, initialize with default items
 	if len(items) == 0 {
-		// Get horse to check pregnancy status and due date
 		pregnancy, err := h.service.GetPregnancy(c.Request.Context(), uint(horseID))
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: err.Error()})
@@ -182,12 +224,9 @@ func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 			return
 		}
 
-		// Calculate due date and set checklist deadlines accordingly
 		dueDate := pregnancy.ConceptionDate.Add(340 * 24 * time.Hour)
 		
-		// Create timeline-based checklist items
 		items = []models.PreFoalingChecklistItem{
-			// 60 days before
 			{
 				HorseID:     uint(horseID),
 				Description: "Schedule pre-foaling veterinary exam",
@@ -195,7 +234,6 @@ func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 				DueDate:     dueDate.AddDate(0, 0, -60),
 				Notes:       "Check vaccination status, overall health, and pregnancy progress",
 			},
-			// 45 days before
 			{
 				HorseID:     uint(horseID),
 				Description: "Begin mammary gland monitoring",
@@ -203,7 +241,6 @@ func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 				DueDate:     dueDate.AddDate(0, 0, -45),
 				Notes:       "Document any changes in size or appearance",
 			},
-			// 30 days before
 			{
 				HorseID:     uint(horseID),
 				Description: "Prepare foaling kit",
@@ -218,7 +255,6 @@ func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 				DueDate:     dueDate.AddDate(0, 0, -30),
 				Notes:       "Test cameras, alarms, and ensure backup power supply",
 			},
-			// 21 days before
 			{
 				HorseID:     uint(horseID),
 				Description: "Start intensive udder monitoring",
@@ -233,7 +269,6 @@ func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 				DueDate:     dueDate.AddDate(0, 0, -21),
 				Notes:       "Clean thoroughly, fresh bedding, ensure good lighting and ventilation",
 			},
-			// 14 days before
 			{
 				HorseID:     uint(horseID),
 				Description: "Begin vulva monitoring",
@@ -248,7 +283,6 @@ func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 				DueDate:     dueDate.AddDate(0, 0, -14),
 				Notes:       "Update contact numbers, review red-flag symptoms, plan transport route to clinic",
 			},
-			// 7 days before
 			{
 				HorseID:     uint(horseID),
 				Description: "Begin temperature monitoring",
@@ -265,7 +299,6 @@ func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 			},
 		}
 
-		// Add each item to database
 		for _, item := range items {
 			if err := h.service.AddPreFoalingChecklistItem(c.Request.Context(), &item); err != nil {
 				c.JSON(http.StatusInternalServerError, types.ErrorResponse{Error: "Failed to initialize checklist"})
@@ -274,7 +307,6 @@ func (h *PregnancyHandler) GetFoalingChecklist(c *gin.Context) {
 		}
 	}
 
-	// Return checklist sorted by due date and priority
 	c.JSON(http.StatusOK, items)
 }
 
@@ -294,7 +326,6 @@ func (h *PregnancyHandler) GetPostFoalingChecklist(c *gin.Context) {
 	}
 
 	items := []models.PreFoalingChecklistItem{
-		// Immediate post-foaling
 		{
 			HorseID:     uint(horseID),
 			Description: "Check placenta expulsion",
@@ -309,7 +340,6 @@ func (h *PregnancyHandler) GetPostFoalingChecklist(c *gin.Context) {
 			DueDate:     data.FoalingDate.Add(6 * time.Hour),
 			Notes:       "Ensure successful first nursing within 6 hours",
 		},
-		// 24 hours post-foaling
 		{
 			HorseID:     uint(horseID),
 			Description: "Veterinary check-up",
@@ -317,7 +347,6 @@ func (h *PregnancyHandler) GetPostFoalingChecklist(c *gin.Context) {
 			DueDate:     data.FoalingDate.AddDate(0, 0, 1),
 			Notes:       "Schedule vet visit for mare and foal health assessment",
 		},
-		// Continue with other checklist items...
 	}
 
 	c.JSON(http.StatusOK, items)
@@ -408,4 +437,18 @@ func (h *PregnancyHandler) GetPregnancy(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, pregnancy)
+}
+
+func formatValidationErrorsForPregnancyHandler(err error) map[string]string {
+	errorsMap := make(map[string]string)
+	var validationErrors validator.ValidationErrors
+	if errors.As(err, &validationErrors) {
+		for _, fieldError := range validationErrors {
+			fieldName := fieldError.Field()
+			errorsMap[fieldName] = fmt.Sprintf("Field validation for '%s' failed on the '%s' tag", fieldName, fieldError.Tag())
+		}
+	} else {
+		errorsMap["error"] = "Validation error: " + err.Error()
+	}
+	return errorsMap
 }

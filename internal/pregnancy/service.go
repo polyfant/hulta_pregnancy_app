@@ -2,11 +2,13 @@ package pregnancy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
 	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
+	"gorm.io/gorm"
 )
 
 // Service handles pregnancy-related business logic
@@ -164,4 +166,34 @@ func (s *Service) GetPregnancyStatus(ctx context.Context, horseID uint) (*models
 	}
 
 	return status, nil
+}
+
+// AddPregnancyEvent creates a new event for an active pregnancy of a horse.
+func (s *Service) AddPregnancyEvent(ctx context.Context, userID string, horseID uint, eventInput *models.PregnancyEventInputDTO) (*models.PregnancyEvent, error) {
+	// 1. Fetch the active pregnancy for the horseID.
+	activePregnancy, err := s.repo.GetCurrentPregnancy(ctx, horseID) 
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("no active pregnancy found for horse ID %d: %w", horseID, err) 
+		}
+		return nil, fmt.Errorf("failed to retrieve active pregnancy for horse ID %d: %w", horseID, err)
+	}
+
+	// 2. Construct the PregnancyEvent model
+	newEvent := &models.PregnancyEvent{
+		PregnancyID:  activePregnancy.ID, 
+		UserID:       userID,            
+		Type:         eventInput.Type,
+		Description:  eventInput.Description,
+		Date:         eventInput.Date,
+		// CreatedAt and UpdatedAt will be set by GORM or BeforeCreate hook in models.PregnancyEvent
+	}
+
+	// 4. Call the repository to save the new event.
+	err = s.repo.AddPregnancyEvent(ctx, newEvent) 
+	if err != nil {
+		return nil, fmt.Errorf("failed to create pregnancy event in repository: %w", err)
+	}
+
+	return newEvent, nil
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/polyfant/hulta_pregnancy_app/internal/config"
 	"github.com/polyfant/hulta_pregnancy_app/internal/mocks"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service"
-	"github.com/polyfant/hulta_pregnancy_app/internal/service/breeding"
 )
 
 // setupTestHandler creates a new API handler with mock repositories for testing.
@@ -25,7 +24,7 @@ func setupTestHandler() (*api.Handler, *mocks.MockHorseRepository, *mocks.MockUs
 	userService := service.NewUserService(mockUserRepo)
 	pregnancyService := service.NewPregnancyService(mockHorseRepo, mockPregnancyRepo)
 	healthService := service.NewHealthService(mockHealthRepo)
-	breedingService := breeding.NewBreedingService(mockBreedingRepo)
+	breedingService := service.NewBreedingService(mockBreedingRepo)
 	horseService := service.NewHorseService(mockHorseRepo)
 	// Initialize cache
 	cache := cache.NewMemoryCache()

@@ -25,6 +25,15 @@ func (r *BreedingRepository) Create(ctx context.Context, cost *models.BreedingCo
 	return r.db.WithContext(ctx).Create(cost).Error
 }
 
+func (r *BreedingRepository) GetByID(ctx context.Context, id uint) (*models.BreedingRecord, error) {
+	var record models.BreedingRecord
+	err := r.db.WithContext(ctx).First(&record, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &record, nil
+}
+
 func (r *BreedingRepository) GetRecords(ctx context.Context, horseID uint) ([]models.BreedingRecord, error) {
 	var records []models.BreedingRecord
 	err := r.db.WithContext(ctx).Where("horse_id = ?", horseID).Find(&records).Error
@@ -33,4 +42,12 @@ func (r *BreedingRepository) GetRecords(ctx context.Context, horseID uint) ([]mo
 
 func (r *BreedingRepository) CreateRecord(ctx context.Context, record *models.BreedingRecord) error {
 	return r.db.WithContext(ctx).Create(record).Error
+}
+
+func (r *BreedingRepository) UpdateRecord(ctx context.Context, record *models.BreedingRecord) error {
+	return r.db.WithContext(ctx).Save(record).Error
+}
+
+func (r *BreedingRepository) DeleteRecord(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).Delete(&models.BreedingRecord{}, id).Error
 } 

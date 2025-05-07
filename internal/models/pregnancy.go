@@ -73,22 +73,22 @@ type PregnancyStatus struct {
 // Pregnancy model is updated to include more comprehensive tracking
 type Pregnancy struct {
 	ID                 uint           `json:"id" gorm:"primaryKey"`
-	HorseID            uint           `json:"horseID"`
-	StartDate          time.Time      `json:"startDate"`
-	EndDate            *time.Time     `json:"endDate,omitempty"`
-	Status             string         `json:"status"`
-	ConceptionDate     *time.Time     `json:"conceptionDate,omitempty"`
-	CurrentStage       PregnancyStage `json:"currentStage"`
-	RiskLevel          RiskLevel      `json:"riskLevel"`
-	ProgressPercentage float64        `json:"progressPercentage"`
-	Notes              string         `json:"notes,omitempty"`
-	CreatedAt          time.Time      `json:"createdAt"`
-	UpdatedAt          time.Time      `json:"updatedAt"`
+	HorseID            uint           `json:"horse_id" validate:"required"`
+	StartDate          time.Time      `json:"start_date" validate:"required"`
+	EndDate            *time.Time     `json:"end_date,omitempty" validate:"omitempty,gtfield=StartDate"`
+	Status             string         `json:"status" validate:"required,oneof=ACTIVE COMPLETE LOST ABORTED"`
+	ConceptionDate     *time.Time     `json:"conception_date,omitempty"`
+	CurrentStage       PregnancyStage `json:"current_stage,omitempty" validate:"omitempty,oneof=EARLY_GESTATION MID_GESTATION LATE_GESTATION OVERDUE HIGH_RISK"`
+	RiskLevel          RiskLevel      `json:"risk_level,omitempty" validate:"omitempty,oneof=LOW MEDIUM HIGH CRITICAL"`
+	ProgressPercentage float64        `json:"progress_percentage,omitempty" validate:"omitempty,min=0,max=100"`
+	Notes              string         `json:"notes,omitempty" validate:"omitempty,max=5000"`
+	CreatedAt          time.Time      `json:"created_at"`
+	UpdatedAt          time.Time      `json:"updated_at"`
 }
 
 // PregnancyStart represents the data needed to start pregnancy tracking
 type PregnancyStart struct {
-	ConceptionDate time.Time `json:"conceptionDate" binding:"required"`
+	ConceptionDate time.Time `json:"conception_date" validate:"required"`
 }
 
 // PregnancyGuideline represents guidelines for different pregnancy stages
@@ -101,13 +101,21 @@ type PregnancyGuideline struct {
 // PregnancyEvent represents a pregnancy event
 type PregnancyEvent struct {
 	ID           uint      `json:"id"`
-	PregnancyID  uint      `json:"pregnancy_id"`
-	UserID       string    `json:"user_id"`
-	Type         string    `json:"type"`
-	Description  string    `json:"description"`
-	Date         time.Time `json:"date"`
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	PregnancyID  uint      `json:"pregnancy_id" validate:"required"`
+	UserID       string    `json:"user_id" validate:"required"`
+	Type         string    `json:"type" validate:"required,max=100"`
+	Description  string    `json:"description" validate:"required,max=1000"`
+	Date         time.Time `json:"date" validate:"required"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+// PregnancyEventInputDTO is used for creating a new pregnancy event via the API.
+// It excludes fields like PregnancyID and UserID which are determined by the context/service.
+type PregnancyEventInputDTO struct {
+	Type        string    `json:"type" validate:"required,max=100"`
+	Description string    `json:"description" validate:"required,max=1000"`
+	Date        time.Time `json:"date" validate:"required"` // Custom validation will check if it's in the past or present
 }
 
 // PreFoalingSign represents a pre-foaling sign
@@ -181,6 +189,9 @@ func (p *Pregnancy) IsActive() bool {
 }
 
 func (p *Pregnancy) DaysPregnant() int {
+	if p.ConceptionDate != nil && !p.ConceptionDate.IsZero() {
+		return int(time.Since(*p.ConceptionDate).Hours() / 24)
+	}
 	if p.StartDate.IsZero() {
 		return 0
 	}
@@ -188,7 +199,15 @@ func (p *Pregnancy) DaysPregnant() int {
 }
 
 func (p *Pregnancy) ExpectedDueDate() time.Time {
-	return p.StartDate.AddDate(0, 0, DefaultGestationDays)
+	var baseDate time.Time
+	if p.ConceptionDate != nil && !p.ConceptionDate.IsZero() {
+		baseDate = *p.ConceptionDate
+	} else if !p.StartDate.IsZero() {
+		baseDate = p.StartDate
+	} else {
+		return time.Time{}
+	}
+	return baseDate.AddDate(0, 0, DefaultGestationDays)
 }
 
 func (e *PregnancyEvent) Validate() error {
@@ -200,6 +219,9 @@ func (e *PregnancyEvent) Validate() error {
 	}
 	if e.Date.IsZero() {
 		return fmt.Errorf("date is required")
+	}
+	if e.Date.After(time.Now()) {
+		return fmt.Errorf("event date cannot be in the future")
 	}
 	return nil
 }

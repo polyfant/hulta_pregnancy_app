@@ -94,6 +94,23 @@ func SetupRouter(router *gin.Engine, h *Handler) *gin.Engine {
 		protected.POST("/horses/:id/growth", h.growthHandler.RecordGrowthMeasurement)
 		protected.GET("/horses/:id/growth", h.growthHandler.GetFoalGrowthData)
 		protected.GET("/horses/:id/growth/analysis", h.growthHandler.AnalyzeGrowthTrends)
+		protected.POST("/horses/:id/body-condition", h.growthHandler.RecordBodyCondition)
+
+		// Expense routes
+		protected.POST("/expenses", h.AddExpense)
+		protected.GET("/horses/:horseId/expenses", h.ListExpensesByHorse)
+		protected.GET("/expenses/total", h.GetUserTotalExpensesHandler)
+		protected.GET("/expenses/type/:type", h.GetExpensesByTypeHandler)
+		protected.GET("/expenses/:expenseId", h.GetExpense)
+		protected.PUT("/expenses/:expenseId", h.UpdateExpense)
+		protected.DELETE("/expenses/:expenseId", h.DeleteExpense)
+
+		// Recurring Expense routes
+		protected.POST("/recurring-expenses", h.AddRecurringExpense)
+		protected.GET("/recurring-expenses", h.ListRecurringExpenses)
+		protected.GET("/recurring-expenses/:expenseId", h.GetRecurringExpense)
+		protected.PUT("/recurring-expenses/:expenseId", h.UpdateRecurringExpense)
+		protected.DELETE("/recurring-expenses/:expenseId", h.DeleteRecurringExpense)
 
 		// Dashboard route
 		protected.GET("/dashboard", h.GetDashboardStats)

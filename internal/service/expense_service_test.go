@@ -7,122 +7,292 @@ import (
 	"time"
 
 	"github.com/polyfant/hulta_pregnancy_app/internal/models"
+	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"gorm.io/gorm"
 )
 
+// --- Mock ExpenseRepository ---
 type mockExpenseRepo struct{ mock.Mock }
-func (m *mockExpenseRepo) Create(ctx context.Context, expense *models.Expense) error {
+
+func (m *mockExpenseRepo) Create(ctx context.Context, expense *models.Expense) (*models.Expense, error) {
 	args := m.Called(ctx, expense)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Expense), args.Error(1)
+}
+func (m *mockExpenseRepo) Update(ctx context.Context, expense *models.Expense) (*models.Expense, error) {
+	args := m.Called(ctx, expense)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Expense), args.Error(1)
+}
+func (m *mockExpenseRepo) GetByID(ctx context.Context, expenseID uint) (*models.Expense, error) {
+	args := m.Called(ctx, expenseID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Expense), args.Error(1)
+}
+func (m *mockExpenseRepo) Delete(ctx context.Context, expenseID uint) error {
+	args := m.Called(ctx, expenseID)
 	return args.Error(0)
 }
-func (m *mockExpenseRepo) Update(ctx context.Context, expense *models.Expense) error { return nil }
-func (m *mockExpenseRepo) GetByHorseID(ctx context.Context, horseID uint) ([]models.Expense, error) { return nil, nil }
-func (m *mockExpenseRepo) GetExpensesByType(ctx context.Context, userID, expenseType string) ([]models.Expense, error) { return nil, nil }
-func (m *mockExpenseRepo) GetTotalExpensesByUser(ctx context.Context, userID string) (decimal.Decimal, error) { return decimal.NewFromInt(0), nil }
+func (m *mockExpenseRepo) GetByHorseID(ctx context.Context, horseID uint) ([]models.Expense, error) {
+	args := m.Called(ctx, horseID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]models.Expense), args.Error(1)
+}
+func (m *mockExpenseRepo) GetExpensesByType(ctx context.Context, userID, expenseType string) ([]models.Expense, error) {
+	args := m.Called(ctx, userID, expenseType)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]models.Expense), args.Error(1)
+}
+func (m *mockExpenseRepo) GetTotalExpensesByUser(ctx context.Context, userID string) (decimal.Decimal, error) {
+	args := m.Called(ctx, userID)
+	return args.Get(0).(decimal.Decimal), args.Error(1)
+}
 
-// RecurringExpenseRepository mock
+var _ repository.ExpenseRepository = (*mockExpenseRepo)(nil)
+
+// --- Mock RecurringExpenseRepository ---
 type mockRecurringRepo struct{ mock.Mock }
-func (m *mockRecurringRepo) Create(ctx context.Context, recurring *models.RecurringExpense) error {
+
+func (m *mockRecurringRepo) Create(ctx context.Context, recurring *models.RecurringExpense) (*models.RecurringExpense, error) {
 	args := m.Called(ctx, recurring)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.RecurringExpense), args.Error(1)
+}
+func (m *mockRecurringRepo) Update(ctx context.Context, recurring *models.RecurringExpense) (*models.RecurringExpense, error) {
+	args := m.Called(ctx, recurring)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.RecurringExpense), args.Error(1)
+}
+func (m *mockRecurringRepo) GetByID(ctx context.Context, id uint) (*models.RecurringExpense, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.RecurringExpense), args.Error(1)
+}
+func (m *mockRecurringRepo) Delete(ctx context.Context, id uint) error {
+	args := m.Called(ctx, id)
 	return args.Error(0)
 }
 func (m *mockRecurringRepo) GetDueRecurringExpenses(ctx context.Context) ([]models.RecurringExpense, error) {
 	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 	return args.Get(0).([]models.RecurringExpense), args.Error(1)
 }
 func (m *mockRecurringRepo) GetByUserID(ctx context.Context, userID string) ([]models.RecurringExpense, error) {
-	return nil, nil
+	args := m.Called(ctx, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]models.RecurringExpense), args.Error(1)
 }
 
+var _ repository.RecurringExpenseRepository = (*mockRecurringRepo)(nil)
+
+// --- Mock HorseRepository ---
+type mockHorseRepo struct{ mock.Mock }
+
+func (m *mockHorseRepo) Create(ctx context.Context, horse *models.Horse) error {
+	args := m.Called(ctx, horse); return args.Error(0)
+}
+func (m *mockHorseRepo) GetByID(ctx context.Context, id uint) (*models.Horse, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil { return nil, args.Error(1) }
+	return args.Get(0).(*models.Horse), args.Error(1)
+}
+func (m *mockHorseRepo) Update(ctx context.Context, horse *models.Horse) error {
+	args := m.Called(ctx, horse); return args.Error(0)
+}
+func (m *mockHorseRepo) Delete(ctx context.Context, id uint) error {
+	args := m.Called(ctx, id); return args.Error(0)
+}
+func (m *mockHorseRepo) ListByUser(ctx context.Context, userID string) ([]models.Horse, error) {
+	args := m.Called(ctx, userID); if args.Get(0) == nil { return nil, args.Error(1) }; return args.Get(0).([]models.Horse), args.Error(1)
+}
+func (m *mockHorseRepo) GetPregnantHorses(ctx context.Context, userID string) ([]models.Horse, error) {
+	args := m.Called(ctx, userID); if args.Get(0) == nil { return nil, args.Error(1) }; return args.Get(0).([]models.Horse), args.Error(1)
+}
+func (m *mockHorseRepo) GetOffspring(ctx context.Context, horseID uint) ([]models.Horse, error) {
+	args := m.Called(ctx, horseID); if args.Get(0) == nil { return nil, args.Error(1) }; return args.Get(0).([]models.Horse), args.Error(1)
+}
+func (m *mockHorseRepo) GetFamilyTree(ctx context.Context, horseID uint) (*models.FamilyTree, error) {
+	args := m.Called(ctx, horseID); if args.Get(0) == nil { return nil, args.Error(1) }; return args.Get(0).(*models.FamilyTree), args.Error(1)
+}
+func (m *mockHorseRepo) GetPregnant(ctx context.Context, userID string) ([]models.Horse, error) {
+	args := m.Called(ctx, userID); if args.Get(0) == nil { return nil, args.Error(1) }; return args.Get(0).([]models.Horse), args.Error(1)
+}
+
+var _ repository.HorseRepository = (*mockHorseRepo)(nil)
+
 func TestCreateRecurringExpense_Validation(t *testing.T) {
-	svc := &ExpenseService{
-		expenseRepo:         &mockExpenseRepo{},
-		recurringExpenseRepo: &mockRecurringRepo{},
-	}
 	ctx := context.Background()
 
-	re := &models.RecurringExpense{
-		UserID:      "user-1",
-		Amount:      -10,
-		ExpenseType: "",
-		Frequency:   "",
-		StartDate:   time.Now(),
+	// Validation is now primarily in handlers and model tags.
+	// This test should focus on service-level behavior, e.g., repository interaction errors.
+	testCases := []struct {
+		name          string
+		input         *models.RecurringExpense
+		setupMock     func(mrr *mockRecurringRepo, mer *mockExpenseRepo, mhr *mockHorseRepo)
+		expectedErrorContains string
+	}{
+		{
+			name: "Repository Create Fails",
+			input: &models.RecurringExpense{
+				UserID:      "user-1",
+				Amount:      decimal.NewFromInt(100),
+				ExpenseType: models.ExpenseTypeFeed,
+				Frequency:   models.FrequencyMonthly,
+				StartDate:   time.Now().Add(-24 * time.Hour), // Valid past date
+			},
+			setupMock: func(mrr *mockRecurringRepo, mer *mockExpenseRepo, mhr *mockHorseRepo) {
+				// Service calculates NextDueDate before calling Create
+				mrr.On("Create", ctx, mock.AnythingOfType("*models.RecurringExpense")).Return(nil, errors.New("repo create error")).Once()
+			},
+			expectedErrorContains: "repo create error",
+		},
 	}
-	err := svc.CreateRecurringExpense(ctx, re)
-	assert.ErrorIs(t, err, models.ErrInvalidAmount)
 
-	re.Amount = 100
-	err = svc.CreateRecurringExpense(ctx, re)
-	assert.ErrorIs(t, err, models.ErrInvalidExpenseType)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create new mocks for each sub-test to ensure isolation
+			currentMockExpRepo := &mockExpenseRepo{}
+			currentMockRecRepo := &mockRecurringRepo{}
+			currentMockHrsRepo := &mockHorseRepo{}
+			currentSvc := NewExpenseService(currentMockExpRepo, currentMockRecRepo, currentMockHrsRepo)
 
-	re.ExpenseType = models.ExpenseTypeFeed
-	err = svc.CreateRecurringExpense(ctx, re)
-	assert.ErrorIs(t, err, models.ErrInvalidFrequency)
+			tc.setupMock(currentMockRecRepo, currentMockExpRepo, currentMockHrsRepo)
+
+			_, err := currentSvc.CreateRecurringExpense(ctx, tc.input)
+
+			if tc.expectedErrorContains != "" {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tc.expectedErrorContains)
+			} else {
+				assert.NoError(t, err)
+			}
+			currentMockRecRepo.AssertExpectations(t)
+			currentMockExpRepo.AssertExpectations(t)
+			currentMockHrsRepo.AssertExpectations(t)
+		})
+	}
 }
 
 func TestCreateRecurringExpense_Success(t *testing.T) {
-	repo := &mockRecurringRepo{}
-	svc := &ExpenseService{
-		expenseRepo:         &mockExpenseRepo{},
-		recurringExpenseRepo: repo,
-	}
+	mockRecRepo := &mockRecurringRepo{}
+	mockExpRepo := &mockExpenseRepo{}
+	mockHrsRepo := &mockHorseRepo{}
+	svc := NewExpenseService(mockExpRepo, mockRecRepo, mockHrsRepo)
 	ctx := context.Background()
 
+	startDate := time.Now().Add(-48 * time.Hour)
 	re := &models.RecurringExpense{
 		UserID:      "user-1",
-		Amount:      100,
+		Amount:      decimal.NewFromInt(100),
 		ExpenseType: models.ExpenseTypeFeed,
 		Frequency:   models.FrequencyMonthly,
-		StartDate:   time.Now(),
+		StartDate:   startDate,
+	}
+	expectedNextDueDate := calculateNextDueDate(*re)
+
+	expectedReturn := &models.RecurringExpense{
+		Model:       gorm.Model{ID: 1},
+		UserID:      re.UserID,
+		Amount:      re.Amount,
+		ExpenseType: re.ExpenseType,
+		Frequency:   re.Frequency,
+		StartDate:   re.StartDate,
+		NextDueDate: expectedNextDueDate,
 	}
 
-	repo.On("Create", ctx, re).Return(nil).Once()
+	mockRecRepo.On("Create", ctx, mock.MatchedBy(func(arg *models.RecurringExpense) bool {
+		return arg.UserID == re.UserID && 
+		       arg.Amount.Equal(re.Amount) &&
+		       arg.ExpenseType == re.ExpenseType &&
+		       arg.Frequency == re.Frequency &&
+		       arg.StartDate.Equal(re.StartDate) &&
+		       arg.NextDueDate.Equal(expectedNextDueDate)
+	})).Return(expectedReturn, nil).Once()
 
-	err := svc.CreateRecurringExpense(ctx, re)
+	createdRe, err := svc.CreateRecurringExpense(ctx, re)
 	assert.NoError(t, err)
-	repo.AssertExpectations(t)
+	assert.NotNil(t, createdRe)
+	assert.Equal(t, expectedReturn.ID, createdRe.ID)
+	assert.True(t, createdRe.NextDueDate.Equal(expectedNextDueDate), "NextDueDate should be correctly calculated and returned")
+	mockRecRepo.AssertExpectations(t)
 }
 
 func TestProcessDueRecurringExpenses(t *testing.T) {
-	repo := &mockRecurringRepo{}
-	expRepo := &mockExpenseRepo{}
-	svc := &ExpenseService{
-		expenseRepo:         expRepo,
-		recurringExpenseRepo: repo,
-	}
+	mockRecRepo := &mockRecurringRepo{}
+	mockExpRepo := &mockExpenseRepo{}
+	mockHrsRepo := &mockHorseRepo{}
+	svc := NewExpenseService(mockExpRepo, mockRecRepo, mockHrsRepo)
 	ctx := context.Background()
 
-	due := models.RecurringExpense{
+	now := time.Now()
+	dueItem := models.RecurringExpense{
+		Model:       gorm.Model{ID: 1},
 		UserID:      "user-1",
-		Amount:      50,
+		Amount:      decimal.NewFromInt(50),
 		ExpenseType: models.ExpenseTypeFeed,
 		Frequency:   models.FrequencyMonthly,
-		StartDate:   time.Now().AddDate(0, -1, 0),
-		NextDueDate: time.Now(),
+		StartDate:   now.AddDate(0, -2, 0),
+		NextDueDate: now.Truncate(24 * time.Hour),
 	}
 
-	repo.On("GetDueRecurringExpenses", ctx).Return([]models.RecurringExpense{due}, nil).Once()
-	expRepo.On("Create", ctx, mock.AnythingOfType("*models.Expense")).Return(nil).Once()
+	mockRecRepo.On("GetDueRecurringExpenses", ctx).Return([]models.RecurringExpense{dueItem}, nil).Once()
+
+	expenseMatcher := mock.MatchedBy(func(exp *models.Expense) bool {
+		return exp.UserID == dueItem.UserID &&
+			exp.Amount.Equal(dueItem.Amount) &&
+			exp.Date.Equal(dueItem.NextDueDate)
+	})
+	mockExpRepo.On("Create", ctx, expenseMatcher).Return(&models.Expense{ID: 101, UserID: dueItem.UserID}, nil).Once()
+
+	expectedUpdatedNextDueDate := calculateNextDueDate(dueItem)
+	recurringMatcher := mock.MatchedBy(func(rec *models.RecurringExpense) bool {
+		return rec.ID == dueItem.ID && rec.NextDueDate.Equal(expectedUpdatedNextDueDate)
+	})
+	mockRecRepo.On("Update", ctx, recurringMatcher).Return(&models.RecurringExpense{Model: gorm.Model{ID: dueItem.ID}, NextDueDate: expectedUpdatedNextDueDate}, nil).Once()
 
 	err := svc.ProcessDueRecurringExpenses(ctx)
 	assert.NoError(t, err)
 
-	repo.AssertExpectations(t)
-	expRepo.AssertExpectations(t)
+	mockRecRepo.AssertExpectations(t)
+	mockExpRepo.AssertExpectations(t)
 }
 
 func TestProcessDueRecurringExpenses_Error(t *testing.T) {
-	repo := &mockRecurringRepo{}
-	svc := &ExpenseService{
-		expenseRepo:         &mockExpenseRepo{},
-		recurringExpenseRepo: repo,
-	}
+	mockRecRepo := &mockRecurringRepo{}
+	mockExpRepo := &mockExpenseRepo{}
+	mockHrsRepo := &mockHorseRepo{}
+	svc := NewExpenseService(mockExpRepo, mockRecRepo, mockHrsRepo)
 	ctx := context.Background()
 
-	repo.On("GetDueRecurringExpenses", ctx).Return([]models.RecurringExpense{}, errors.New("db error")).Once()
+	mockRecRepo.On("GetDueRecurringExpenses", ctx).Return(nil, errors.New("db error")).Once()
 
 	err := svc.ProcessDueRecurringExpenses(ctx)
 	assert.Error(t, err)
-} 
+	assert.Contains(t, err.Error(), "db error")
+	mockRecRepo.AssertExpectations(t)
+}
+
+// Further tests for other ExpenseService methods should be added here. 

@@ -21,8 +21,10 @@ type HorseRepository interface {
 }
 
 type ExpenseRepository interface {
-	Create(ctx context.Context, expense *models.Expense) error
-	Update(ctx context.Context, expense *models.Expense) error
+	Create(ctx context.Context, expense *models.Expense) (*models.Expense, error)
+	Update(ctx context.Context, expense *models.Expense) (*models.Expense, error)
+	GetByID(ctx context.Context, expenseID uint) (*models.Expense, error)
+	Delete(ctx context.Context, expenseID uint) error
 	GetByHorseID(ctx context.Context, horseID uint) ([]models.Expense, error)
 	GetTotalExpensesByUser(ctx context.Context, userID string) (decimal.Decimal, error)
 	GetExpensesByType(ctx context.Context, userID string, expenseType string) ([]models.Expense, error)
@@ -38,7 +40,10 @@ type UserRepository interface {
 }
 
 type RecurringExpenseRepository interface {
-	Create(ctx context.Context, recurringExpense *models.RecurringExpense) error
+	Create(ctx context.Context, recurringExpense *models.RecurringExpense) (*models.RecurringExpense, error)
+	Update(ctx context.Context, recurringExpense *models.RecurringExpense) (*models.RecurringExpense, error)
+	GetByID(ctx context.Context, recurringExpenseID uint) (*models.RecurringExpense, error)
+	Delete(ctx context.Context, recurringExpenseID uint) error
 	GetByUserID(ctx context.Context, userID string) ([]models.RecurringExpense, error)
 	GetDueRecurringExpenses(ctx context.Context) ([]models.RecurringExpense, error)
 }
@@ -48,6 +53,7 @@ type BreedingRepository interface {
 	Create(ctx context.Context, cost *models.BreedingCost) error
 	GetRecords(ctx context.Context, horseID uint) ([]models.BreedingRecord, error)
 	CreateRecord(ctx context.Context, record *models.BreedingRecord) error
+	GetByID(ctx context.Context, id uint) (*models.BreedingRecord, error)
 	UpdateRecord(ctx context.Context, record *models.BreedingRecord) error
 	DeleteRecord(ctx context.Context, id uint) error
 }
@@ -76,8 +82,9 @@ type PregnancyRepository interface {
 }
 
 type HealthRepository interface {
-	CreateRecord(ctx context.Context, record *models.HealthRecord) error
-	GetRecords(ctx context.Context, horseID uint) ([]models.HealthRecord, error)
-	UpdateRecord(ctx context.Context, record *models.HealthRecord) error
-	DeleteRecord(ctx context.Context, id uint) error
+	Create(ctx context.Context, record *models.HealthRecord) error
+	GetByHorseID(ctx context.Context, horseID uint) ([]models.HealthRecord, error)
+	Update(ctx context.Context, record *models.HealthRecord) error
+	Delete(ctx context.Context, id uint) error
+	GetByID(ctx context.Context, id uint) (*models.HealthRecord, error)
 }

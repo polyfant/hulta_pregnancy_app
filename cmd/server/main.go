@@ -5,14 +5,13 @@ import (
 	"log"
 	"os"
 
+	"github.com/gin-gonic/gin"
 	"github.com/polyfant/hulta_pregnancy_app/internal/api"
 	"github.com/polyfant/hulta_pregnancy_app/internal/cache"
 	"github.com/polyfant/hulta_pregnancy_app/internal/config"
 	"github.com/polyfant/hulta_pregnancy_app/internal/database"
 	"github.com/polyfant/hulta_pregnancy_app/internal/repository"
 	"github.com/polyfant/hulta_pregnancy_app/internal/service"
-	"github.com/polyfant/hulta_pregnancy_app/internal/service/breeding"
-	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -66,7 +65,16 @@ func run() error {
 	horseService := service.NewHorseService(horseRepo)
 	pregnancyService := service.NewPregnancyService(horseRepo, pregnancyRepo)
 	healthService := service.NewHealthService(healthRepo)
-	breedingService := breeding.NewBreedingService(breedingRepo)
+	breedingService := service.NewBreedingService(breedingRepo)
+
+	// Initialize growth service
+	growthRepo := repository.NewGrowthRepository(db.DB)
+	growthService := service.NewGrowthService(growthRepo, horseRepo)
+
+	// Initialize expense service
+	expenseRepo := repository.NewExpenseRepository(db.DB)
+	recurringExpenseRepo := repository.NewRecurringExpenseRepository(db.DB)
+	expenseService := service.NewExpenseService(expenseRepo, recurringExpenseRepo, horseRepo)
 
 	// Initialize handler
 	handler := api.NewHandler(api.HandlerConfig{
@@ -76,9 +84,12 @@ func run() error {
 		PregnancyService: pregnancyService,
 		HealthService:    healthService,
 		BreedingService:  breedingService,
+		GrowthService:    growthService,
+		ExpenseService:   expenseService,
 		Cache:           cache,
 		HorseRepo:       horseRepo,
 		BreedingRepo:    breedingRepo,
+		GrowthRepo:      growthRepo,
 		Auth0:           cfg.Auth0,
 	})
 

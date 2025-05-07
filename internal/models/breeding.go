@@ -3,14 +3,14 @@ package models
 import "time"
 
 type BreedingRecord struct {
-    ID        uint      `json:"id" gorm:"primaryKey"`
-    HorseID   uint      `json:"horse_id"`
-    UserID    string    `json:"user_id"`
-    Date      time.Time `json:"date"`
-    Status    string    `json:"status"`
-    Notes     string    `json:"notes,omitempty"`
-    CreatedAt time.Time `json:"created_at"`
-    UpdatedAt time.Time `json:"updated_at"`
+    ID        uint      `json:"id,omitempty" gorm:"primaryKey"`
+    HorseID   uint      `json:"horse_id" validate:"required"`
+    UserID    string    `json:"user_id" validate:"required"`
+    Date      time.Time `json:"date" validate:"required"`
+    Status    string    `json:"status" validate:"required,max=50"`
+    Notes     string    `json:"notes,omitempty" validate:"omitempty,max=5000"`
+    CreatedAt time.Time `json:"created_at,omitempty"`
+    UpdatedAt time.Time `json:"updated_at,omitempty"`
 }
 
 type BreedingCost struct {

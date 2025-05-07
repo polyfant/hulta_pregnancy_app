@@ -240,6 +240,37 @@ func (m *MockHealthRepository) DeleteRecord(ctx context.Context, id uint) error 
 	return args.Error(0)
 }
 
+func (m *MockHealthRepository) Create(ctx context.Context, record *models.HealthRecord) error {
+	args := m.Called(ctx, record)
+	return args.Error(0)
+}
+
+func (m *MockHealthRepository) GetByHorseID(ctx context.Context, horseID uint) ([]models.HealthRecord, error) {
+	args := m.Called(ctx, horseID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]models.HealthRecord), args.Error(1)
+}
+
+func (m *MockHealthRepository) Delete(ctx context.Context, id uint) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
+func (m *MockHealthRepository) GetByID(ctx context.Context, id uint) (*models.HealthRecord, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.HealthRecord), args.Error(1)
+}
+
+func (m *MockHealthRepository) Update(ctx context.Context, record *models.HealthRecord) error {
+	args := m.Called(ctx, record)
+	return args.Error(0)
+}
+
 type MockBreedingRepository struct {
 	mock.Mock
 }
@@ -247,6 +278,14 @@ type MockBreedingRepository struct {
 func (m *MockBreedingRepository) CreateRecord(ctx context.Context, record *models.BreedingRecord) error {
 	args := m.Called(ctx, record)
 	return args.Error(0)
+}
+
+func (m *MockBreedingRepository) GetByID(ctx context.Context, id uint) (*models.BreedingRecord, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.BreedingRecord), args.Error(1)
 }
 
 func (m *MockBreedingRepository) Create(ctx context.Context, cost *models.BreedingCost) error {
